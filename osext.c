@@ -133,7 +133,9 @@ int main()
 	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
 	
 	
-	
+	#ifdef MODULE_SETTINGS
+		loadSettings();
+	#endif
 	
 	
 	

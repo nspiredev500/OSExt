@@ -39,7 +39,7 @@ void changeSetting(char * name,void *data)
 		}
 	}
 }
-void loadsettings()
+void loadSettings()
 {
 	FILE *settingsf = fopen("/OSExt config.conf","r");
 	if (settingsf == NULL)
@@ -143,7 +143,7 @@ void loadsettings()
 	}
 	fclose(settingsf);
 }
-void savesettings()
+void saveSettings()
 {
 	FILE *settingsf = fopen("/OSExt config.conf","w");
 	if (settingsf == NULL)

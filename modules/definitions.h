@@ -8,8 +8,8 @@ void hook_minicklock();
 
 #ifdef MODULE_SETTINGS
 void changeSetting(char * name,void *data);
-void loadsettings();
-void savesettings();
+void loadSettings();
+void saveSettings();
 void defaultSettings();
 #endif
 
