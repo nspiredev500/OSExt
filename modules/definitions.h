@@ -1,0 +1,60 @@
+
+
+#ifdef MODULE_CLOCK
+void settime();
+void drawclock();
+void hook_minicklock();
+#endif
+
+#ifdef MODULE_DESKTOP
+void desktop();
+void initdesktop();
+#endif
+
+#ifdef MODULE_DISABLENAVNET
+void disablenavnet();
+void disableusb();
+void enableusb();
+#endif
+
+
+#ifdef MODULE_SHELL
+void shell();
+void initshell();
+#endif
+
+#ifdef MODULE_USBTEST
+void ums_register(void)
+#endif
+
+#ifdef MODULE_SECURITY
+
+#endif
+
+
+#ifdef MODULE_CLOCK
+#include "clock/miniclock.h"
+#endif
+
+#ifdef MODULE_DESKTOP
+#include "desktop/desktop.h"
+#endif
+
+#ifdef MODULE_DISABLENAVNET
+#include "disablenavnet/disablenavnet.h"
+#endif
+
+
+#ifdef MODULE_SHELL
+#include "shell/shell.h"
+#endif
+
+#ifdef MODULE_USBTEST
+#include "usb/usbtest.h"
+#endif
+
+#ifdef MODULE_SECURITY
+#include "security/security.h"
+#endif
+
+
