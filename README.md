@@ -25,31 +25,3 @@ security:
 This module will be like the login manager on linux. It will ask you for a password whenfirst loaded (for example as a startup programm), after some time of inactivity and before entering press-to-test-mode, because that disables startup programms and would <del>enable you to give your calculator to other people</del> allow anyone to execute code on it (by installing ndless).
 
 
-
-apis:
-These are supposed to be used for internal things and programms using OSExt, but you can use them for whatever you want.
-chars:
-just a single latin alphabet of lowercase letters in array format. Used by my graphics api
-
-digits:
-the same with digits
-
-rawdraw:
-wrapper around the lcd library for use with buffers
-
-graphics:
-wrapper around rawdraw to allow more functions, like using the os-internal framebuffer, copying the screen to the buffer, remembering colors
-
-pipes:
-I plan to use this with system calls to make a pipe between OSExt and the programm, but it isn't implemented right now
-
-
-
-
-
-
-
-
-
-
-
