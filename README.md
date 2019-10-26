@@ -1,10 +1,10 @@
 # OSExt
 A small project I started to enhance the functionality of the TI-Nspire os, because it turns out linux doesn't support my new hardware revision.
-
+(see wiki for updated informations)
 look in config.h to configure the project and run make to compile
 look into the module folders for readmes
 
-current modules:
+current/planned modules:
 Clock:
 A miniclock in the top left of the screen. I made this because Levak's NClock miniclock doesn't work on newer os versions.
 Currently it's flickering but I'm working on it.
