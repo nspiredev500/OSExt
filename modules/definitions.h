@@ -7,7 +7,10 @@ void hook_minicklock();
 #endif
 
 #ifdef MODULE_SETTINGS
-
+void changeSetting(char * name,void *data);
+void loadsettings();
+void savesettings();
+void defaultSettings();
 #endif
 
 #ifdef MODULE_DESKTOP

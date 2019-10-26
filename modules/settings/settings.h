@@ -1,5 +1,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 typedef struct {
 	char type; // 0 = int, 1 = string, 2 = double
 	char *name;
@@ -21,14 +24,15 @@ void changeSetting(char * name,void *data)
 		{
 			if (settings[i].def)
 			{
+				if (settings[i].type != 1)
+				{
+					free(settings[i].data);
+				}
 				settings[i].data = data;
 			}
 			else
 			{
-				if (settings[i].type == 1)
-				{
-					free(settings[i].data)
-				}
+				free(settings[i].data);
 				settings[i].data = data;
 			}
 			return;
@@ -37,19 +41,19 @@ void changeSetting(char * name,void *data)
 }
 void loadsettings()
 {
-	File *settingsf = fopen("/OSExt config.conf","r");
+	FILE *settingsf = fopen("/OSExt config.conf","r");
 	if (settingsf == NULL)
 	{
-		defaultsettings();
+		defaultSettings();
 		return;
 	}
 	int matches;
 	int length;
-	matches = fscanf(settingsf,"length: %d\n",&length)
+	matches = fscanf(settingsf,"length: %d\n",&length);
 	if (matches == 0)
 	{
 		fclose(settingsf);
-		defaultsettings();
+		defaultSettings();
 		return;
 	}
 	settingssize = length;
@@ -63,28 +67,28 @@ void loadsettings()
 			free(settings);
 			settings = NULL;
 			fclose(settingsf);
-			defaultsettings();
+			defaultSettings();
 			return;
 		}
-		if (type < 0 || type > 2)
+		if (type > 2)
 		{
 			free(settings);
 			settings = NULL;
 			fclose(settingsf);
-			defaultsettings();
+			defaultSettings();
 			return;
 		}
 		char *name = calloc(11,sizeof(char));
-		matches = fscanf(settingsf,"%10s ");
+		matches = fscanf(settingsf,"%10s ",name);
 		if (matches == 0)
 		{
 			free(settings);
 			settings = NULL;
 			fclose(settingsf);
-			defaultsettings();
+			defaultSettings();
 			return;
 		}
-		if (d == 0)
+		if (type == 0)
 		{
 			int *data = calloc(1,sizeof(int));
 			matches = fscanf(settingsf,"%d\n",data);
@@ -94,16 +98,16 @@ void loadsettings()
 				free(settings);
 				settings = NULL;
 				fclose(settingsf);
-				defaultsettings();
+				defaultSettings();
 				return;
 			}
 			settings[i].name = name;
 			settings[i].type = type;
-			settigns[i].data = data;
+			settings[i].data = data;
 		}
-		if (d == 1)
+		if (type == 1)
 		{
-			int *data = calloc(31,sizeof(char));
+			char *data = calloc(31,sizeof(char));
 			matches = fscanf(settingsf,"%30s\n",data);
 			if (matches == 0)
 			{
@@ -111,29 +115,29 @@ void loadsettings()
 				free(settings);
 				settings = NULL;
 				fclose(settingsf);
-				defaultsettings();
+				defaultSettings();
 				return;
 			}
 			settings[i].name = name;
 			settings[i].type = type;
-			settigns[i].data = data;
+			settings[i].data = data;
 		}
-		if (d == 2)
+		if (type == 2)
 		{
-			int *data = calloc(1,sizeof(double));
-			matches = fscanf(settingsf,"%f\n",data);
+			double *data = calloc(1,sizeof(double));
+			matches = fscanf(settingsf,"%lf\n",data);
 			if (matches == 0)
 			{
 				free(data);
 				free(settings);
 				settings = NULL;
 				fclose(settingsf);
-				defaultsettings();
+				defaultSettings();
 				return;
 			}
 			settings[i].name = name;
 			settings[i].type = type;
-			settigns[i].data = data;
+			settings[i].data = data;
 		}
 		settings[i].def = false;
 	}
@@ -141,27 +145,27 @@ void loadsettings()
 }
 void savesettings()
 {
-	File *settingsf = fopen("/OSExt config.conf","w");
+	FILE *settingsf = fopen("/OSExt config.conf","w");
 	if (settingsf == NULL)
 	{
 		return;
 	}
-	fprintf(settingsf,"length: %d\n",settingssize)
+	fprintf(settingsf,"length: %d\n",settingssize);
 	for (int i = 0;i<settingssize;i++)
 	{
 		fprintf(settingsf,"%c ",settings[i].type);
 		fprintf(settingsf,"%10s ",settings[i].name);
 		if (settings[i].type == 0)
 		{
-			fprintf(settingsf,"%d\n",*(settings[i].data));
+			fprintf(settingsf,"%d\n",*((int*)settings[i].data));
 		}
 		if (settings[i].type == 1)
 		{
-			fprintf(settingsf,"%30s\n",*(settings[i].data));
+			fprintf(settingsf,"%30s\n",((char*)settings[i].data));
 		}
 		if (settings[i].type == 2)
 		{
-			fprintf(settingsf,"%f\n",*(settings[i].data));
+			fprintf(settingsf,"%lf\n",*((double*)settings[i].data));
 		}
 	}
 	fclose(settingsf);
@@ -182,20 +186,20 @@ void defaultSettings()
 	settings[index].type = 0;
 	settings[index].name = "r";
 	settings[index].def = true;
-	settings[index].data = malloc(sizeof(int))
-	*(settings[index].data) = 255;
+	settings[index].data = (void*) malloc(sizeof(int));
+	*((int*)settings[index].data) = 255;
 	index++;
 	settings[index].type = 0;
 	settings[index].name = "g";
 	settings[index].def = true;
-	settings[index].data = malloc(sizeof(int))
-	*(settings[index].data) = 255;
+	settings[index].data = (void*) malloc(sizeof(int));
+	*((int*)settings[index].data) = 255;
 	index++;
 	settings[index].type = 0;
 	settings[index].name = "b";
 	settings[index].def = true;
-	settings[index].data = malloc(sizeof(int))
-	*(settings[index].data) = 255;
+	settings[index].data = (void*) malloc(sizeof(int));
+	*((int*)settings[index].data) = 255;
 	index++;
 	#endif
 	
