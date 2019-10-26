@@ -1,7 +1,7 @@
 # OSExt
-A small project I started to enhance the functionality of the TI-Nspire os, because it turns out linux doesn't support my new hardware revision.
-(see wiki for updated informations)
-look in config.h to configure the project and run make to compile
+A small project I started to enhance the functionality of the TI-Nspire os, because it turns out linux doesn't support my new hardware revision.<br>
+(see wiki for updated informations)<br>
+look in config.h to configure the project and run make to compile<br>
 look into the module folders for readmes
 
 current/planned modules:<br>
