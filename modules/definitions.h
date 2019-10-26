@@ -6,6 +6,10 @@ void drawclock();
 void hook_minicklock();
 #endif
 
+#ifdef MODULE_SETTINGS
+
+#endif
+
 #ifdef MODULE_DESKTOP
 void desktop();
 void initdesktop();
@@ -34,6 +38,10 @@ void ums_register(void)
 
 #ifdef MODULE_CLOCK
 #include "clock/miniclock.h"
+#endif
+
+#ifdef MODULE_SETTINGS
+#include "settings/settings.h"
 #endif
 
 #ifdef MODULE_DESKTOP
