@@ -4,19 +4,36 @@ typedef struct {
 	char type; // 0 = int, 1 = string, 2 = double
 	char *name;
 	void *data;
+	bool def;
 } SettingsEntry;
 
-static int settingssize = 0;
-static SettingsEntry *settings = NULL;
+int settingssize = 0;
+SettingsEntry *settings = NULL;
 void changeSetting(char * name,void *data)
 {
 	if (settings == NULL)
 	{
 		return;
 	}
-	
-	
-	
+	for (int i = 0;i<settingssize;i++)
+	{
+		if (strcmp(name,settings[i].name) == 0)
+		{
+			if (settings[i].def)
+			{
+				settings[i].data = data;
+			}
+			else
+			{
+				if (settings[i].type == 1)
+				{
+					free(settings[i].data)
+				}
+				settings[i].data = data;
+			}
+			return;
+		}
+	}
 }
 void loadsettings()
 {
@@ -118,6 +135,7 @@ void loadsettings()
 			settings[i].type = type;
 			settigns[i].data = data;
 		}
+		settings[i].def = false;
 	}
 	fclose(settingsf);
 }
@@ -150,6 +168,40 @@ void savesettings()
 }
 void defaultSettings()
 {
+	int length = 0;
+	#ifdef MODULE_DESKTOP
+	length += 3;
+	#endif
+	
+	
+	settings = calloc(length,sizeof(SettingsEntry));
+	int index = 0;
+	
+	
+	#ifdef MODULE_DESKTOP
+	settings[index].type = 0;
+	settings[index].name = "r";
+	settings[index].def = true;
+	settings[index].data = malloc(sizeof(int))
+	*(settings[index].data) = 255;
+	index++;
+	settings[index].type = 0;
+	settings[index].name = "g";
+	settings[index].def = true;
+	settings[index].data = malloc(sizeof(int))
+	*(settings[index].data) = 255;
+	index++;
+	settings[index].type = 0;
+	settings[index].name = "b";
+	settings[index].def = true;
+	settings[index].data = malloc(sizeof(int))
+	*(settings[index].data) = 255;
+	index++;
+	#endif
+	
+	
+	
+	
 	
 	
 	
