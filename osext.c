@@ -44,9 +44,13 @@ noncas 4.5: 0x10023808 0x10023840
 
 
 time_t lasthook;
+
 HOOK_DEFINE(testhook)
 {
 	//bkpt();
+	#ifdef MODULE_CLOCK
+	drawclock();
+	#endif
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
 	{
@@ -85,6 +89,79 @@ HOOK_DEFINE(testhook)
 };
 
 
+/*
+void checker()
+{
+	
+	time_t chook = time(NULL);
+	if (chook-lasthook >= 0 && chook-lasthook <= 2)
+	{
+		return;
+	}
+	lasthook = chook;
+	#ifdef MODULE_DESKTOP
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_COMMA))
+	{
+		desktop();
+		return;
+	}
+	#endif
+	#ifdef MODULE_SHELL
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+	{
+		shell();
+		return;
+	}
+	#endif
+	#ifdef MODULE_CLOCK
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE) && isKeyPressed(KEY_NSPIRE_G))
+	{
+		settime();
+		return;
+	}
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE))
+	{
+		miniclock_enabled = ! miniclock_enabled;
+		return;
+	}
+	#endif
+	
+}
+
+
+static volatile uint32_t *watchdog_load = (uint32_t*) 0x90060000,
+                         *watchdog_control = (uint32_t*) 0x90060008,
+                         *watchdog_intclear = (uint32_t*) 0x9006000C,
+                         *watchdog_lock = (uint32_t*) 0x90060C00;
+
+static __attribute__ ((interrupt("FIQ"))) void checker_fiq()
+{
+	*watchdog_lock = 0x1ACCE551;
+    *watchdog_intclear = 1;
+	
+	checker();
+	
+	
+	
+}
+*/
+
+static const unsigned int hook_addrs[] =
+{0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x10023810, 0x100237d4,
+ 0x0, 0x0
+};
+
+
+/*
 // 100230dc		10011174
 const unsigned int hook_addrs[] =
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -98,7 +175,7 @@ const unsigned int hook_addrs[] =
  0x0, 0x0,
  0x100e112C, 0x100e0f68,		//0x10011178
  0x0, 0x0
-};
+};*/
 /* ndless adresses
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
  0x1002DE38, 0x1002DDC8, 0x1002D388, 0x1002D348,
@@ -115,22 +192,16 @@ const unsigned int hook_addrs[] =
 
 
 
-void test()
-{
-	bkpt();
-}
-
 
 
 int main()
 {
 	
 	lasthook = time(NULL);
-	hook_minicklock();
 	
 	
 	
-	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
+	
 	
 	
 	#ifdef MODULE_SETTINGS
@@ -139,10 +210,39 @@ int main()
 	
 	
 	
+	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
+	/*
+	*watchdog_lock = 0x1ACCE551;
+    *watchdog_load = 33000000 / 15; // 15 Hz
+    *watchdog_control = 1;
+
+    // Install FIQ handler
+    *(volatile uint32_t*)0x3C = (uint32_t) checker_fiq;
+
+    // Set first watchdog interrupt as FIQ
+    *(volatile uint32_t*) 0xDC00000C = 1 << 3;
+    // Activate watchdog IRQ
+    *(volatile uint32_t*) 0xDC000010 = 1 << 3;
+
+    // Enable FIQs
+    uint32_t spsr;
+    asm volatile("mrs %[spsr], spsr" : [spsr] "=r" (spsr));
+    spsr &= ~0x40;
+    asm volatile("msr spsr_c, %[spsr]" :: [spsr] "r" (spsr));
+	*/
+	
+	
+	
+	
+	#ifdef MODULE_CLOCK
+	hook_minicklock();
+	#endif
+	
+	/*
 	#ifdef DISABLENAVNET_H
 		disablenavnet();
 	#endif
-	
+	*/
 	
 	
 	clear_cache();

@@ -92,9 +92,15 @@ static Graphics *clockg;
 #ifdef EXPERIMENTAL
 	//uint16_t *os_scrbuf = (uint16_t*) 0x11349890;
 #endif
+/*
 HOOK_DEFINE(clockhook1)
 {
 	drawclock();
+	
+	
+	FILE *test = fopen("/test.tns","w");
+	fprintf(test,"test");
+	fclose(test);
 	
 	
 	#ifndef EXPERIMENTAL
@@ -117,6 +123,8 @@ HOOK_DEFINE(clockhook1)
 	
 	
 };
+*/
+
 
 HOOK_DEFINE(clockhook2)
 {
@@ -309,7 +317,7 @@ void hook_minicklock()
 	#endif
 	
 	
-	HOOK_INSTALL(nl_osvalue(clock_hook_addrs1,32),clockhook1);
+	//HOOK_INSTALL(nl_osvalue(clock_hook_addrs1,32),clockhook1);
 	#ifdef EXPERIMENTAL
 		/*
 		uint32_t * adr = (nl_osvalue(clock_hook_addrs1,32));

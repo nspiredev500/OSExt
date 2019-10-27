@@ -1,5 +1,5 @@
-#ifndef KEYS_H
-#define KEYS_H
+#ifndef MY_KEYS_H
+#define MY_KEYS_H
 char firstAlphanumericKeyPressed()
 {
 	if (isKeyPressed(KEY_NSPIRE_SHIFT))
@@ -132,7 +132,7 @@ char firstAlphanumericKeyPressed()
 		return '9';
 	if (isKeyPressed(KEY_NSPIRE_0))
 		return '0';
-	
+	return '\0';
 }
 
 

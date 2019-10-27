@@ -10,6 +10,8 @@ typedef struct {
 	bool def;
 } SettingsEntry;
 
+static char *configpath = "/OSExt_config.conf.tns";
+
 int settingssize = 0;
 SettingsEntry *settings = NULL;
 void changeSetting(char * name,void *data)
@@ -29,6 +31,7 @@ void changeSetting(char * name,void *data)
 					free(settings[i].data);
 				}
 				settings[i].data = data;
+				settings[i].def = false;
 			}
 			else
 			{
@@ -39,9 +42,24 @@ void changeSetting(char * name,void *data)
 		}
 	}
 }
+int getSetting(char *name)
+{
+	if (settings == NULL)
+	{
+		return -1;
+	}
+	for (int i = 0;i<settingssize;i++)
+	{
+		if (strcmp(name,settings[i].name) == 0)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
 void loadSettings()
 {
-	FILE *settingsf = fopen("/OSExt config.conf","r");
+	FILE *settingsf = fopen(configpath,"r");
 	if (settingsf == NULL)
 	{
 		defaultSettings();
@@ -145,7 +163,7 @@ void loadSettings()
 }
 void saveSettings()
 {
-	FILE *settingsf = fopen("/OSExt config.conf","w");
+	FILE *settingsf = fopen(configpath,"w");
 	if (settingsf == NULL)
 	{
 		return;
@@ -177,7 +195,7 @@ void defaultSettings()
 	length += 3;
 	#endif
 	
-	
+	settingssize = length;
 	settings = calloc(length,sizeof(SettingsEntry));
 	int index = 0;
 	
@@ -187,7 +205,7 @@ void defaultSettings()
 	settings[index].name = "r";
 	settings[index].def = true;
 	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 255;
+	*((int*)settings[index].data) = 0;
 	index++;
 	settings[index].type = 0;
 	settings[index].name = "g";
