@@ -11,6 +11,12 @@
 
 #include "config.h"
 
+
+void enableWatchdog();
+
+
+
+
 #include "modules/definitions.h"
 
 
@@ -41,15 +47,18 @@ noncas 4.5: 0x10023808 0x10023840
 
 */
 
+extern volatile int savedregs;
+
 
 
 time_t lasthook;
 
 HOOK_DEFINE(testhook)
 {
+	/*
 	//bkpt();
 	#ifdef MODULE_CLOCK
-	drawclock();
+		drawclock();
 	#endif
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
@@ -83,16 +92,18 @@ HOOK_DEFINE(testhook)
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
-	
-	
+	*/
+	enableWatchdog();
 	HOOK_RESTORE_RETURN(testhook);
 };
 
 
-/*
+
 void checker()
 {
-	
+	#ifdef MODULE_CLOCK
+		drawclock();
+	#endif
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
 	{
@@ -125,7 +136,6 @@ void checker()
 		return;
 	}
 	#endif
-	
 }
 
 
@@ -134,17 +144,103 @@ static volatile uint32_t *watchdog_load = (uint32_t*) 0x90060000,
                          *watchdog_intclear = (uint32_t*) 0x9006000C,
                          *watchdog_lock = (uint32_t*) 0x90060C00;
 
+
+/*
 static __attribute__ ((interrupt("FIQ"))) void checker_fiq()
 {
+	bkpt();
+	register volatile int test asm("r8");
+	test = savedregs;
+	
+	//asm ("mov %1, %0\n\t add $1, %0" : "=r" (dst) : "r" (src));
+	asm volatile ("stmia r8, {r0,r1,r2,r3,r4,r5,r6,r7}\n");
+	//asm volatile ("stmia %0, {r0-r7,sp,lr}"::"r8" (savedregs):"r8");
+	
+	bkpt();
+	unsigned int a;
+	
+	//__asm__ __volatile__("");
+	
+	checker();
+	
+	
 	*watchdog_lock = 0x1ACCE551;
     *watchdog_intclear = 1;
 	
-	checker();
 	
 	
 	
 }
 */
+
+void ackfiq()
+{
+	*watchdog_lock = 0x1ACCE551;
+    *watchdog_intclear = 1;
+	
+	
+}
+
+
+
+/*
+asm(
+"sp_svc: .word 0\n"
+"lr_svc: .word 0\n"
+"lcd_compat_abort_handler:\n"
+"sub sp, sp, #8\n" // Somehow the OS uses this...
+    "push {r0-r12, lr}\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "str sp, sp_svc\n" // Save sp_svc
+            "str lr, lr_svc\n" // Save lr_svc
+        "msr cpsr_c, #0xd7\n" // Back to ABT mode
+        "mov r0, sp\n" // First arg, array of r0-12, lr
+        "bl lcd_compat_abort\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "ldr sp, sp_svc\n" // Restore sp_svc
+            "ldr lr, lr_svc\n" // Restore lr_svc
+        "msr cpsr_c, #0xd7\n" // Back to ABT mode
+    "pop {r0-r12, lr}\n"
+"add sp, sp, #8\n"
+"subs pc, lr, #4");
+*/
+
+extern checker_fiq;
+extern exit_to_os;
+asm(
+"watchdoglock: .word 90060C00\n"
+"watchdoglockval: .word 0x1ACCE551\n"
+"watchdogintclear: .word 9006000C\n"
+"savedregs: .word 0\n"//r0
+"sr1: .word 0\n"//r1...
+"sr2: .word 0\n"
+"sr3: .word 0\n"
+"sr4: .word 0\n"
+"sr5: .word 0\n"
+"sr6: .word 0\n"
+"sr7: .word 0\n"
+"sr8: .word 0\n"
+"sr9: .word 0\n"
+"sr10: .word 0\n"
+"sr11: .word 0\n"
+"sr12: .word 0\n"
+"slr: .word 0\n"//lr
+"spc: .word 0\n"//pc
+"checker_fiq:\n"
+".word e1212374" //breakpoint
+"b ackfiq\n"
+"subs pc, lr, #4\n"
+"\n"
+"\n"
+"\n"
+"\n");
+
+
+
 
 static const unsigned int hook_addrs[] =
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -191,27 +287,8 @@ const unsigned int hook_addrs[] =
 };*/
 
 
-
-
-
-int main()
+void enableWatchdog()
 {
-	
-	lasthook = time(NULL);
-	
-	
-	
-	
-	
-	
-	#ifdef MODULE_SETTINGS
-		loadSettings();
-	#endif
-	
-	
-	
-	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
-	/*
 	*watchdog_lock = 0x1ACCE551;
     *watchdog_load = 33000000 / 15; // 15 Hz
     *watchdog_control = 1;
@@ -229,20 +306,63 @@ int main()
     asm volatile("mrs %[spsr], spsr" : [spsr] "=r" (spsr));
     spsr &= ~0x40;
     asm volatile("msr spsr_c, %[spsr]" :: [spsr] "r" (spsr));
-	*/
+}
+
+
+int main()
+{
+	
+	lasthook = time(NULL);
 	
 	
 	
+	
+	
+	
+	#ifdef MODULE_SETTINGS
+		loadSettings();
+	#endif
 	
 	#ifdef MODULE_CLOCK
-	hook_minicklock();
+		hook_minicklock();
 	#endif
 	
-	/*
-	#ifdef DISABLENAVNET_H
-		disablenavnet();
+	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
+	
+	enableWatchdog();
+	
+	
+	
+	
+	
+	
+	
+	
+	#ifdef MODULE_DISABLENAVNET
+		#ifdef MODULE_SETTINGS
+			int navnetstatus = getSetting("navnet");
+			if (navnetstatus != -1 && IntSetting(navnetstatus) == 0)
+			{
+				int navnetnextboot = getSetting("navnet_next");
+				if (navnetnextboot != -1)
+				{
+					if (IntSetting(navnetnextboot) == 0)
+					{
+						disablenavnet();
+					}
+					else
+					{
+						changeSetting("navnet_next",0);
+						saveSettings();
+					}
+					
+				}
+			}
+		#else
+			disablenavnet();
+		#endif
 	#endif
-	*/
+	
 	
 	
 	clear_cache();

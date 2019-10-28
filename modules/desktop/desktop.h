@@ -6,7 +6,10 @@
 #include "../../apis/rawdraw.h"
 #include "../../apis/keys.h"
 
+
+#ifdef MODULE_SETTINGS
 static void settingsscreen();
+#endif
 static void reloadcolor();
 
 
@@ -48,10 +51,12 @@ void desktop()
 		{
 			break;
 		}
+		#ifdef MODULE_SETTINGS
 		if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_S))
 		{
 			settingsscreen();
 		}
+		#endif
 		setGraphicsColor(desktopg,r,g,b);
 		fillRect(desktopg,0,0,320,240);
 		
@@ -73,7 +78,7 @@ void desktop()
 	
 	
 }
-
+#ifdef MODULE_SETTINGS
 void settingsscreen()
 {
 	int selected = 0;
@@ -190,8 +195,8 @@ void settingsscreen()
 		setGraphicsColor(desktopg,0,0,0);
 		drawString10p(desktopg,10,yoff,"type");
 		drawString10p(desktopg,60,yoff,"name");
-		drawString10p(desktopg,110,yoff,"value");
-		drawString10p(desktopg,170,yoff,buffer);
+		drawString10p(desktopg,160,yoff,"value");
+		drawString10p(desktopg,220,yoff,buffer);
 		for (int i = 0;i<settingssize;i++)
 		{
 			setGraphicsColor(desktopg,50,220,50);
@@ -209,19 +214,19 @@ void settingsscreen()
 				char str[10];
 				sprintf(str,"%8d",*((int*)settings[i].data));
 				drawString10p(desktopg,10,yoff+10*i+10,"0");
-				drawString10p(desktopg,110,yoff+10*i+10,str);
+				drawString10p(desktopg,160,yoff+10*i+10,str);
 			}
 			if (settings[i].type == 1)
 			{
 				drawString10p(desktopg,10,yoff+10*i+10,"1");
-				drawString10p(desktopg,110,yoff+10*i+10,((char*)settings[i].data));
+				drawString10p(desktopg,160,yoff+10*i+10,((char*)settings[i].data));
 			}
 			if (settings[i].type == 2)
 			{
 				drawString10p(desktopg,10,yoff+10*i+10,"2");
 				char str[10];
 				sprintf(str,"%8lf",*((double*)settings[i].data));
-				drawString10p(desktopg,110,yoff+10*i+10,str);
+				drawString10p(desktopg,160,yoff+10*i+10,str);
 			}
 			drawString10p(desktopg,60,yoff+10*i+10,settings[i].name);
 		}
@@ -236,7 +241,7 @@ void settingsscreen()
 	
 	
 }
-
+#endif
 
 static void reloadcolor()
 {

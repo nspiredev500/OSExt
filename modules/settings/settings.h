@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define IntSetting(set) (*((int*)settings[(set)].data))
+#define StringSetting(set) ((char*)settings[(set)].data)
+#define DoubleSetting(set) (*((double*)settings[(set)].data))
+
+
 typedef struct {
 	char type; // 0 = int, 1 = string, 2 = double
 	char *name;
@@ -194,6 +200,11 @@ void defaultSettings()
 	#ifdef MODULE_DESKTOP
 	length += 3;
 	#endif
+	#ifdef MODULE_DISABLENAVNET
+	length += 2;
+	#endif
+	
+	
 	
 	settingssize = length;
 	settings = calloc(length,sizeof(SettingsEntry));
@@ -220,7 +231,20 @@ void defaultSettings()
 	*((int*)settings[index].data) = 255;
 	index++;
 	#endif
-	
+	#ifdef MODULE_DISABLENAVNET
+	settings[index].type = 0;
+	settings[index].name = "navnet";
+	settings[index].def = true;
+	settings[index].data = (void*) malloc(sizeof(int));
+	*((int*)settings[index].data) = 0;
+	index++;
+	settings[index].type = 0;
+	settings[index].name = "navnet_next";
+	settings[index].def = true;
+	settings[index].data = (void*) malloc(sizeof(int));
+	*((int*)settings[index].data) = 0;
+	index++;
+	#endif
 	
 	
 	
