@@ -3,8 +3,28 @@
 #include "rawdraw.h"
 #include "digits.h"
 #include "chars.h"
-const uint16_t *OSGCBUFF = (uint16_t*) 0x11d067d8;
+//uint16_t *OSGCBUFF = (uint16_t*) 0x11d067d8; // cx noncas 4.5
+uint16_t *OSGCBUFF = 0x0;
+static const unsigned int OSGCBUFF_adr[] =
+{0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x11d067d8, 0x11d6e630, // currently not working in hardware
+ 0x0, 0x0
+};
+//noncas  11712960  10a3e250      10B9 5542    12C 8588
+//cas  11778c90  10aa2fe4         5F 59A0      12C B64C‬
 
+void initOSGCBUFF()
+{
+	OSGCBUFF = (uint16_t*) nl_osvalue(OSGCBUFF_adr,32);
+}
 
 void* resolveCharTo10pFont(char c);
 typedef struct{
@@ -52,6 +72,16 @@ void saveScreenToGraphics(Graphics *g)
 void blitGraphicsToScreen(Graphics *g)
 {
 	lcd_blit(g->buffer,g->scr);
+}
+void blitGraphicsToOSGC(Graphics *g)
+{
+	for (int x = 0;x<320;x++)
+	{
+		for (int y = 0;y<260;y++)
+		{
+			*(OSGCBUFF+y*320+x) = *(g->buffer+y+x*240);
+		}
+	}
 }
 void setPixel(Graphics *g,int x,int y)
 {

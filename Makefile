@@ -19,7 +19,7 @@ endif
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))
 OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp))
 OBJS += $(patsubst %.S, %.o, $(shell find . -depth -name \*.S))
-HEADERS = modules/desktop/desktop.h modules/shell/shell.h modules/windowoverlay/windowmanager.h modules/clock/miniclock.h apis/digits.h apis/rawdraw.h apis/nclockfragments.h apis/graphics.h apis/usbtest.h modules/disablenavnet/disablenavnet.h
+HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
 EXE = osext
 DISTDIR = .
 vpath %.tns $(DISTDIR)

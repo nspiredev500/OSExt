@@ -7,9 +7,17 @@
 #include <os.h>
 #include <usbdi.h>
 #include <usb.h>
-#include <nspireio2.h>
+//#include <nspireio2.h> //printf doesn't default to serial port with nio2
+
+
+void osgctest();
 
 #include "config.h"
+
+
+
+
+
 
 #include "modules/definitions.h"
 
@@ -41,50 +49,133 @@ noncas 4.5: 0x10023808 0x10023840
 
 */
 
+//unsigned volatile int *timer;
+
+
+// from ndless sdk utils.c
+void ut_disable_watchdog(void) {
+	// Disable the watchdog on CX that may trigger a reset
+	*(volatile unsigned*)0x90060C00 = 0x1ACCE551; // enable write access to all other watchdog registers
+	*(volatile unsigned*)0x90060008 = 0; // disable reset, counter and interrupt
+	*(volatile unsigned*)0x90060C00 = 0; // disable write access to all other watchdog registers
+}
 
 
 time_t lasthook;
+
+
+int hookcount = 0;
+int hookmax = 1000;
 HOOK_DEFINE(testhook)
 {
 	//bkpt();
+	/*
+	FILE *f = fopen("/test","w");
+	if (f != NULL)
+		fclose(f);
+	*/
+	/*
+	if (hookcount != hookmax)
+	{
+		hookcount++;
+		HOOK_RESTORE_RETURN(testhook);
+	}
+	*/
+	
+	//bkpt();
+	/*
+	#ifdef MODULE_CLOCK
+		//if (*timer%100 == 0)
+			drawclock();
+	#endif
+	*/
+	if (isKeyPressed(KEY_NSPIRE_ESC) && isKeyPressed(KEY_NSPIRE_HOME))
+	{
+		//bkpt();
+	}
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
 	{
 		HOOK_RESTORE_RETURN(testhook);
 	}
+	ut_disable_watchdog();
+	int intmask = TCT_Local_Control_Interrupts(-1);
+	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
 	lasthook = chook;
 	#ifdef MODULE_DESKTOP
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_COMMA))
+	if (ctrl && isKeyPressed(KEY_NSPIRE_COMMA))
 	{
 		desktop();
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
 	#ifdef MODULE_SHELL
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+	if (ctrl && isKeyPressed(KEY_NSPIRE_PI))
 	{
 		shell();
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
 	#ifdef MODULE_CLOCK
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE) && isKeyPressed(KEY_NSPIRE_G))
+	bool ee = isKeyPressed(KEY_NSPIRE_EE);
+	if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
 	{
-		settime();
+		settime(); // calc hanging in loop after short while without esc working
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE))
+	if (ctrl && ee)
 	{
 		miniclock_enabled = ! miniclock_enabled;
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
 	
 	
+	
+	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(testhook);
 };
 
 
+
+
+
+void osgctest() // to get osgc address
+{
+	Gc gc = gui_gc_global_GC();
+	gui_gc_begin(gc);
+	gui_gc_setColorRGB(gc,255,0,0);
+	bkpt();
+	gui_gc_fillRect(gc,0,0,100,100);
+	bkpt();
+	gui_gc_finish(gc);
+}
+
+
+
+
+static const unsigned int hook_addrs[] =
+{0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0, 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,
+ 0x0, 0x0,//0x10011178 works with fopen!   at osgc read
+ 0x10011178, 0x10011134, // somehow crashes on hardware
+ //0x100237d4,//0x10023810
+ 0x0, 0x0
+};
+
+
+
+/*
 // 100230dc		10011174
 const unsigned int hook_addrs[] =
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -98,7 +189,7 @@ const unsigned int hook_addrs[] =
  0x0, 0x0,
  0x100e112C, 0x100e0f68,		//0x10011178
  0x0, 0x0
-};
+};*/
 /* ndless adresses
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
  0x1002DE38, 0x1002DDC8, 0x1002D388, 0x1002D348,
@@ -115,20 +206,39 @@ const unsigned int hook_addrs[] =
 
 
 
-void test()
-{
-	bkpt();
-}
-
-
 
 int main()
 {
+	initOSGCBUFF();
+	
+	/*
+	*(volatile unsigned *)0x900B0018 &= ~(1 << 11);
+	*(volatile unsigned *)0x900C0080 = 0xA;
+	volatile unsigned *control = (unsigned *)0x900C0008;
+	*control = 0b10000010;
+	timer = (unsigned *)0x900C0004;
+	*/
 	
 	lasthook = time(NULL);
-	hook_minicklock();
+	
+	/*
+	Gc gc = gui_gc_global_GC();
+	printf("%x\n",gc);
+	printf("%x\n",*gc);
+	printf("%x\n",**(int**)gc);
+	*/
 	
 	
+	
+	
+	
+	#ifdef MODULE_SETTINGS
+		loadSettings();
+	#endif
+	
+	#ifdef MODULE_CLOCK
+		hook_minicklock();
+	#endif
 	
 	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
 	
@@ -137,19 +247,44 @@ int main()
 	
 	
 	
-	#ifdef DISABLENAVNET_H
-		disablenavnet();
+	
+	
+	
+	#ifdef MODULE_DISABLENAVNET
+		#ifdef MODULE_SETTINGS
+			int navnetstatus = getSetting("navnet");
+			if (navnetstatus != -1 && IntSetting(navnetstatus) == 0)
+			{
+				int navnetnextboot = getSetting("navnet_next");
+				if (navnetnextboot != -1)
+				{
+					if (IntSetting(navnetnextboot) == 0)
+					{
+						disablenavnet();
+					}
+					else
+					{
+						changeSetting("navnet_next",0);
+						saveSettings();
+					}
+					
+				}
+			}
+		#else
+			disablenavnet();
+		#endif
 	#endif
 	
 	
 	
-	clear_cache();
+	
 	
 	nl_set_resident();
 	#ifdef USBTEST_H
 		ums_register();
 	#endif
 	
+	clear_cache();
 	
 	return 0;
 }
