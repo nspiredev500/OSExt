@@ -115,6 +115,22 @@ void settingsscreen()
 				saveSettings();
 				return;
 			}
+			/*
+			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+			{
+				deleteSettings();
+				loadSettings(); // makes a memory leak if run more than once after boot
+				reloadcolor();
+				return;
+			}
+			*/
+			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+			{
+				deleteSettings();
+				reloadSettings();
+				reloadcolor();
+				return;
+			}
 			if (isKeyPressed(KEY_NSPIRE_B) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
 			{
 				yoff += 4;

@@ -24,8 +24,6 @@ static const unsigned int clock_hook_addrs1[] =
 };
 #endif
 
-
-
 #ifdef EXPERIMENTAL
 static const unsigned int clock_hook_addrs1[] = //override write addresses
 {0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -92,15 +90,16 @@ static Graphics *clockg;
 #ifdef EXPERIMENTAL
 	//uint16_t *os_scrbuf = (uint16_t*) 0x11349890;
 #endif
-/*
+
 HOOK_DEFINE(clockhook1)
 {
+	
+	//osgctest();
+	
 	drawclock();
 	
 	
-	FILE *test = fopen("/test.tns","w");
-	fprintf(test,"test");
-	fclose(test);
+	
 	
 	
 	#ifndef EXPERIMENTAL
@@ -123,9 +122,9 @@ HOOK_DEFINE(clockhook1)
 	
 	
 };
-*/
 
 
+extern unsigned volatile int *timer;
 HOOK_DEFINE(clockhook2)
 {
 	drawclock();
@@ -136,21 +135,28 @@ HOOK_DEFINE(clockhook3)
 	drawclock();
 	HOOK_RESTORE_RETURN(clockhook2);
 };
+
+long last = 0;
 void drawclock()
 {
 	//bkpt();
 	if (! miniclock_enabled)
 		return;
+	long val = *v_RTC;
 	
 	
 	initGraphics();
 	saveScreenToGraphics(clockg);
 	setGraphicsColor(clockg,0,0,0);
 	fillRect(clockg,clockx,clocky,70,10);
+	
+	
+	//fillRect(clockg,clockx-20,clocky,10,10);
+	
 	setGraphicsColor(clockg,255,255,255);
 	drawRect(clockg,clockx-1,clocky-1,72,12);
 	
-	long val = *v_RTC;
+	
 	timestamp2date(val,&year,&month,&day,&hour,&minute,&second);
 	
 	setGraphicsColor(clockg,255,0,0);
@@ -174,10 +180,15 @@ void drawclock()
 	
 	
 	
+	//write10pChar(clockg,clockx-20,clocky,(*timer)%10,digits10p);
+	
 	#ifdef USBTEST_H
 		drawString10p(clockg,50,60,usbstring);
 	#endif
 	blitGraphicsToScreen(clockg);
+	//bkpt();
+	//blitGraphicsToOSGC(clockg);
+	//bkpt();
 	exitGraphics();
 	
 	
@@ -317,7 +328,7 @@ void hook_minicklock()
 	#endif
 	
 	
-	//HOOK_INSTALL(nl_osvalue(clock_hook_addrs1,32),clockhook1);
+	HOOK_INSTALL(nl_osvalue(clock_hook_addrs1,32),clockhook1);
 	#ifdef EXPERIMENTAL
 		/*
 		uint32_t * adr = (nl_osvalue(clock_hook_addrs1,32));

@@ -7,27 +7,17 @@
 #include <os.h>
 #include <usbdi.h>
 #include <usb.h>
-#include <nspireio2.h>
+//#include <nspireio2.h> //printf doesn't default to serial port with nio2
+
+
+void osgctest();
 
 #include "config.h"
 
 
-void enableWatchdog();
 
-#define enableInterrupts asm("mrs r1, cpsr \n\t" \
-        "bic r1, r1, #0x80 \n\t" \
-        "msr cpsr, r1" \
-        : \
-        : \
-        : "r1");
-//
-#define disableInterrupts asm("mrs r1, cpsr \n\t" \
-        "orr r1, r1, #0x80 \n\t" \
-        "msr cpsr, r1" \
-        : \
-        : \
-        : "r1");
-//
+
+
 
 #include "modules/definitions.h"
 
@@ -59,240 +49,113 @@ noncas 4.5: 0x10023808 0x10023840
 
 */
 
-extern volatile int savedregs;
-
-//
+//unsigned volatile int *timer;
 
 
-
-
-// disableInterrupts after systemcalls
+// from ndless sdk utils.c
+void ut_disable_watchdog(void) {
+	// Disable the watchdog on CX that may trigger a reset
+	*(volatile unsigned*)0x90060C00 = 0x1ACCE551; // enable write access to all other watchdog registers
+	*(volatile unsigned*)0x90060008 = 0; // disable reset, counter and interrupt
+	*(volatile unsigned*)0x90060C00 = 0; // disable write access to all other watchdog registers
+}
 
 
 time_t lasthook;
 
 
-/*
+int hookcount = 0;
+int hookmax = 1000;
 HOOK_DEFINE(testhook)
 {
-	//int interrupts = TCT_Local_Control_Interrupts(0);
-	disableInterrupts
 	//bkpt();
+	/*
+	FILE *f = fopen("/test","w");
+	if (f != NULL)
+		fclose(f);
+	*/
+	/*
+	if (hookcount != hookmax)
+	{
+		hookcount++;
+		HOOK_RESTORE_RETURN(testhook);
+	}
+	*/
+	
+	//bkpt();
+	/*
 	#ifdef MODULE_CLOCK
-		drawclock();
+		//if (*timer%100 == 0)
+			drawclock();
 	#endif
+	*/
 	if (isKeyPressed(KEY_NSPIRE_ESC) && isKeyPressed(KEY_NSPIRE_HOME))
 	{
-		bkpt();
+		//bkpt();
 	}
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
 	{
 		HOOK_RESTORE_RETURN(testhook);
 	}
+	ut_disable_watchdog();
+	int intmask = TCT_Local_Control_Interrupts(-1);
+	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
 	lasthook = chook;
 	#ifdef MODULE_DESKTOP
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_COMMA))
+	if (ctrl && isKeyPressed(KEY_NSPIRE_COMMA))
 	{
 		desktop();
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
 	#ifdef MODULE_SHELL
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+	if (ctrl && isKeyPressed(KEY_NSPIRE_PI))
 	{
 		shell();
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
 	#ifdef MODULE_CLOCK
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE) && isKeyPressed(KEY_NSPIRE_G))
+	bool ee = isKeyPressed(KEY_NSPIRE_EE);
+	if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
 	{
-		
-		settime();
-		disableInterrupts
+		settime(); // calc hanging in loop after short while without esc working
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE))
+	if (ctrl && ee)
 	{
 		miniclock_enabled = ! miniclock_enabled;
+		TCT_Local_Control_Interrupts(intmask);
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
-	enableInterrupts
 	
-	//TCT_Local_Control_Interrupts(interrupts);
-	//enableWatchdog();
-	//bkpt();
+	
+	
+	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(testhook);
 };
-*/
 
 
-void checker()
+
+
+
+void osgctest() // to get osgc address
 {
-	#ifdef MODULE_CLOCK
-		drawclock();
-	#endif
-	
-	
-	
-	time_t chook = time(NULL);
-	if (chook-lasthook >= 0 && chook-lasthook <= 1)
-	{
-		return;
-	}
-	lasthook = chook;
-	#ifdef MODULE_DESKTOP
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_COMMA))
-	{
-		desktop();
-		return;
-	}
-	#endif
-	#ifdef MODULE_SHELL
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
-	{
-		shell();
-		return;
-	}
-	#endif
-	#ifdef MODULE_CLOCK
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE) && isKeyPressed(KEY_NSPIRE_G))
-	{
-		settime();
-		return;
-	}
-	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE))
-	{
-		miniclock_enabled = ! miniclock_enabled;
-		return;
-	}
-	#endif
-}
-
-
-static volatile uint32_t *watchdog_load = (uint32_t*) 0x90060000,
-                         *watchdog_control = (uint32_t*) 0x90060008,
-                         *watchdog_intclear = (uint32_t*) 0x9006000C,
-                         *watchdog_lock = (uint32_t*) 0x90060C00;
-//
-
-/*
-static __attribute__ ((interrupt("FIQ"))) void checker_fiq()
-{
+	Gc gc = gui_gc_global_GC();
+	gui_gc_begin(gc);
+	gui_gc_setColorRGB(gc,255,0,0);
 	bkpt();
-	register volatile int test asm("r8");
-	test = savedregs;
-	
-	//asm ("mov %1, %0\n\t add $1, %0" : "=r" (dst) : "r" (src));
-	asm volatile ("stmia r8, {r0,r1,r2,r3,r4,r5,r6,r7}\n");
-	//asm volatile ("stmia %0, {r0-r7,sp,lr}"::"r8" (savedregs):"r8");
-	
+	gui_gc_fillRect(gc,0,0,100,100);
 	bkpt();
-	unsigned int a;
-	
-	//__asm__ __volatile__("");
-	
-	checker();
-	
-	
-	*watchdog_lock = 0x1ACCE551;
-    *watchdog_intclear = 1;
-	
-	
-	
-	
-}
-*/
-/*
-extern retack;
-void ackfiq()
-{
-	*watchdog_lock = 0x1ACCE551;
-    *watchdog_intclear = 1;
-	asm("b retack");
-}
-*/
-
-
-/*
-asm(
-"sp_svc: .word 0\n"
-"lr_svc: .word 0\n"
-"lcd_compat_abort_handler:\n"
-"sub sp, sp, #8\n" // Somehow the OS uses this...
-    "push {r0-r12, lr}\n"
-        "mrs r0, spsr\n"
-        "orr r0, r0, #0xc0\n"
-        "msr cpsr_c, r0\n" // To SVC mode
-            "str sp, sp_svc\n" // Save sp_svc
-            "str lr, lr_svc\n" // Save lr_svc
-        "msr cpsr_c, #0xd7\n" // Back to ABT mode
-        "mov r0, sp\n" // First arg, array of r0-12, lr
-        "bl lcd_compat_abort\n"
-        "mrs r0, spsr\n"
-        "orr r0, r0, #0xc0\n"
-        "msr cpsr_c, r0\n" // To SVC mode
-            "ldr sp, sp_svc\n" // Restore sp_svc
-            "ldr lr, lr_svc\n" // Restore lr_svc
-        "msr cpsr_c, #0xd7\n" // Back to ABT mode
-    "pop {r0-r12, lr}\n"
-"add sp, sp, #8\n" 
-"subs pc, lr, #4");
-*/
-
-
-//extern checker_fiq;
-extern exit_to_os;
-
-
-void __attribute__ ((interrupt("FIQ"))) checker_fiq()
-{
-	*watchdog_lock = 0x1ACCE551;
-    *watchdog_intclear = 1;
-	
-	
-	
+	gui_gc_finish(gc);
 }
 
 
-/*
-asm(
-"watchdoglock: .word 0x90060C00\n"
-"watchdoglockval: .word 0x1ACCE551\n"
-"watchdogintclear: .word 0x9006000C\n"
-"savedregs: .word 0\n"//r0
-"sr1: .word 0\n"//r1...
-"sr2: .word 0\n"
-"sr3: .word 0\n"
-"sr4: .word 0\n"
-"sr5: .word 0\n"
-"sr6: .word 0\n"
-"sr7: .word 0\n"
-"sr8: .word 0\n"
-"sr9: .word 0\n"
-"sr10: .word 0\n"
-"sr11: .word 0\n"
-"sr12: .word 0\n"
-"slr: .word 0\n"//lr
-"spc: .word 0\n"//pc
-"checker_fiq:\n"
-//".word 0xe1212374" //breakpoint
-//"b ackfiq\n"
-//"retack:\n"
-"sub sp, sp, #8\n"
-//"ldr r8, watchdoglock\n"
-//"ldr r9, watchdogval\n"
-//"str r8, r9\n"
-//"ldr r8, watchdogintclear\n"
-//"str r8, 1\n"
-"subs pc, lr, #4\n"
-"\n"
-"\n"
-"\n"
-"\n");
-*/
 
 
 static const unsigned int hook_addrs[] =
@@ -304,8 +167,9 @@ static const unsigned int hook_addrs[] =
  0x0, 0x0,
  0x0, 0x0,
  0x0, 0x0,
- 0x0, 0x0,
- 0x10023810, 0x100237d4,//0x100237d4
+ 0x0, 0x0,//0x10011178 works with fopen!   at osgc read
+ 0x10011178, 0x10011134, // somehow crashes on hardware
+ //0x100237d4,//0x10023810
  0x0, 0x0
 };
 
@@ -341,33 +205,28 @@ const unsigned int hook_addrs[] =
 };*/
 
 
-void enableWatchdog()
-{
-	*watchdog_lock = 0x1ACCE551;
-    *watchdog_load = 33000000 / 15; // 15 Hz
-    *watchdog_control = 1;
-
-    // Install FIQ handler
-    *(volatile uint32_t*)0x3C = (uint32_t) checker_fiq;
-
-    // Set first watchdog interrupt as FIQ
-    *(volatile uint32_t*) 0xDC00000C = 1 << 3;
-    // Activate watchdog IRQ
-    *(volatile uint32_t*) 0xDC000010 = 1 << 3;
-
-    // Enable FIQs
-    uint32_t spsr;
-    asm volatile("mrs %[spsr], spsr" : [spsr] "=r" (spsr));
-    spsr &= ~0x40;
-    asm volatile("msr spsr_c, %[spsr]" :: [spsr] "r" (spsr));
-}
 
 
 int main()
 {
+	initOSGCBUFF();
+	
+	/*
+	*(volatile unsigned *)0x900B0018 &= ~(1 << 11);
+	*(volatile unsigned *)0x900C0080 = 0xA;
+	volatile unsigned *control = (unsigned *)0x900C0008;
+	*control = 0b10000010;
+	timer = (unsigned *)0x900C0004;
+	*/
 	
 	lasthook = time(NULL);
 	
+	/*
+	Gc gc = gui_gc_global_GC();
+	printf("%x\n",gc);
+	printf("%x\n",*gc);
+	printf("%x\n",**(int**)gc);
+	*/
 	
 	
 	
@@ -381,9 +240,8 @@ int main()
 		hook_minicklock();
 	#endif
 	
-	//HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
+	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
 	
-	enableWatchdog();
 	
 	
 	
@@ -419,13 +277,14 @@ int main()
 	
 	
 	
-	clear_cache();
+	
 	
 	nl_set_resident();
 	#ifdef USBTEST_H
 		ums_register();
 	#endif
 	
+	clear_cache();
 	
 	return 0;
 }

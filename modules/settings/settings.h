@@ -20,6 +20,10 @@ static char *configpath = "/OSExt_config.conf.tns";
 
 int settingssize = 0;
 SettingsEntry *settings = NULL;
+void deleteSettings()
+{
+	remove(configpath);
+}
 void changeSetting(char * name,void *data)
 {
 	if (settings == NULL)
@@ -47,6 +51,25 @@ void changeSetting(char * name,void *data)
 			return;
 		}
 	}
+}
+void reloadSettings() // there should be no memory leak if I'm right 
+{
+	for (int i = 0;i<settingssize;i++)
+	{
+		if (settings[i].def)
+		{
+			if (settings[i].type != 1)
+			{
+				free(settings[i].data);
+			}
+		}
+		else
+		{
+			free(settings[i].data);
+		}
+	}
+	free(settings);
+	loadSettings();
 }
 int getSetting(char *name)
 {
@@ -80,7 +103,7 @@ void loadSettings()
 		defaultSettings();
 		return;
 	}
-	disableInterrupts
+	
 	settingssize = length;
 	settings = calloc(length,sizeof(SettingsEntry));
 	for (int i = 0;i<length;i++)
@@ -165,10 +188,9 @@ void loadSettings()
 			settings[i].data = data;
 		}
 		settings[i].def = false;
-		disableInterrupts
+		
 	}
 	fclose(settingsf);
-	disableInterrupts
 }
 void saveSettings()
 {
@@ -177,7 +199,7 @@ void saveSettings()
 	{
 		return;
 	}
-	disableInterrupts
+	
 	fprintf(settingsf,"length: %d\n",settingssize);
 	for (int i = 0;i<settingssize;i++)
 	{
@@ -195,10 +217,10 @@ void saveSettings()
 		{
 			fprintf(settingsf,"%lf\n",*((double*)settings[i].data));
 		}
-		disableInterrupts
+		
 	}
 	fclose(settingsf);
-	disableInterrupts
+	
 }
 void defaultSettings()
 {
