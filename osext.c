@@ -83,15 +83,10 @@ HOOK_DEFINE(testhook)
 	*/
 	
 	//bkpt();
-	/*
-	#ifdef MODULE_CLOCK
-		//if (*timer%100 == 0)
-			drawclock();
-	#endif
-	*/
+	
 	if (isKeyPressed(KEY_NSPIRE_ESC) && isKeyPressed(KEY_NSPIRE_HOME))
 	{
-		//bkpt();
+		
 	}
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
@@ -168,7 +163,7 @@ static const unsigned int hook_addrs[] =
  0x0, 0x0,
  0x0, 0x0,
  0x0, 0x0,//0x10011178 works with fopen!   at osgc read
- 0x10011178, 0x10011134, // somehow crashes on hardware
+ 0x10011178, 0x10011134,
  //0x100237d4,//0x10023810
  0x0, 0x0
 };
@@ -249,10 +244,12 @@ int main()
 	
 	
 	
-	
 	#ifdef MODULE_DISABLENAVNET
 		#ifdef MODULE_SETTINGS
 			int navnetstatus = getSetting("navnet");
+			//printf("%d",navnetstatus);
+			if (navnetstatus != -1)
+				printf("navnet %d\n",IntSetting(navnetstatus));
 			if (navnetstatus != -1 && IntSetting(navnetstatus) == 0)
 			{
 				int navnetnextboot = getSetting("navnet_next");
@@ -271,6 +268,7 @@ int main()
 				}
 			}
 		#else
+			printf("no settings module\n");
 			disablenavnet();
 		#endif
 	#endif

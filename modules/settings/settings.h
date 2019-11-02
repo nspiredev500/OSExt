@@ -10,7 +10,7 @@
 
 
 typedef struct {
-	char type; // 0 = int, 1 = string, 2 = double
+	int type; // 0 = int, 1 = string, 2 = double
 	char *name;
 	void *data;
 	bool def;
@@ -91,6 +91,7 @@ void loadSettings()
 	FILE *settingsf = fopen(configpath,"r");
 	if (settingsf == NULL)
 	{
+		printf("could not open config");
 		defaultSettings();
 		return;
 	}
@@ -101,6 +102,7 @@ void loadSettings()
 	{
 		fclose(settingsf);
 		defaultSettings();
+		printf("no length found");
 		return;
 	}
 	
@@ -108,14 +110,15 @@ void loadSettings()
 	settings = calloc(length,sizeof(SettingsEntry));
 	for (int i = 0;i<length;i++)
 	{
-		char type = 0;
-		matches = fscanf(settingsf,"%c ",&type);
+		int type = 0;
+		matches = fscanf(settingsf,"%d ",&type);
 		if (matches == 0)
 		{
 			free(settings);
 			settings = NULL;
 			fclose(settingsf);
 			defaultSettings();
+			printf("not enough entries found");
 			return;
 		}
 		if (type > 2)
@@ -124,18 +127,21 @@ void loadSettings()
 			settings = NULL;
 			fclose(settingsf);
 			defaultSettings();
+			printf("invalid type");
 			return;
 		}
-		char *name = calloc(11,sizeof(char));
-		matches = fscanf(settingsf,"%10s ",name);
+		char *name = calloc(31,sizeof(char));
+		matches = fscanf(settingsf,"%30s ",name);
 		if (matches == 0)
 		{
 			free(settings);
 			settings = NULL;
 			fclose(settingsf);
 			defaultSettings();
+			printf("no name found");
 			return;
 		}
+		printf("\nname: %s\n",name);
 		if (type == 0)
 		{
 			int *data = calloc(1,sizeof(int));
@@ -147,6 +153,7 @@ void loadSettings()
 				settings = NULL;
 				fclose(settingsf);
 				defaultSettings();
+				printf("no int data found: %d",i);
 				return;
 			}
 			settings[i].name = name;
@@ -164,6 +171,7 @@ void loadSettings()
 				settings = NULL;
 				fclose(settingsf);
 				defaultSettings();
+				printf("no string data found");
 				return;
 			}
 			settings[i].name = name;
@@ -181,6 +189,7 @@ void loadSettings()
 				settings = NULL;
 				fclose(settingsf);
 				defaultSettings();
+				printf("no float data found");
 				return;
 			}
 			settings[i].name = name;
@@ -197,21 +206,26 @@ void saveSettings()
 	FILE *settingsf = fopen(configpath,"w");
 	if (settingsf == NULL)
 	{
+		printf("could not write the config");
 		return;
 	}
 	
 	fprintf(settingsf,"length: %d\n",settingssize);
+	printf("length: %d\n",settingssize);
 	for (int i = 0;i<settingssize;i++)
 	{
-		fprintf(settingsf,"%c ",settings[i].type);
-		fprintf(settingsf,"%10s ",settings[i].name);
+		fprintf(settingsf,"%d ",settings[i].type);
+		fprintf(settingsf,"%s ",settings[i].name);
+		printf("%d ",settings[i].type);
+		printf("%s ",settings[i].name);
 		if (settings[i].type == 0)
 		{
 			fprintf(settingsf,"%d\n",*((int*)settings[i].data));
+			printf("%d\n",*((int*)settings[i].data));
 		}
 		if (settings[i].type == 1)
 		{
-			fprintf(settingsf,"%30s\n",((char*)settings[i].data));
+			fprintf(settingsf,"%s\n",((char*)settings[i].data));
 		}
 		if (settings[i].type == 2)
 		{
@@ -219,11 +233,13 @@ void saveSettings()
 		}
 		
 	}
+	//fprintf(settingsf,"\n");
 	fclose(settingsf);
 	
 }
 void defaultSettings()
 {
+	printf("could not read the config");
 	int length = 0;
 	#ifdef MODULE_DESKTOP
 	length += 3;

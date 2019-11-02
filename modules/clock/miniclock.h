@@ -124,7 +124,6 @@ HOOK_DEFINE(clockhook1)
 };
 
 
-extern unsigned volatile int *timer;
 HOOK_DEFINE(clockhook2)
 {
 	drawclock();
