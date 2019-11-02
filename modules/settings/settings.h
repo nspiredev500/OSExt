@@ -211,17 +211,13 @@ void saveSettings()
 	}
 	
 	fprintf(settingsf,"length: %d\n",settingssize);
-	printf("length: %d\n",settingssize);
 	for (int i = 0;i<settingssize;i++)
 	{
 		fprintf(settingsf,"%d ",settings[i].type);
 		fprintf(settingsf,"%s ",settings[i].name);
-		printf("%d ",settings[i].type);
-		printf("%s ",settings[i].name);
 		if (settings[i].type == 0)
 		{
 			fprintf(settingsf,"%d\n",*((int*)settings[i].data));
-			printf("%d\n",*((int*)settings[i].data));
 		}
 		if (settings[i].type == 1)
 		{
@@ -233,7 +229,6 @@ void saveSettings()
 		}
 		
 	}
-	//fprintf(settingsf,"\n");
 	fclose(settingsf);
 	
 }

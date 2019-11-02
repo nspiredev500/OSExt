@@ -247,9 +247,6 @@ int main()
 	#ifdef MODULE_DISABLENAVNET
 		#ifdef MODULE_SETTINGS
 			int navnetstatus = getSetting("navnet");
-			//printf("%d",navnetstatus);
-			if (navnetstatus != -1)
-				printf("navnet %d\n",IntSetting(navnetstatus));
 			if (navnetstatus != -1 && IntSetting(navnetstatus) == 0)
 			{
 				int navnetnextboot = getSetting("navnet_next");
@@ -268,7 +265,6 @@ int main()
 				}
 			}
 		#else
-			printf("no settings module\n");
 			disablenavnet();
 		#endif
 	#endif
