@@ -255,23 +255,23 @@ void defaultSettings()
 	settings[index].name = "r";
 	settings[index].def = true;
 	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 0;
+	*((int*)settings[index].data) = 102;
 	index++;
 	settings[index].type = 0;
 	settings[index].name = "g";
 	settings[index].def = true;
 	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 255;
+	*((int*)settings[index].data) = 205;
 	index++;
 	settings[index].type = 0;
 	settings[index].name = "b";
 	settings[index].def = true;
 	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 255;
+	*((int*)settings[index].data) = 170;
 	index++;
 	#endif
 	#ifdef MODULE_DISABLENAVNET
-	settings[index].type = 0;
+	settings[index].type = 1;
 	settings[index].name = "navnet";
 	settings[index].def = true;
 	settings[index].data = (void*) malloc(sizeof(int));
