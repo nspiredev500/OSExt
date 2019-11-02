@@ -28,7 +28,7 @@ void disablenavnet() // cannot be re-enabled currently
 	
 	TI_NN_StopService(0x4080);
 	TI_NN_StopService(0x5000);
-	
+	disableInterrupts
 }
 
 void disableusb() // can be re-enabled, but os enables is quickly so it's not really usefull

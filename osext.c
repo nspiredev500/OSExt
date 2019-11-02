@@ -14,8 +14,20 @@
 
 void enableWatchdog();
 
-
-
+#define enableInterrupts asm("mrs r1, cpsr \n\t" \
+        "bic r1, r1, #0x80 \n\t" \
+        "msr cpsr, r1" \
+        : \
+        : \
+        : "r1");
+//
+#define disableInterrupts asm("mrs r1, cpsr \n\t" \
+        "orr r1, r1, #0x80 \n\t" \
+        "msr cpsr, r1" \
+        : \
+        : \
+        : "r1");
+//
 
 #include "modules/definitions.h"
 
@@ -49,17 +61,30 @@ noncas 4.5: 0x10023808 0x10023840
 
 extern volatile int savedregs;
 
+//
+
+
+
+
+// disableInterrupts after systemcalls
 
 
 time_t lasthook;
 
+
+/*
 HOOK_DEFINE(testhook)
 {
-	/*
+	//int interrupts = TCT_Local_Control_Interrupts(0);
+	disableInterrupts
 	//bkpt();
 	#ifdef MODULE_CLOCK
 		drawclock();
 	#endif
+	if (isKeyPressed(KEY_NSPIRE_ESC) && isKeyPressed(KEY_NSPIRE_HOME))
+	{
+		bkpt();
+	}
 	time_t chook = time(NULL);
 	if (chook-lasthook >= 0 && chook-lasthook <= 2)
 	{
@@ -83,7 +108,9 @@ HOOK_DEFINE(testhook)
 	#ifdef MODULE_CLOCK
 	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE) && isKeyPressed(KEY_NSPIRE_G))
 	{
+		
 		settime();
+		disableInterrupts
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_EE))
@@ -92,11 +119,14 @@ HOOK_DEFINE(testhook)
 		HOOK_RESTORE_RETURN(testhook);
 	}
 	#endif
-	*/
-	enableWatchdog();
+	enableInterrupts
+	
+	//TCT_Local_Control_Interrupts(interrupts);
+	//enableWatchdog();
+	//bkpt();
 	HOOK_RESTORE_RETURN(testhook);
 };
-
+*/
 
 
 void checker()
@@ -104,8 +134,11 @@ void checker()
 	#ifdef MODULE_CLOCK
 		drawclock();
 	#endif
+	
+	
+	
 	time_t chook = time(NULL);
-	if (chook-lasthook >= 0 && chook-lasthook <= 2)
+	if (chook-lasthook >= 0 && chook-lasthook <= 1)
 	{
 		return;
 	}
@@ -143,7 +176,7 @@ static volatile uint32_t *watchdog_load = (uint32_t*) 0x90060000,
                          *watchdog_control = (uint32_t*) 0x90060008,
                          *watchdog_intclear = (uint32_t*) 0x9006000C,
                          *watchdog_lock = (uint32_t*) 0x90060C00;
-
+//
 
 /*
 static __attribute__ ((interrupt("FIQ"))) void checker_fiq()
@@ -172,15 +205,15 @@ static __attribute__ ((interrupt("FIQ"))) void checker_fiq()
 	
 }
 */
-
+/*
+extern retack;
 void ackfiq()
 {
 	*watchdog_lock = 0x1ACCE551;
     *watchdog_intclear = 1;
-	
-	
+	asm("b retack");
 }
-
+*/
 
 
 /*
@@ -205,16 +238,30 @@ asm(
             "ldr lr, lr_svc\n" // Restore lr_svc
         "msr cpsr_c, #0xd7\n" // Back to ABT mode
     "pop {r0-r12, lr}\n"
-"add sp, sp, #8\n"
+"add sp, sp, #8\n" 
 "subs pc, lr, #4");
 */
 
-extern checker_fiq;
+
+//extern checker_fiq;
 extern exit_to_os;
+
+
+void __attribute__ ((interrupt("FIQ"))) checker_fiq()
+{
+	*watchdog_lock = 0x1ACCE551;
+    *watchdog_intclear = 1;
+	
+	
+	
+}
+
+
+/*
 asm(
-"watchdoglock: .word 90060C00\n"
+"watchdoglock: .word 0x90060C00\n"
 "watchdoglockval: .word 0x1ACCE551\n"
-"watchdogintclear: .word 9006000C\n"
+"watchdogintclear: .word 0x9006000C\n"
 "savedregs: .word 0\n"//r0
 "sr1: .word 0\n"//r1...
 "sr2: .word 0\n"
@@ -231,15 +278,21 @@ asm(
 "slr: .word 0\n"//lr
 "spc: .word 0\n"//pc
 "checker_fiq:\n"
-".word e1212374" //breakpoint
-"b ackfiq\n"
+//".word 0xe1212374" //breakpoint
+//"b ackfiq\n"
+//"retack:\n"
+"sub sp, sp, #8\n"
+//"ldr r8, watchdoglock\n"
+//"ldr r9, watchdogval\n"
+//"str r8, r9\n"
+//"ldr r8, watchdogintclear\n"
+//"str r8, 1\n"
 "subs pc, lr, #4\n"
 "\n"
 "\n"
 "\n"
 "\n");
-
-
+*/
 
 
 static const unsigned int hook_addrs[] =
@@ -252,9 +305,10 @@ static const unsigned int hook_addrs[] =
  0x0, 0x0,
  0x0, 0x0,
  0x0, 0x0,
- 0x10023810, 0x100237d4,
+ 0x10023810, 0x100237d4,//0x100237d4
  0x0, 0x0
 };
+
 
 
 /*
@@ -327,7 +381,7 @@ int main()
 		hook_minicklock();
 	#endif
 	
-	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
+	//HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
 	
 	enableWatchdog();
 	
