@@ -18,6 +18,8 @@ uncomment the modules you want, comment the ones you don't
 
 
 
-
-
+//dependencies: some modules need others and those will be selected even if you disabled them above
+#ifdef MODULE_SECURITY
+	#define MODULE_SETTINGS //security needs settings, so you can set a password, and without a password it's pointless
+#endif
 

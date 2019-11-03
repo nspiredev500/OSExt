@@ -1,13 +1,26 @@
 
 #include <hook.h>
-#include <time.h>
 #include <SDL/SDL_config.h>
 #include <SDL/SDL.h>
 #include <ngc.h>
 #include <os.h>
 #include <usbdi.h>
 #include <usb.h>
-//#include <nspireio2.h> //printf doesn't default to serial port with nio2
+#include <time.h>
+#include <nspireio2.h> //printf doesn't default to serial port with nio2, use uart_printf
+
+
+#define precisetime
+
+
+
+#ifdef precisetime
+	volatile unsigned int *timer;
+	unsigned int lasttime = 0;
+#else
+	time_t lasthook;
+#endif
+
 
 
 void osgctest();
@@ -20,8 +33,6 @@ void osgctest();
 
 
 #include "modules/definitions.h"
-
-
 
 
 
@@ -43,13 +54,10 @@ noncas 4.5: 0x10023808 0x10023840
 
 
 
-//SDL doesn't work, maybe because it's in hooks?
-
 
 
 */
 
-//unsigned volatile int *timer;
 
 
 // from ndless sdk utils.c
@@ -61,81 +69,99 @@ void ut_disable_watchdog(void) {
 }
 
 
-time_t lasthook;
 
 
-int hookcount = 0;
-int hookmax = 1000;
+
+void hookfunc();
+
+
+
 HOOK_DEFINE(testhook)
 {
-	//bkpt();
-	/*
-	FILE *f = fopen("/test","w");
-	if (f != NULL)
-		fclose(f);
-	*/
-	/*
-	if (hookcount != hookmax)
-	{
-		hookcount++;
-		HOOK_RESTORE_RETURN(testhook);
-	}
-	*/
 	
-	//bkpt();
 	
-	if (isKeyPressed(KEY_NSPIRE_ESC) && isKeyPressed(KEY_NSPIRE_HOME))
-	{
-		
-	}
-	time_t chook = time(NULL);
-	if (chook-lasthook >= 0 && chook-lasthook <= 2)
-	{
-		HOOK_RESTORE_RETURN(testhook);
-	}
 	ut_disable_watchdog();
 	int intmask = TCT_Local_Control_Interrupts(-1);
-	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
-	lasthook = chook;
-	#ifdef MODULE_DESKTOP
-	if (ctrl && isKeyPressed(KEY_NSPIRE_COMMA))
-	{
-		desktop();
-		TCT_Local_Control_Interrupts(intmask);
-		HOOK_RESTORE_RETURN(testhook);
-	}
-	#endif
-	#ifdef MODULE_SHELL
-	if (ctrl && isKeyPressed(KEY_NSPIRE_PI))
-	{
-		shell();
-		TCT_Local_Control_Interrupts(intmask);
-		HOOK_RESTORE_RETURN(testhook);
-	}
-	#endif
-	#ifdef MODULE_CLOCK
-	bool ee = isKeyPressed(KEY_NSPIRE_EE);
-	if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
-	{
-		settime(); // calc hanging in loop after short while without esc working
-		TCT_Local_Control_Interrupts(intmask);
-		HOOK_RESTORE_RETURN(testhook);
-	}
-	if (ctrl && ee)
-	{
-		miniclock_enabled = ! miniclock_enabled;
-		TCT_Local_Control_Interrupts(intmask);
-		HOOK_RESTORE_RETURN(testhook);
-	}
-	#endif
 	
-	
+	hookfunc();
 	
 	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(testhook);
 };
 
 
+void hookfunc()
+{
+	
+	#ifdef MODULE_SECURITY
+		if (isKeyPressed(KEY_NSPIRE_ESC) && (isKeyPressed(KEY_NSPIRE_HOME) || on_key_pressed()))
+		{
+			ptt_pressed();
+			wait_no_key_pressed();
+		}
+	#endif
+	#ifndef precisetime
+		time_t chook = time(NULL);
+		if (chook-lasthook > 0)
+		{
+			return;
+		}
+		lasthook = chook;
+	#else
+		unsigned int time = *timer;
+		if (abs(time-lasttime) < 500)
+		{
+			return;
+		}
+		lasttime = time;
+	#endif
+	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
+	#ifdef MODULE_SECURITY
+		if (ctrl && isKeyPressed(KEY_NSPIRE_SPACE))
+		{
+			lockScreen();
+			wait_no_key_pressed();
+			return;
+		}
+		testScreentime();
+	#endif
+	
+	
+	#ifdef MODULE_DESKTOP
+		if (ctrl && isKeyPressed(KEY_NSPIRE_COMMA))
+		{
+			desktop();
+			wait_no_key_pressed();
+			return;
+		}
+	#endif
+	#ifdef MODULE_SHELL
+		if (ctrl && isKeyPressed(KEY_NSPIRE_PI))
+		{
+			shell();
+			wait_no_key_pressed();
+			return;
+		}
+	#endif
+	#ifdef MODULE_CLOCK
+		bool ee = isKeyPressed(KEY_NSPIRE_EE);
+		if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
+		{
+			settime();
+			wait_no_key_pressed();
+			return;
+		}
+		if (ctrl && ee)
+		{
+			miniclock_enabled = ! miniclock_enabled;
+			return;
+		}
+	#endif
+	
+	
+	
+	
+}
 
 
 
@@ -205,23 +231,21 @@ const unsigned int hook_addrs[] =
 int main()
 {
 	initOSGCBUFF();
+	#ifdef precisetime
+		// init timer from nsSDL
+		*(volatile unsigned *)0x900B0018 &= ~(1 << 11);
+		*(volatile unsigned *)0x900C0080 = 0xA;
+		volatile unsigned *control = (unsigned *)0x900C0008;
+		*control = 0b10000010;
+		timer = (unsigned *)0x900C0004;
+	#else
+		lasthook = time(NULL);
+	#endif
 	
-	/*
-	*(volatile unsigned *)0x900B0018 &= ~(1 << 11);
-	*(volatile unsigned *)0x900C0080 = 0xA;
-	volatile unsigned *control = (unsigned *)0x900C0008;
-	*control = 0b10000010;
-	timer = (unsigned *)0x900C0004;
-	*/
 	
-	lasthook = time(NULL);
 	
-	/*
-	Gc gc = gui_gc_global_GC();
-	printf("%x\n",gc);
-	printf("%x\n",*gc);
-	printf("%x\n",**(int**)gc);
-	*/
+	
+	
 	
 	
 	
@@ -231,6 +255,10 @@ int main()
 		loadSettings();
 	#endif
 	
+	#ifdef MODULE_SECURITY
+		initlogin();
+		loginScreen();
+	#endif
 	#ifdef MODULE_CLOCK
 		hook_minicklock();
 	#endif
