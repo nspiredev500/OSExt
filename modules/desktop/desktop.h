@@ -8,9 +8,18 @@
 
 
 #ifdef MODULE_SETTINGS
-static void settingsscreen();
+	static void settingsscreen();
 #endif
 static void reloadcolor();
+
+
+
+//from ndless utils.c
+static void __attribute__ ((noreturn)) ut_calc_reboot(void) {
+	*(volatile unsigned*)0x900A0008 = 2; //CPU reset
+	__builtin_unreachable();
+}
+
 
 
 
@@ -52,11 +61,15 @@ void desktop()
 			break;
 		}
 		#ifdef MODULE_SETTINGS
-		if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_S))
-		{
-			settingsscreen();
-		}
+			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_S))
+			{
+				settingsscreen();
+			}
 		#endif
+		if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_9) && isKeyPressed(KEY_NSPIRE_ENTER))
+		{
+			ut_calc_reboot();
+		}
 		setGraphicsColor(desktopg,r,g,b);
 		fillRect(desktopg,0,0,320,240);
 		
@@ -72,191 +85,195 @@ void desktop()
 		
 		
 		blitGraphicsToScreen(desktopg);
-		msleep(20);
+		msleep(80);
 	}
 	exitGraphics(desktopg);
 	
 	
 }
 #ifdef MODULE_SETTINGS
-void settingsscreen()
-{
-	int selected = 0;
-	char buffer[32];
-	int stringindex = 0;
-	bool edit = false;
-	int yoff = 0;
-	while (true)
+	void settingsscreen()
 	{
-		if (edit)
+		int selected = 0;
+		char buffer[32];
+		for (int i = 0;i<30;i++)
 		{
-			char key = firstAlphanumericKeyPressed();
-			if (key != '\0')
-			{
-				if (stringindex < 29)
-				{
-					buffer[stringindex] = key;
-					stringindex++;
-				}
-			}
-			if (isKeyPressed(KEY_NSPIRE_DEL))
-			{
-				if (stringindex > 0)
-				{
-					buffer[stringindex-1] = '\0';
-					stringindex--;
-				}
-			}
+			buffer[i] = '\0';
 		}
-		else
-		{
-			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_ENTER))
-			{
-				saveSettings();
-				return;
-			}
-			/*
-			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
-			{
-				deleteSettings();
-				loadSettings(); // makes a memory leak if run more than once after boot
-				reloadcolor();
-				return;
-			}
-			*/
-			if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
-			{
-				deleteSettings();
-				reloadSettings();
-				reloadcolor();
-				return;
-			}
-			if (isKeyPressed(KEY_NSPIRE_B) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
-			{
-				yoff += 4;
-			}
-			if (isKeyPressed(KEY_NSPIRE_P) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
-			{
-				if (yoff > 0)
-					yoff -= 4;
-			}
-			if (isKeyPressed(KEY_NSPIRE_B) && isKeyPressed(KEY_NSPIRE_SHIFT))
-			{
-				if (selected > 0)
-					selected--;
-			}
-			if (isKeyPressed(KEY_NSPIRE_P) && isKeyPressed(KEY_NSPIRE_SHIFT))
-			{
-				if (selected < settingssize-1)
-					selected++;
-			}
-		}
-		if (isKeyPressed(KEY_NSPIRE_ENTER))
+		int stringindex = 0;
+		bool edit = false;
+		int yoff = 0;
+		while (true)
 		{
 			if (edit)
 			{
-				edit = false;
-				if (settings[selected].type == 0)
+				char key = firstAlphanumericKeyPressed();
+				if (key != '\0')
 				{
-					int *d = malloc(sizeof(int));
-					int match = sscanf(buffer,"%d",d);
-					if (match)
+					if (stringindex < 29)
 					{
-						changeSetting(settings[selected].name,d);
-					}
-					else
-					{
-						free(d);
+						buffer[stringindex] = key;
+						stringindex++;
 					}
 				}
-				if (settings[selected].type == 1)
+				if (isKeyPressed(KEY_NSPIRE_DEL))
 				{
-					char *str = calloc(31,sizeof(char));
-					memcpy(str,buffer,30);
-					changeSetting(settings[selected].name,str);
-				}
-				if (settings[selected].type == 2)
-				{
-					double *d = malloc(sizeof(double));
-					int match = sscanf(buffer,"%lf",d);
-					if (match)
+					if (stringindex > 0)
 					{
-						changeSetting(settings[selected].name,d);
-					}
-					else
-					{
-						free(d);
+						buffer[stringindex-1] = '\0';
+						stringindex--;
 					}
 				}
-				for (int i = 0;i<30;i++)
-				{
-					buffer[i] = '\0';
-				}
-				stringindex = 0;
 			}
 			else
 			{
-				edit = true;
+				if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_ENTER))
+				{
+					saveSettings();
+					reloadcolor();
+					#ifdef MODULE_SECURITY
+						initlogin();
+					#endif
+					return;
+				}
+				if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_PI))
+				{
+					deleteSettings();
+					reloadSettings();
+					reloadcolor();
+					#ifdef MODULE_SECURITY
+						initlogin();
+					#endif
+					return;
+				}
+				if (isKeyPressed(KEY_NSPIRE_B) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
+				{
+					yoff += 4;
+				}
+				if (isKeyPressed(KEY_NSPIRE_P) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
+				{
+					if (yoff > 0)
+						yoff -= 4;
+				}
+				if (isKeyPressed(KEY_NSPIRE_B) && isKeyPressed(KEY_NSPIRE_SHIFT))
+				{
+					if (selected > 0)
+						selected--;
+				}
+				if (isKeyPressed(KEY_NSPIRE_P) && isKeyPressed(KEY_NSPIRE_SHIFT))
+				{
+					if (selected < settingssize-1)
+						selected++;
+				}
 			}
-		}
-		
-		
-		
-		reloadcolor();
-		
-		setGraphicsColor(desktopg,r,g,b);
-		fillRect(desktopg,0,0,320,240);
-		
-		
-		setGraphicsColor(desktopg,0,0,0);
-		drawString10p(desktopg,10,yoff,"type");
-		drawString10p(desktopg,60,yoff,"name");
-		drawString10p(desktopg,160,yoff,"value");
-		drawString10p(desktopg,220,yoff,buffer);
-		for (int i = 0;i<settingssize;i++)
-		{
-			setGraphicsColor(desktopg,50,220,50);
-			if (edit)
+			if (isKeyPressed(KEY_NSPIRE_ENTER))
 			{
-				setGraphicsColor(desktopg,150,220,50);
+				if (edit)
+				{
+					edit = false;
+					uart_printf("edited type: %d\n",settings[selected].type);
+					if (settings[selected].type == 0)
+					{
+						int *d = malloc(sizeof(int));
+						int match = sscanf(buffer,"%d",d);
+						if (match)
+						{
+							changeSetting(settings[selected].name,d);
+						}
+						else
+						{
+							free(d);
+						}
+					}
+					if (settings[selected].type == 1)
+					{
+						char *str = calloc(31,sizeof(char));
+						sscanf(buffer,"%28s",str);
+						uart_printf("string setting changed to: %s\n",str);
+						changeSetting(settings[selected].name,str);
+					}
+					if (settings[selected].type == 2)
+					{
+						double *d = malloc(sizeof(double));
+						int match = sscanf(buffer,"%lf",d);
+						if (match)
+						{
+							changeSetting(settings[selected].name,d);
+						}
+						else
+						{
+							free(d);
+						}
+					}
+					for (int i = 0;i<30;i++)
+					{
+						buffer[i] = '\0';
+					}
+					stringindex = 0;
+				}
+				else
+				{
+					edit = true;
+				}
 			}
-			if (i == selected)
-			{
-				fillRect(desktopg,0,10*i+10+yoff,320,10);
-			}
+			
+			
+			
+			reloadcolor();
+			
+			setGraphicsColor(desktopg,r,g,b);
+			fillRect(desktopg,0,0,320,240);
+			
+			
 			setGraphicsColor(desktopg,0,0,0);
-			if (settings[i].type == 0)
+			drawString10p(desktopg,10,yoff,"type");
+			drawString10p(desktopg,60,yoff,"name");
+			drawString10p(desktopg,160,yoff,"value");
+			drawString10p(desktopg,220,yoff,buffer);
+			for (int i = 0;i<settingssize;i++)
 			{
-				char str[10];
-				sprintf(str,"%8d",*((int*)settings[i].data));
-				drawString10p(desktopg,10,yoff+10*i+10,"0");
-				drawString10p(desktopg,160,yoff+10*i+10,str);
+				setGraphicsColor(desktopg,50,220,50);
+				if (edit)
+				{
+					setGraphicsColor(desktopg,150,220,50);
+				}
+				if (i == selected)
+				{
+					fillRect(desktopg,0,10*i+10+yoff,320,10);
+				}
+				setGraphicsColor(desktopg,0,0,0);
+				if (settings[i].type == 0)
+				{
+					char str[10];
+					sprintf(str,"%8d",*((int*)settings[i].data));
+					drawString10p(desktopg,10,yoff+10*i+10,"0");
+					drawString10p(desktopg,160,yoff+10*i+10,str);
+				}
+				if (settings[i].type == 1)
+				{
+					drawString10p(desktopg,10,yoff+10*i+10,"1");
+					drawString10p(desktopg,160,yoff+10*i+10,((char*)settings[i].data));
+				}
+				if (settings[i].type == 2)
+				{
+					drawString10p(desktopg,10,yoff+10*i+10,"2");
+					char str[10];
+					sprintf(str,"%8lf",*((double*)settings[i].data));
+					drawString10p(desktopg,160,yoff+10*i+10,str);
+				}
+				drawString10p(desktopg,60,yoff+10*i+10,settings[i].name);
 			}
-			if (settings[i].type == 1)
-			{
-				drawString10p(desktopg,10,yoff+10*i+10,"1");
-				drawString10p(desktopg,160,yoff+10*i+10,((char*)settings[i].data));
-			}
-			if (settings[i].type == 2)
-			{
-				drawString10p(desktopg,10,yoff+10*i+10,"2");
-				char str[10];
-				sprintf(str,"%8lf",*((double*)settings[i].data));
-				drawString10p(desktopg,160,yoff+10*i+10,str);
-			}
-			drawString10p(desktopg,60,yoff+10*i+10,settings[i].name);
+			
+			
+			
+			
+			blitGraphicsToScreen(desktopg);
+			msleep(100);
 		}
 		
 		
 		
-		
-		blitGraphicsToScreen(desktopg);
-		msleep(60);
 	}
-	
-	
-	
-}
 #endif
 
 static void reloadcolor()

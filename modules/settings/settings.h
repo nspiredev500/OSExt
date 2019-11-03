@@ -66,6 +66,7 @@ void reloadSettings() // there should be no memory leak if I'm right
 		else
 		{
 			free(settings[i].data);
+			free(settings[i].name);
 		}
 	}
 	free(settings);
@@ -237,10 +238,13 @@ void defaultSettings()
 	printf("could not read the config");
 	int length = 0;
 	#ifdef MODULE_DESKTOP
-	length += 3;
+		length += 3;
 	#endif
 	#ifdef MODULE_DISABLENAVNET
-	length += 2;
+		length += 2;
+	#endif
+	#ifdef MODULE_SECURITY
+		length += 2;
 	#endif
 	
 	
@@ -251,42 +255,52 @@ void defaultSettings()
 	
 	
 	#ifdef MODULE_DESKTOP
-	settings[index].type = 0;
-	settings[index].name = "r";
-	settings[index].def = true;
-	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 102;
-	index++;
-	settings[index].type = 0;
-	settings[index].name = "g";
-	settings[index].def = true;
-	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 205;
-	index++;
-	settings[index].type = 0;
-	settings[index].name = "b";
-	settings[index].def = true;
-	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 170;
-	index++;
+		settings[index].type = 0;
+		settings[index].name = "r";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 102;
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "g";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 205;
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "b";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 170;
+		index++;
 	#endif
 	#ifdef MODULE_DISABLENAVNET
-	settings[index].type = 1;
-	settings[index].name = "navnet";
-	settings[index].def = true;
-	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 0;
-	index++;
-	settings[index].type = 0;
-	settings[index].name = "navnet_next";
-	settings[index].def = true;
-	settings[index].data = (void*) malloc(sizeof(int));
-	*((int*)settings[index].data) = 0;
-	index++;
+		settings[index].type = 0;
+		settings[index].name = "navnet";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 1;
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "navnet_next";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 0;
+		index++;
 	#endif
-	
-	
-	
+	#ifdef MODULE_SECURITY
+		settings[index].type = 1;
+		settings[index].name = "password";
+		settings[index].def = true;
+		settings[index].data = "";
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "locktime";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 120;
+		index++;
+	#endif
 	
 	
 	
