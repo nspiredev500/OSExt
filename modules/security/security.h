@@ -28,11 +28,11 @@ void initlogin()
 		char *pwd = StringSetting(pwdsn);
 		password[31] = '\0';
 		memcpy(password,pwd,31);
-		printf("password: %s",password);
+		//uart_printf("password: %s",password);
 	}
 	else
 	{
-		printf("password setting not found\n");
+		uart_printf("password setting not found\n",NULL);
 		password[0] = '\0';
 	}
 	int locktsn = getSetting("locktime");

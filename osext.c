@@ -1,4 +1,5 @@
 
+#include <stdarg.h>
 #include <hook.h>
 #include <SDL/SDL_config.h>
 #include <SDL/SDL.h>
@@ -8,6 +9,13 @@
 #include <usb.h>
 #include <time.h>
 #include <nspireio2.h> //printf doesn't default to serial port with nio2, use uart_printf
+
+
+
+
+
+
+
 
 
 #define precisetime
@@ -88,10 +96,41 @@ HOOK_DEFINE(testhook)
 	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(testhook);
 };
-
-
+#ifdef MODULE_CLOCK
+	#ifdef precisetime
+		unsigned int lastclock = 0;
+	#else
+		int hookcount = 0;
+	#endif
+#endif
+bool cr4 = true;
 void hookfunc()
 {
+	
+	// for now draw the clock here if the screen isn't 240*320, because the miniclock hook doesn't get called
+	if (! cr4)
+	{
+		#ifdef MODULE_CLOCK
+			#ifdef precisetime
+				unsigned int time = *timer;
+				if (abs(time-lastclock) > 200)
+				{
+					drawclock();
+					lastclock = *timer;
+				}
+			#else
+				if (hookcount > 200)
+				{
+					hookcount++;
+				}
+				else
+				{
+					hookcount = 0;
+					drawclock();
+				}
+			#endif
+		#endif
+	}
 	
 	#ifdef MODULE_SECURITY
 		if (isKeyPressed(KEY_NSPIRE_ESC) && (isKeyPressed(KEY_NSPIRE_HOME) || on_key_pressed()))
@@ -230,6 +269,8 @@ const unsigned int hook_addrs[] =
 
 int main()
 {
+	assert_ndless_rev(2014);
+	
 	initOSGCBUFF();
 	#ifdef precisetime
 		// init timer from nsSDL
@@ -245,8 +286,10 @@ int main()
 	
 	
 	
-	
-	
+	if (lcd_type() != SCR_240x320_565)
+	{
+		cr4 = false;
+	}
 	
 	
 	
@@ -257,7 +300,7 @@ int main()
 	
 	#ifdef MODULE_SECURITY
 		initlogin();
-		loginScreen();
+		lockScreen();
 	#endif
 	#ifdef MODULE_CLOCK
 		hook_minicklock();

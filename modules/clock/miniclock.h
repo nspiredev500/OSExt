@@ -91,10 +91,8 @@ static Graphics *clockg;
 	//uint16_t *os_scrbuf = (uint16_t*) 0x11349890;
 #endif
 
-HOOK_DEFINE(clockhook1)
+HOOK_DEFINE(clockhook1) // TODO hook is only for HW W+, becaus it's apparently in the 240*320 compatibility code
 {
-	
-	//osgctest();
 	
 	drawclock();
 	

@@ -15,7 +15,7 @@ static const unsigned int OSGCBUFF_adr[] =
  0x0, 0x0,
  0x0, 0x0,
  0x0, 0x0,
- 0x11d067d8, 0x11d6e630, // currently not working in hardware
+ 0x11d067d8, 0x11d6e630, // currently not working in hardware, only for read I think or when gc drawing initialized
  0x0, 0x0
 };
 //noncas  11712960  10a3e250      10B9 5542    12C 8588

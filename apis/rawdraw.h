@@ -17,6 +17,15 @@ void setpixeldirect(void *buffer,scr_type_t scr,int x,int y,uint16_t color)
 			return;
 		uint16_t *wbuff = (uint16_t*) buffer;
 		*(wbuff+y+x*240) = color;
+		return;
+	}
+	if (scr == SCR_320x240_565)
+	{
+		if (x<0 || y<0 || x>320 || y >240)
+			return;
+		uint16_t *wbuff = (uint16_t*) buffer;
+		*(wbuff+x+y*320) = color;
+		return;
 	}
 }
 void write10pchardirect(void* buffer,scr_type_t scr,int xx,int yy,uint16_t color,int charn,char c[][10][10])
