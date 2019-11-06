@@ -11,13 +11,21 @@ ints_next_descriptor_ptr = &ut_next_descriptor;
 */
 
 
-static const unsigned int hookoffset = 0x4c;
+static const unsigned int hookoffset = 0x1293f114-0x1293f0d8;
 
 HOOK_DEFINE(swi_hook)
 {
+	unsigned int r1 = HOOK_SAVED_REGS(swi_hook)[1]; // syscall number for comparison
+	//uart_printf("syscall number: %x",r1); // doesn't work in syscalls
+	
+	//right place for custom task switcher
+	
+	
+	
+	
+	
 	bkpt();
-	
-	
+	HOOK_RESTORE_RETURN(swi_hook);
 }
 
 
