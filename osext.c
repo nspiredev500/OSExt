@@ -271,6 +271,8 @@ int main()
 {
 	assert_ndless_rev(2014);
 	
+	
+	
 	initOSGCBUFF();
 	#ifdef precisetime
 		// init timer from nsSDL
@@ -290,6 +292,7 @@ int main()
 	{
 		cr4 = false;
 	}
+	
 	
 	
 	
@@ -341,6 +344,9 @@ int main()
 	#endif
 	
 	
+	#ifdef MODULE_DYNLINKER
+		initializeDynlinker();
+	#endif
 	
 	
 	

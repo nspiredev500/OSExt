@@ -9,10 +9,11 @@ uncomment the modules you want, comment the ones you don't
 //#define EXPERIMENTAL
 
 #define MODULE_CLOCK
-//#define MODULE_SETTINGS
+#define MODULE_SETTINGS
 //#define MODULE_SHELL // currently not implemented
-//#define MODULE_DESKTOP
+#define MODULE_DESKTOP
 //#define MODULE_DISABLENAVNET
+#define MODULE_DYNLINKER
 //#define MODULE_SECURITY
 //#define MODULE_USBTEST // currently not working
 

@@ -26,7 +26,7 @@ DISTDIR = .
 vpath %.tns $(DISTDIR)
 vpath %.elf $(DISTDIR)
 
-.PHONY: release
+.PHONY: release cleanrelease cleanwoexe osext
 
 release:
 	env GCCFLAGS="-Wall -W -marm -DMODULES_CHOSEN_BY_MAKE -DMODULE_CLOCK" EXE="OSExt_clockonly" make -e all;\
@@ -44,6 +44,8 @@ cleanrelease:
 	env GCCFLAGS="-Wall -W -marm -DMODULES_CHOSEN_BY_MAKE -DMODULE_CLOCK -DMODULE_SETTINGS -DMODULE_DESKTOP -DMODULE_DISABLENAVNET" EXE="OSExt_clock+desktop+disablenavnet" make -e clean;\
 	env GCCFLAGS="-Wall -W -marm -DMODULES_CHOSEN_BY_MAKE -DMODULE_CLOCK -DMODULE_SETTINGS -DMODULE_DESKTOP -DMODULE_DISABLENAVNET -DMODULE_SECURITY" EXE="OSExt_full" make -e clean;
 
+osext: $(EXE).tns
+
 all: $(EXE).tns
 
 $(HEADERS):
@@ -59,7 +61,7 @@ $(HEADERS):
 
 $(EXE).elf: $(OBJS)
 	mkdir -p $(DISTDIR)
-	$(LD) $(EXE)$^ -o $@ $(LDFLAGS)
+	$(LD) $(EXE)$^ -o $(EXE)$@ $(LDFLAGS)
 
 $(EXE).tns: $(EXE).elf
 	$(GENZEHN) --input $(EXE)$^ --output $(EXE)$@.zehn $(ZEHNFLAGS)

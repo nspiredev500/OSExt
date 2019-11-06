@@ -44,6 +44,15 @@
 #endif
 
 
+#ifdef MODULE_DYNLINKER
+	void initializeDynlinker();
+	void DynlinkerSelftest();
+	
+	
+#endif
+
+
+
 #ifdef MODULE_CLOCK
 	#include "clock/miniclock.h"
 #endif
@@ -72,5 +81,33 @@
 #ifdef MODULE_SECURITY
 	#include "security/security.h"
 #endif
+
+#ifdef MODULE_DYNLINKER
+	#include "dynlinker/dynlinker.h"
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
