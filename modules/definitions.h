@@ -53,6 +53,12 @@
 
 
 
+#ifdef MODULE_ADDSYSCALLS
+	
+	
+#endif
+
+
 #ifdef MODULE_CLOCK
 	#include "clock/miniclock.h"
 #endif
@@ -88,6 +94,9 @@
 
 
 
+#ifdef MODULE_ADDSYSCALLS
+	#include "addsyscalls/addsyscalls.h"
+#endif
 
 
 

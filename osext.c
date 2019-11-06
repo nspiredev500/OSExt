@@ -345,7 +345,8 @@ int main()
 	
 	
 	#ifdef MODULE_DYNLINKER
-		initializeDynlinker();
+		extendSWIHandler();
+		osgctest();
 	#endif
 	
 	

@@ -14,6 +14,7 @@ uncomment the modules you want, comment the ones you don't
 #define MODULE_DESKTOP
 //#define MODULE_DISABLENAVNET
 #define MODULE_DYNLINKER
+#define MODULE_ADDSYSCALLS
 //#define MODULE_SECURITY
 //#define MODULE_USBTEST // currently not working
 
@@ -33,9 +34,11 @@ uncomment the modules you want, comment the ones you don't
 		#define MODULE_SETTINGS //security needs settings, so you can set a password, and without a password it's pointless
 	#endif
 #endif
-
-
-
+#ifdef MODULE_DYNLINKER
+	#ifndef MODULE_ADDSYSCALLS
+		#define MODULE_ADDSYSCALLS
+	#endif
+#endif
 
 
 
