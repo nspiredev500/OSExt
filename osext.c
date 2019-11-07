@@ -106,6 +106,25 @@ HOOK_DEFINE(testhook)
 bool cr4 = true;
 void hookfunc()
 {
+	/*
+	if (syscallsready)
+	{
+		bkpt();
+		unsigned int nr = 0xF80000;
+		register int r0 asm("r0");
+		bkpt();
+		asm volatile(
+			"swi %[nr]\n"
+			: "=r" (r0)
+			: [nr] "i" (nr)
+			: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
+			bkpt();
+		uart_printf("return value: %d",r0);
+		bkpt();
+	}
+	*/
+	
+	
 	
 	// for now draw the clock here if the screen isn't 240*320, because the miniclock hook doesn't get called
 	if (! cr4)
@@ -344,9 +363,8 @@ int main()
 	#endif
 	
 	
-	#ifdef MODULE_DYNLINKER
+	#ifdef MODULE_ADDSYSCALLS
 		extendSWIHandler();
-		osgctest();
 	#endif
 	
 	
@@ -357,6 +375,17 @@ int main()
 	#endif
 	
 	clear_cache();
+	
+	unsigned int nr = 0x7c000;
+	register int r0 asm("r0");
+	bkpt();
+	asm volatile(
+		"swi %[nr]\n"
+		: "=r" (r0)
+		: [nr] "i" (nr)
+		: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
+	//bkpt();
+	uart_printf("return value: %d",r0);
 	
 	return 0;
 }

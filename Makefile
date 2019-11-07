@@ -69,8 +69,8 @@ $(EXE).tns: $(EXE).elf
 	rm $(EXE)$@.zehn
 
 clean:
-	rm -f $(OBJS) ./$(EXE)osext.o $(DISTDIR)/$(EXE).tns $(DISTDIR)/$(EXE).elf $(DISTDIR)/$(EXE).zehn
+	rm -f $(OBJS) ./$(EXE)osext.o $(DISTDIR)/$(EXE).tns $(DISTDIR)/$(EXE)$(EXE).elf $(DISTDIR)/$(EXE).zehn
 
 cleanwoexe:
-	rm -f $(OBJS) ./$(EXE)osext.o $(DISTDIR)/$(EXE).elf $(DISTDIR)/$(EXE).zehn
+	rm -f $(OBJS) ./$(EXE)osext.o $(DISTDIR)/$(EXE)$(EXE).elf $(DISTDIR)/$(EXE).zehn
 
