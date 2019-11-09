@@ -5,7 +5,6 @@
 
 bool registerLibrary(char* name,void *functiontable) // name should be the name of the library file and functiontable a table with all functions you want to export
 {
-	//unsigned int nr = OSEXT_SYSCALL_MASK | (5*20+10);
 	unsigned int nr = OSEXT_SYSCALL_MASK | (5*20+10);
 	register int r0 asm("r0") = (int) name;
 	register int r1 asm("r1") = (int) functiontable;
@@ -17,11 +16,10 @@ bool registerLibrary(char* name,void *functiontable) // name should be the name 
 	return (bool) r0;
 }
 
-void* requestLibrary()
+void* requestLibrary(char *name)
 {
-	//unsigned int nr = OSEXT_SYSCALL_MASK | (5*20+10+1);
 	unsigned int nr = OSEXT_SYSCALL_MASK | (5*20+10+1);
-	register int r0 asm("r0");
+	register int r0 asm("r0") = (int) name;
 	asm volatile(
 		"swi %[nr]\n"
 		: "=r" (r0)

@@ -367,6 +367,7 @@ int main()
 	{
 		test();
 		uart_printf("test called!");
+		
 	}
 	
 	
