@@ -246,7 +246,9 @@ void defaultSettings()
 	#ifdef MODULE_SECURITY
 		length += 2;
 	#endif
-	
+	#ifdef MODULE_DYNLINKER
+		length += 1;
+	#endif
 	
 	
 	settingssize = length;
@@ -301,7 +303,13 @@ void defaultSettings()
 		*((int*)settings[index].data) = 120;
 		index++;
 	#endif
-	
+	#ifdef MODULE_DYNLINKER
+		settings[index].type = 1;
+		settings[index].name = "libpath";
+		settings[index].def = true;
+		settings[index].data = "/lib/";
+		index++;
+	#endif
 	
 	
 	

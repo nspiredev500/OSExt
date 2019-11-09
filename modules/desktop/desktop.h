@@ -29,7 +29,6 @@ static struct
 	
 	
 } Task;
-
 static struct
 {
 	
@@ -146,21 +145,21 @@ void desktop()
 					#endif
 					return;
 				}
-				if (isKeyPressed(KEY_NSPIRE_UP) && isKeyPressed(KEY_NSPIRE_SHIFT))
+				if (isKeyPressed(KEY_NSPIRE_B) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
 				{
 					yoff += 4;
 				}
-				if (isKeyPressed(KEY_NSPIRE_DOWN) && isKeyPressed(KEY_NSPIRE_SHIFT))
+				if (isKeyPressed(KEY_NSPIRE_P) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
 				{
 					if (yoff > 0)
 						yoff -= 4;
 				}
-				if (isKeyPressed(KEY_NSPIRE_UP) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
+				if (isKeyPressed(KEY_NSPIRE_B) && isKeyPressed(KEY_NSPIRE_SHIFT))
 				{
 					if (selected > 0)
 						selected--;
 				}
-				if (isKeyPressed(KEY_NSPIRE_DOWN) && ! isKeyPressed(KEY_NSPIRE_SHIFT))
+				if (isKeyPressed(KEY_NSPIRE_P) && isKeyPressed(KEY_NSPIRE_SHIFT))
 				{
 					if (selected < settingssize-1)
 						selected++;

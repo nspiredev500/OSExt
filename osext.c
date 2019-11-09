@@ -10,7 +10,7 @@
 #include <time.h>
 #include <nspireio2.h> //printf doesn't default to serial port with nio2, use uart_printf
 
-
+#include "include/osext.h"
 
 
 
@@ -106,26 +106,11 @@ HOOK_DEFINE(testhook)
 bool cr4 = true;
 void hookfunc()
 {
-	/*
-	if (syscallsready)
-	{
-		bkpt();
-		unsigned int nr = 0xF80000;
-		register int r0 asm("r0");
-		bkpt();
-		asm volatile(
-			"swi %[nr]\n"
-			: "=r" (r0)
-			: [nr] "i" (nr)
-			: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
-			bkpt();
-		uart_printf("return value: %d",r0);
-		bkpt();
-	}
-	*/
 	
 	
-	
+	#ifdef MODULE_ADDSYSCALLS
+		
+	#endif
 	// for now draw the clock here if the screen isn't 240*320, because the miniclock hook doesn't get called
 	if (! cr4)
 	{
@@ -285,11 +270,16 @@ const unsigned int hook_addrs[] =
 
 
 
+void testfunc()
+{
+	
+}
+
+void *ftable[] = {testfunc};
 
 int main()
 {
 	assert_ndless_rev(2014);
-	
 	
 	
 	initOSGCBUFF();
@@ -362,11 +352,22 @@ int main()
 		#endif
 	#endif
 	
-	
 	#ifdef MODULE_ADDSYSCALLS
 		extendSWIHandler();
 	#endif
 	
+	
+	initDynlinker();
+	//bkpt();
+	//registerLibrary("test",ftable);
+	//uart_printf("lib: %x",searchLibrary("test"));
+	
+	void (*test)() = requestLibrary("testlib");
+	if (test != NULL)
+	{
+		test();
+		uart_printf("test called!");
+	}
 	
 	
 	nl_set_resident();
@@ -376,16 +377,8 @@ int main()
 	
 	clear_cache();
 	
-	unsigned int nr = 0x7c000;
-	register int r0 asm("r0");
-	bkpt();
-	asm volatile(
-		"swi %[nr]\n"
-		: "=r" (r0)
-		: [nr] "i" (nr)
-		: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
-	//bkpt();
-	uart_printf("return value: %d",r0);
+	
+	
 	
 	return 0;
 }

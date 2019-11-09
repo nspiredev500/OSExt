@@ -6,9 +6,9 @@ GXX = nspire-g++
 LD  = nspire-ld
 GENZEHN = genzehn
 
-GCCFLAGS = -Wall -W -marm -Wno-unused-variable
+GCCFLAGS = -Wall -W -marm
 LDFLAGS =
-ZEHNFLAGS = --name "osext"
+ZEHNFLAGS = --name "testlib" --240x320-support true
 
 ifeq ($(DEBUG),FALSE)
 	GCCFLAGS += -Os
@@ -16,18 +16,15 @@ else
 	GCCFLAGS += -O0 -g
 endif
 
-OBJS = osext.o
-#OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
-#OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
-HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
-EXE = osext
+OBJS = testlib.o
+EXE = testlib
 DISTDIR = .
 vpath %.tns $(DISTDIR)
 vpath %.elf $(DISTDIR)
 
 all: $(EXE).tns
 
-%.o: %.c $(HEADERS)
+%.o: %.c
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 %.o: %.cpp

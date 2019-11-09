@@ -45,8 +45,27 @@
 
 
 #ifdef MODULE_DYNLINKER
-	void initializeDynlinker();
-	void DynlinkerSelftest();
+	typedef struct Library Library;
+	struct Library
+	{
+		char *name;
+		void *functiontable;
+		Library *next;
+	};
+	struct Library *libs;
+	typedef struct
+	{
+		char *name;
+		char *translation;
+	} TranslationEntry;
+	
+	bool s_addLibrary();
+	void* s_requestLibrary();
+	bool loadLibrary(char *name);
+	Library* searchLibrary(char * name);
+	void initDynlinker();
+	void addLibraryEntry(char *name, void *functiontable);
+	
 	
 	
 #endif
@@ -54,6 +73,8 @@
 
 
 #ifdef MODULE_ADDSYSCALLS
+	void setSyscall(int syscall_number,unsigned int address);
+	void extendSWIHandler();
 	
 	
 #endif
