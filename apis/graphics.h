@@ -73,6 +73,17 @@ void blitGraphicsToScreen(Graphics *g)
 {
 	lcd_blit(g->buffer,g->scr);
 }
+void blitGraphicsToBuffer(Graphics *g,void *bufferp)
+{
+	uint16_t *buffer = bufferp;
+	for (int x = 0;x<320;x++)
+	{
+		for (int y = 0;y<240;y++)
+		{
+			*(buffer+240*x+y) = *(g->buffer+240*x+y);
+		}
+	}
+}
 void blitGraphicsToOSGC(Graphics *g)
 {
 	for (int x = 0;x<320;x++)

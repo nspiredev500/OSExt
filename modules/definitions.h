@@ -71,6 +71,23 @@
 #endif
 
 
+#ifndef MODULE_NOFLICKER
+	uint32_t *real_lcdc;
+	bool noflicker;
+	void enableNoflicker();
+	void disableNoflicker();
+	
+	
+	
+	
+#endif
+
+
+
+
+
+
+
 
 #ifdef MODULE_ADDSYSCALLS
 	void setSyscall(int syscall_number,unsigned int address);
@@ -118,6 +135,21 @@
 #ifdef MODULE_ADDSYSCALLS
 	#include "addsyscalls/addsyscalls.h"
 #endif
+
+#ifndef MODULE_NOFLICKER
+#include "noflicker/noflicker.h"
+#endif
+
+
+
+
+
+
+
+
+
+
+
 
 
 

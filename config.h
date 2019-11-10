@@ -16,6 +16,7 @@ uncomment the modules you want, comment the ones you don't
 #define MODULE_DESKTOP
 //#define MODULE_DISABLENAVNET
 #define MODULE_DYNLINKER
+#define MODULE_NOFLICKER
 //#define MODULE_SECURITY
 //#define MODULE_USBTEST // currently not working
 
@@ -42,6 +43,10 @@ uncomment the modules you want, comment the ones you don't
 		#define MODULE_ADDSYSCALLS
 	#endif
 #endif
-
+#ifdef MODULE_NOFLICKER
+	#ifndef MODULE_ADDSYSCALLS
+		#define MODULE_ADDSYSCALLS
+	#endif
+#endif
 
 
