@@ -69,6 +69,10 @@ void desktop()
 		{
 			ut_calc_reboot();
 		}
+		
+		setGraphicsColor(desktopg,0,0,0);
+		fillRect(desktopg,0,0,329,249);
+		
 		setGraphicsColor(desktopg,r,g,b);
 		fillRect(desktopg,0,0,320,240);
 		
@@ -78,13 +82,13 @@ void desktop()
 		fillRect(desktopg,0,240-20,320,20);
 		
 		
-		
-		
+		checkPad();
+		drawCursor(desktopg);
 		
 		
 		
 		blitGraphicsToScreen(desktopg);
-		msleep(80);
+		msleep(20);
 	}
 	exitGraphics(desktopg);
 	

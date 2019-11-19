@@ -17,7 +17,6 @@
 
 
 
-
 #define precisetime
 
 
@@ -43,7 +42,7 @@ void osgctest();
 #include "modules/definitions.h"
 
 
-
+//#include "modules/noflicker/noflicker.h"
 
 
 
@@ -108,9 +107,11 @@ void hookfunc()
 {
 	
 	
-	#ifdef MODULE_ADDSYSCALLS
-		
-	#endif
+	
+	
+	
+	
+	
 	// for now draw the clock here if the screen isn't 240*320, because the miniclock hook doesn't get called
 	if (! cr4)
 	{
@@ -158,6 +159,7 @@ void hookfunc()
 		}
 		lasttime = time;
 	#endif
+	
 	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
 	#ifdef MODULE_SECURITY
 		if (ctrl && isKeyPressed(KEY_NSPIRE_SPACE))
@@ -167,6 +169,17 @@ void hookfunc()
 			return;
 		}
 		testScreentime();
+	#endif
+	
+	#ifdef MODULE_NOFLICKER
+		if (ctrl && isKeyPressed(KEY_NSPIRE_9))
+		{
+			installSleds();
+		}
+		if (ctrl && isKeyPressed(KEY_NSPIRE_8))
+		{
+			uninstallSleds();
+		}
 	#endif
 	
 	
@@ -208,6 +221,7 @@ void hookfunc()
 
 
 
+
 void osgctest() // to get osgc address
 {
 	Gc gc = gui_gc_global_GC();
@@ -217,6 +231,7 @@ void osgctest() // to get osgc address
 	gui_gc_fillRect(gc,0,0,100,100);
 	bkpt();
 	gui_gc_finish(gc);
+	bkpt();
 }
 
 
@@ -270,16 +285,38 @@ const unsigned int hook_addrs[] =
 
 
 
-void testfunc()
-{
-	
-}
 
-void *ftable[] = {testfunc};
-
-int main()
+int main(int argc,char **argv)
 {
 	assert_ndless_rev(2014);
+	
+	
+	
+	
+	uart_printf("argsn: %d\n",argsn);
+	
+	for (int i = 0;i<argsn;i++)
+	{
+		uart_printf("argv[%d]: %s\n",i,argv[i]);
+	}
+	
+	
+	
+	// values aren't shared because osext is run again, communication has to be done through syscalls
+	if (argsn > 1 && argv[1] != NULL) 
+	{
+		return fileExtensionTriggered(argv[1]);
+	}
+	
+	
+	//needs ndless.cfg.tns to work
+	//creating it doesn't seem to work
+	//an empty config file has to be transferred to the calc once it seems
+	
+	
+	cfg_register_fileext("libp","osext");
+	cfg_register_fileext("lib","osext");
+	
 	
 	
 	initOSGCBUFF();
@@ -293,6 +330,7 @@ int main()
 	#else
 		lasthook = time(NULL);
 	#endif
+	
 	
 	
 	
@@ -319,9 +357,6 @@ int main()
 	#endif
 	
 	HOOK_INSTALL(nl_osvalue(hook_addrs,32),testhook);
-	
-	
-	
 	
 	
 	
@@ -356,25 +391,30 @@ int main()
 		extendSWIHandler();
 	#endif
 	
+	#ifdef MODULE_DYNLINKER
+		initDynlinker();
+	#endif
 	
-	initDynlinker();
-	//bkpt();
-	//registerLibrary("test",ftable);
-	//uart_printf("lib: %x",searchLibrary("test"));
 	
-	void (*test)() = requestLibrary("testlib");
-	if (test != NULL)
-	{
-		test();
-		uart_printf("test called!");
-		
-	}
+	
+	
+	
+	
 	
 	
 	nl_set_resident();
+	
+	
 	#ifdef USBTEST_H
 		ums_register();
 	#endif
+	
+	
+	#ifdef MODULE_NOFLICKER
+		initSleds();
+	#endif
+	
+	
 	
 	clear_cache();
 	

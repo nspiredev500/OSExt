@@ -15,6 +15,7 @@
 #endif
 
 #ifdef MODULE_DESKTOP
+	#include "../apis/graphics.h"
 	void desktop();
 	void initdesktop();
 #endif
@@ -32,7 +33,7 @@
 #endif
 
 #ifdef MODULE_USBTEST
-	void ums_register(void)
+	void ums_register();
 #endif
 
 #ifdef MODULE_SECURITY
@@ -52,7 +53,7 @@
 		void *functiontable;
 		Library *next;
 	};
-	struct Library *libs;
+	struct Library *libs = NULL;
 	typedef struct
 	{
 		char *name;
@@ -67,25 +68,28 @@
 	void addLibraryEntry(char *name, void *functiontable);
 	
 	
-	
 #endif
 
 
-#ifndef MODULE_NOFLICKER
+#ifdef MODULE_NOFLICKER
+	/*
 	uint32_t *real_lcdc;
 	bool noflicker;
 	void enableNoflicker();
 	void disableNoflicker();
-	
-	
-	
+	*/
+	void initSleds();
+	void installSleds();
+	void uninstallSleds();
 	
 #endif
 
 
-
-
-
+#ifdef MODULE_CURSOR
+	#include "../apis/graphics.h"
+	void checkPad();
+	void drawCursor(Graphics *g);
+#endif
 
 
 
@@ -136,13 +140,13 @@
 	#include "addsyscalls/addsyscalls.h"
 #endif
 
-#ifndef MODULE_NOFLICKER
-#include "noflicker/noflicker.h"
+#ifdef MODULE_NOFLICKER
+	#include "noflicker/noflicker.h"
 #endif
 
-
-
-
+#ifdef MODULE_CURSOR
+	#include "cursor/cursor.h"
+#endif
 
 
 

@@ -1,10 +1,10 @@
 #ifndef USBTEST_H
 #define USBTEST_H
 
-#include "../../apis/digits.h"
-#include "../../apis/chars.h"
-#include "../../apis/graphics.h"
-#include "../../apis/rawdraw.h"
+//#include "../../apis/digits.h"
+//#include "../../apis/chars.h"
+//#include "../../apis/graphics.h"
+//#include "../../apis/rawdraw.h"
 #include <os.h>
 #include <usbdi.h>
 #include <usb.h>
@@ -27,7 +27,7 @@ static struct s_usb_pipe_buf { // strangely needed by TI's usbd_open_pipe_intr
 
 // modified ums.c
 static Graphics *usbg;
-static char *usbstring = "none";
+char *usbstring = "none";
 static int match(device_t self) {
 	initGraphics();
 	saveScreenToGraphics(usbg);
@@ -203,7 +203,8 @@ static int detach(device_t self) {
 
 static int (*methods[])(device_t) = {match, attach, detach, NULL};
 
-void ums_register(void) {
+void ums_register()
+{
 	//bkpt();
 	//nl_relocdata((unsigned*)methods, sizeof(methods)/sizeof(methods[0]) - 1);
 	usb_register_driver(2, methods, "ums", 0, sizeof(struct ums_softc));

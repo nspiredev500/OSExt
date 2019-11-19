@@ -132,8 +132,8 @@ HOOK_DEFINE(clockhook3)
 	drawclock();
 	HOOK_RESTORE_RETURN(clockhook2);
 };
-
 long last = 0;
+char *usbstring;
 void drawclock()
 {
 	//bkpt();
@@ -179,7 +179,7 @@ void drawclock()
 	
 	//write10pChar(clockg,clockx-20,clocky,(*timer)%10,digits10p);
 	
-	#ifdef USBTEST_H
+	#ifdef MODULE_USBTEST
 		drawString10p(clockg,50,60,usbstring);
 	#endif
 	blitGraphicsToScreen(clockg);

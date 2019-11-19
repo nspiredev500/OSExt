@@ -1,7 +1,10 @@
 
-#include <os.h>
-
+#include <libndls.h>
 #include "include/osext.h"
+
+
+
+
 
 
 
@@ -12,10 +15,14 @@ void test()
 
 
 
+
 int main(int argsn, char *argc)
 {
+	assertOSExt();
+	initRecursiveDynlinker();
 	
-	registerLibrary("testlib",test);
+	
+	registerLibrary_r("testlib",test);
 	
 	nl_set_resident();
 	

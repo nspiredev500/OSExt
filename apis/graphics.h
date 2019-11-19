@@ -3,6 +3,10 @@
 #include "rawdraw.h"
 #include "digits.h"
 #include "chars.h"
+#include "utils.h"
+#include "bmp.h"
+
+
 //uint16_t *OSGCBUFF = (uint16_t*) 0x11d067d8; // cx noncas 4.5
 uint16_t *OSGCBUFF = 0x0;
 static const unsigned int OSGCBUFF_adr[] =
@@ -98,10 +102,64 @@ void setPixel(Graphics *g,int x,int y)
 {
 	setpixeldirect(g->buffer,g->scr,x,y,g->color);
 }
+void drawArrayImage(Graphics *g,ArrayImage *img,int xs,int ys) // currently no resizing
+{
+	if (g->scr == SCR_240x320_565 || g->scr == SCR_320x240_565)
+	{
+		uint16_t *buff = (uint16_t*) img->data;
+		for (int x = 0;x<img->width;x++)
+		{
+			for (int y = 0;y<img->height;y++)
+			{
+				setpixeldirect(g->buffer,g->scr,xs+x,ys+y,buff[240*x+y]);
+			}
+		}
+	}
+}
+void drawLine(Graphics *g,int xs,int ys,int xe,int ye)
+{
+	int xdiff = xe-xs;
+	int ydiff = ye-ys;
+	if (xdiff == 0 && ydiff == 0)
+		return;
+	if (xdiff == 0)
+	{
+		int *ysp = (ydiff<0) ? &ye: &ys;
+		int *yep = (ydiff>0) ? &ye: &ys;
+		for (int y = *ysp;y<*yep;y++)
+		{
+			setPixel(g,xs,y);
+		}
+		return;
+	}
+	if (ydiff == 0)
+	{
+		int *xsp = (xdiff<0) ? &xe: &xs;
+		int *xep = (xdiff>0) ? &xe: &xs;
+		for (int x = *xsp;x<*xep;x++)
+		{
+			setPixel(g,x,ys);
+		}
+		return;
+	}
+	if (xe < xs)
+	{
+		intswap(&xs,&xe);
+		intswap(&ys,&ye);
+	}
+	// y = m*x+b    b = y-m*x
+	double m = ((double)(ye-ys))/((double)(xe-xs));
+	double b = ((double)ys)-m*((double) xs);
+	for (int x = xs;x<xe;x++)
+	{
+		setPixel(g,x,roundtoint(x*m+b));
+	}
+}
 void write10pChar(Graphics *g,int x,int y,int charn,char c[][10][10])
 {
 	write10pchardirect(g->buffer,g->scr,x,y,g->color,charn,c);
 }
+/*
 void drawArrayImage(Graphics *g,int xx,int yy,int w,int h,uint16_t **img)
 {
 	for (int x = 0;x<w;x++)
@@ -112,6 +170,7 @@ void drawArrayImage(Graphics *g,int xx,int yy,int w,int h,uint16_t **img)
 		}
 	}
 }
+*/
 void drawRect(Graphics *g,int x,int y,int w,int h)
 {
 	drawrectdirect(g->buffer,g->scr,x,y,w,h,g->color);

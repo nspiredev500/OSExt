@@ -23,6 +23,7 @@ unsigned int *ndless_swi;
 static const unsigned int mysyscall_mask = 0x70000;
 
 
+
 static bool s_hasmodule(int id)
 {
 	#ifdef MODULE_CLOCK
@@ -130,6 +131,9 @@ void extendSWIHandler()
 	
 	
 }
+
+
+// gc_finish: 0x00012e
 
 asm("OSExt_sign: .long 0\n" // r0 = syscall number, r2 = spsr
 "next_sig: .long 0\n"
