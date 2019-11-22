@@ -160,6 +160,9 @@ void hookfunc()
 		lasttime = time;
 	#endif
 	
+	
+	//bkpt();
+	
 	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
 	#ifdef MODULE_SECURITY
 		if (ctrl && isKeyPressed(KEY_NSPIRE_SPACE))
@@ -170,7 +173,13 @@ void hookfunc()
 		}
 		testScreentime();
 	#endif
-	
+	if (ctrl && isKeyPressed(KEY_NSPIRE_1))
+	{
+		volatile int *powp = 0x900B0018;
+		int pow = *powp;
+		pow &= 0b111101111111111111111111111111111;
+		*powp = pow;
+	}
 	#ifdef MODULE_NOFLICKER
 		if (ctrl && isKeyPressed(KEY_NSPIRE_9))
 		{
@@ -286,7 +295,7 @@ const unsigned int hook_addrs[] =
 
 
 
-int main(int argc,char **argv)
+int main(int argsn,char **argv)
 {
 	assert_ndless_rev(2014);
 	
@@ -418,6 +427,13 @@ int main(int argc,char **argv)
 	
 	clear_cache();
 	
+	
+	
+	Gc gc = gui_gc_global_GC();
+	gui_gc_begin(gc);
+	gui_gc_setColorRGB(gc,255,0,0);
+	gui_gc_fillRect(gc,0,0,100,100);
+	gui_gc_finish(gc);
 	
 	
 	

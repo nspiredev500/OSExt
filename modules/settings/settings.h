@@ -249,7 +249,9 @@ void defaultSettings()
 	#ifdef MODULE_DYNLINKER
 		length += 1;
 	#endif
-	
+	#ifdef MODULE_CURSOR
+		length += 3;
+	#endif
 	
 	settingssize = length;
 	settings = calloc(length,sizeof(SettingsEntry));
@@ -307,12 +309,29 @@ void defaultSettings()
 		settings[index].type = 1;
 		settings[index].name = "libpath";
 		settings[index].def = true;
-		settings[index].data = "/lib/";
+		settings[index].data = "/documents/native libs";
 		index++;
 	#endif
-	
-	
-	
+	#ifdef MODULE_CURSOR
+		settings[index].type = 0;
+		settings[index].name = "cursorx";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 25;
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "cursory";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 25;
+		index++;
+		settings[index].type = 0;
+		settings[index].name = "lastpress";
+		settings[index].def = true;
+		settings[index].data = (void*) malloc(sizeof(int));
+		*((int*)settings[index].data) = 10;
+		index++;
+	#endif
 	
 	
 	

@@ -179,6 +179,10 @@ void drawclock()
 	
 	//write10pChar(clockg,clockx-20,clocky,(*timer)%10,digits10p);
 	
+	
+	volatile int *powp = 0x900B0018;
+	uart_printf("powp: %x\n",*powp);
+	
 	#ifdef MODULE_USBTEST
 		drawString10p(clockg,50,60,usbstring);
 	#endif

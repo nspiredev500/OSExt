@@ -6,7 +6,7 @@ GXX = nspire-g++
 LD  = nspire-ld
 GENZEHN = genzehn
 
-GCCFLAGS = -Wall -W -marm -Wno-unused-variable
+GCCFLAGS = -Wall -W -marm
 LDFLAGS =
 ZEHNFLAGS = --name "osext" --author "nspiredev500" --version "20"
 
@@ -16,7 +16,7 @@ else
 	GCCFLAGS += -O0 -g
 endif
 
-OBJS = osext.o
+OBJS = osext.o zehn_loader.o
 #OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
 #OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))

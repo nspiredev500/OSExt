@@ -1,13 +1,13 @@
 #ifndef DYNLINKER_H
 #define DYNLINKER_H
 #include <nucleus.h>
-#include "zehn_loader.h"
+#include "../../zehn_loader.h"
 #include "strings.h"
 
 
 
 
-#define LIBPATH_OVERRIDE
+//#define LIBPATH_OVERRIDE
 
 
 static char *stdlibpath = "/documents/ndless/";
@@ -63,8 +63,8 @@ void initDynlinker()
 	
 }
 
-static const char* libstring = "LIBS:";
-static char null = '\0';
+
+
 Library* searchLibrary(char * name)
 {
 	uart_printf("searching %s\n",name);

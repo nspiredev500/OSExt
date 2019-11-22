@@ -11,7 +11,12 @@ if arg[1] == "--help" then
 end
 
 
-functionregex="([\r\n]([%a%*])+%s+([%a%*])+%((^[\r\n])%)[\r\n])" -- word spaces word 
+
+
+--functionregex="([\r\n]([%a%*]+)%s+([%a%*]+)%s*%((^[\r\n])%)[\r\n])" -- word spaces word 
+functionregex="([\r\n]([%a%*_]+)%s+([%a%*_]+)%s*(%([^\n]*%))(;?))" -- word spaces word 
+
+
 
 f = assert(io.open(arg[1],"r"))
 text = f:read("*all");
@@ -21,8 +26,8 @@ it = string.gmatch(text,functionregex)
 
 
 
-for typ, name, args in it do
-	print(typ,name,args)
+for full,typ, name, args, semicolon in it do
+	print(typ,name,args,semicolon)
 end
 
 

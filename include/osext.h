@@ -7,6 +7,8 @@
 
 #define OSEXT_SYSCALL_MASK 0x70000
 
+
+#pragma GCC diagnostic ignored "-Wunused-variable"
 bool registerLibrary(char* name,void *functiontable) // name should be the name of the library file and functiontable a table with all functions you want to export
 {
 	unsigned int nr = OSEXT_SYSCALL_MASK | (5*20+10);
@@ -19,6 +21,7 @@ bool registerLibrary(char* name,void *functiontable) // name should be the name 
 		: "memory", "r2", "r3", "r4", "r12", "lr");
 	return (bool) r0;
 }
+#pragma GCC diagnostic warning "-Wunused-variable"
 
 void* requestLibrary(char *name) // name should be the filename of a library in the libpath
 {

@@ -82,7 +82,7 @@ void desktop()
 		fillRect(desktopg,0,240-20,320,20);
 		
 		
-		checkPad();
+		checkPad(20);
 		drawCursor(desktopg);
 		
 		

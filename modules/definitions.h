@@ -60,6 +60,9 @@
 		char *translation;
 	} TranslationEntry;
 	
+	int resolveDependencies(NUC_FILE *file);
+	int fileExtensionTriggered(char *path);
+	
 	bool s_addLibrary();
 	void* s_requestLibrary();
 	bool loadLibrary(char *name);
