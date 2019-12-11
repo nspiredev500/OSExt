@@ -80,22 +80,10 @@ void assertOSExt() // displays a message if OSExt wan't found and then quits
 
 
 
-/*	Module id list (for hasmodule-syscall):
-	addsyscalls has no id, because it is there if the OSExt signature before the swi handler is right
-	every modules gets 20 syscalls reserved, starting at 10
-	0: Clock
-	1: Settings
-	2: Shell
-	3: Desktop
-	4: Disablenavnet
-	5: Dynlinker
-	6: Security
-	7: 
-*/
-bool osext_hasmodule(int id) // checks of OSExt has a specific module
+bool osext_hasmodule(char *name) // checks of OSExt has a specific module
 {
 	unsigned int nr = OSEXT_SYSCALL_MASK;
-	register int r0 asm("r0") = id;
+	register int r0 asm("r0") = name;
 	asm volatile(
 		"swi %[nr]\n"
 		: "=r" (r0)

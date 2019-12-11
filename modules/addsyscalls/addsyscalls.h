@@ -24,62 +24,23 @@ static const unsigned int mysyscall_mask = 0x70000;
 
 
 
-static bool s_hasmodule(int id)
+static bool s_hasmodule(char *name)
 {
-	#ifdef MODULE_CLOCK
-		if (id == 0)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_SETTINGS
-		if (id == 1)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_SHELL
-		if (id == 2)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_DESKTOP
-		if (id == 3)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_DISABLENAVNET
-		if (id == 4)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_DYNLINKER
-		if (id == 5)
-		{
-			return true;
-		}
-	#endif
-	#ifdef MODULE_SECURITY
-		if (id == 6)
-		{
-			return true;
-		}
-	#endif
+	
 	return false;
 }
 
 static void dummysyscall()
 {
-	bkpt();
+	//bkpt();
 	// add message stating that a programm tried to call an nonexistent osext-syscall and the calculator will probably crash
 	return;
 }
-
-
-
+extern saved_lr;
+unsigned int getSavedLr()
+{
+	return saved_lr;
+}
 
 static void initSyscallTable()
 {
@@ -104,6 +65,9 @@ void setSyscall(int syscall_number,unsigned int address)
 
 void extendSWIHandler()
 {
+	shareFunction("setSyscall",setSyscall);
+	shareFunction("getSavedLr",getSavedLr);
+	
 	initSyscallTable();
 	
 	unsigned int *swi_handler_adrs = (unsigned int*) (OS_BASE_ADDRESS + INTS_SWI_HANDLER_ADDR);
@@ -154,10 +118,10 @@ asm("OSExt_sign: .long 0\n" // r0 = syscall number, r2 = spsr
 " and	r1, #0x70000   @ keep the flag \n" 
 " bic	r0, #0x70000   @ clear the flag \n"
 " str r2, save \n"
-" ldr r2, register_driver_syscall\n"
-" cmp r0, r2\n"
-" bne after2\n"
-" .word 0xe1212374\n" // breakpoint
+//" ldr r2, register_driver_syscall\n"
+//" cmp r0, r2\n"
+//" bne after2\n"
+//" .word 0xe1212374\n" // breakpoint
 " after2: ldr r2, save\n"
 " cmp r1, #0x70000\n" // check for my flag
 " beq my_syscall\n"
@@ -199,7 +163,7 @@ asm("OSExt_sign: .long 0\n" // r0 = syscall number, r2 = spsr
 "saved_lr2: .long 0 \n"
 "ndless_swi_asm: .long 0\n" // address of the ndless swi handler
 "syscall_table: .long 0\n"
-"register_driver_syscall: .long 0x102\n"
+//"register_driver_syscall: .long 0x102\n"
 "save: .word 0\n");
 //0x102
 

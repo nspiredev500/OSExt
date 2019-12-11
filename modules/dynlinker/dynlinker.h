@@ -61,6 +61,9 @@ void initDynlinker()
 	setSyscall(syscall_offset+1,(unsigned int) s_requestLibrary);
 	setSyscall(syscall_offset+2,(unsigned int) s_get_lib_function_pointers);
 	
+	
+	
+	
 }
 
 
@@ -255,7 +258,7 @@ int resolveDependencies(NUC_FILE *file)
 }
 
 
-int fileExtensionTriggered(char *path)
+int fileExtensionTriggered(char *path) // TODO add support for zehn files embedded in prg programms
 {
 	char *file = path;
 	while (true) // remove the path and leave the filename
@@ -307,6 +310,36 @@ int fileExtensionTriggered(char *path)
 			return 0xDEAD;
 		}
 	}
+	/*
+	if (strcmp(ext,"mod.tns") == 0) // osext module file for dynamic module loading
+	{
+		uart_printf(".mod file\n")
+		void *base;
+		bool hw_w;
+		int (*entry)(int,char*[]);
+		int ret = resolveDependencies(f);
+		if (ret == 1)
+		{
+			if (zehn_load(f,&base,&entry,&hw_w) == 0)
+			{
+				nuc_fclose(f);
+				entry(0,NULL);
+				return 0xBEEF;
+			}
+			nuc_fclose(f);
+			return 0xDEAD;
+		}
+		if (zehn_load(f,&base,&entry,&hw_w) == 0)
+		{
+			entry(0,NULL);
+		}
+		else
+		{
+			nuc_fclose(f);
+			return 0xDEAD;
+		}
+	}
+	*/
 	if (strcmp(ext,"libp.tns") == 0) // will be unloaded after executing
 	{
 		uart_printf(".libp file\n");

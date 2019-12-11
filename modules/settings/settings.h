@@ -233,9 +233,10 @@ void saveSettings()
 	fclose(settingsf);
 	
 }
-void defaultSettings()
+void defaultSettings() // TODO rewrite default settings for modular modules
 {
 	printf("could not read the config");
+	/*
 	int length = 0;
 	#ifdef MODULE_DESKTOP
 		length += 3;
@@ -332,7 +333,7 @@ void defaultSettings()
 		*((int*)settings[index].data) = 10;
 		index++;
 	#endif
-	
+	*/
 	
 	
 	
