@@ -6,7 +6,7 @@
 #include "utils.h"
 #include "bmp.h"
 
-
+/*
 //uint16_t *OSGCBUFF = (uint16_t*) 0x11d067d8; // cx noncas 4.5
 uint16_t *OSGCBUFF = 0x0;
 static const unsigned int OSGCBUFF_adr[] =
@@ -21,14 +21,18 @@ static const unsigned int OSGCBUFF_adr[] =
  0x0, 0x0,
  0x11d067d8, 0x11d6e630, // currently not working in hardware, only for read I think or when gc drawing initialized
  0x0, 0x0
-};
+};*/
 //noncas  11712960  10a3e250      10B9 5542    12C 8588
 //cas  11778c90  10aa2fe4         5F 59A0      12C B64C‬
 
+
+/*
 void initOSGCBUFF()
 {
 	OSGCBUFF = (uint16_t*) nl_osvalue(OSGCBUFF_adr,32);
 }
+*/
+Gc os_gc = NULL;
 
 void* resolveCharTo10pFont(char c);
 typedef struct{
@@ -38,6 +42,10 @@ typedef struct{
 } Graphics;
 void initGraphics()
 {
+	if (os_gc == NULL)
+	{
+		os_gc = gui_gc_global_GC();
+	}
 	lcd_init(lcd_type());
 }
 void exitGraphics()
@@ -46,6 +54,10 @@ void exitGraphics()
 }
 Graphics* createGraphics()
 {
+	if (os_gc == NULL)
+	{
+		os_gc = gui_gc_global_GC();
+	}
 	Graphics *g = calloc(sizeof(Graphics),1);
 	g->scr = lcd_type();
 	return g;
@@ -61,11 +73,12 @@ void setGraphicsColor(Graphics *g,int r,int gg,int b)
 }
 void saveOSGCToGraphics(Graphics *g)
 {
+	uint16_t *osbuff = (((((char *****)os_gc)[9])[0])[0x8])[0]; // from ngc.c
 	for (int x = 0;x<320;x++)
 	{
-		for (int y = 0;y<260;y++)
+		for (int y = 0;y<240;y++)
 		{
-			*(g->buffer+y+x*240) = *(OSGCBUFF+y*320+x);
+			*(g->buffer+y+x*240) = *(osbuff+x+y*320);
 		}
 	}
 }
@@ -76,6 +89,16 @@ void saveScreenToGraphics(Graphics *g)
 void blitGraphicsToScreen(Graphics *g)
 {
 	lcd_blit(g->buffer,g->scr);
+}
+void blitRegionToScreen(Graphics *g,int xs,int ys,int w,int h)
+{
+	for (int x = xs;x<w;x++)
+	{
+		for (int y = ys;y<h;y++)
+		{
+			setpixeldirect(REAL_SCREEN_BASE_ADDRESS,g->scr,x,y,(g->buffer+240*x+y));
+		}
+	}
 }
 void blitGraphicsToBuffer(Graphics *g,void *bufferp)
 {
@@ -90,11 +113,12 @@ void blitGraphicsToBuffer(Graphics *g,void *bufferp)
 }
 void blitGraphicsToOSGC(Graphics *g)
 {
+	uint16_t *osbuff = (((((char *****)os_gc)[9])[0])[0x8])[0]; // from ngc.c
 	for (int x = 0;x<320;x++)
 	{
-		for (int y = 0;y<260;y++)
+		for (int y = 0;y<240;y++)
 		{
-			*(OSGCBUFF+y*320+x) = *(g->buffer+y+x*240);
+			*(osbuff+x+y*320) = *(g->buffer+y+x*240);
 		}
 	}
 }

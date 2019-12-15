@@ -66,7 +66,7 @@ bool shareFunction(char *name,unsigned int function);
 #include "modules/addsyscalls/addsyscalls.h"
 #include "modules/dynlinker/dynlinker.h"
 
-
+#include <ngc.h>
 
 
 #define precisetime
@@ -94,7 +94,7 @@ bool shareFunction(char *name,unsigned int function);
 //#include "modules/definitions.h"
 
 
-//#include "modules/noflicker/noflicker.h"
+#include "modules/noflicker/noflickerold.h"
 
 
 
@@ -136,7 +136,7 @@ noncas 4.5: 0x10023808 0x10023840
 
 
 // from ndless sdk utils.c
-static void ut_disable_watchdog(void) {
+void ut_disable_watchdog(void) {
 	// Disable the watchdog on CX that may trigger a reset
 	*(volatile unsigned*)0x90060C00 = 0x1ACCE551; // enable write access to all other watchdog registers
 	*(volatile unsigned*)0x90060008 = 0; // disable reset, counter and interrupt
@@ -383,6 +383,21 @@ static void hookfunc()
 {
 	
 	
+	// works without flickering in the emulator and CX CAS HW W+ here, not in the drawhook
+	
+	//uart_printf("early!\n");
+	
+	
+	//Gc gc = gui_gc_global_GC();
+	
+	
+	/*
+	uint16_t * off_screen = (((((char *****)gc)[9])[0])[0x8])[0];
+	*off_screen = rgbto565(255,0,0);
+	*(off_screen+1) = rgbto565(255,0,0);
+	*(off_screen+2) = rgbto565(255,0,0);
+	*/
+	
 	
 	
 	
@@ -457,6 +472,10 @@ static void hookfunc()
 		}
 	}
 	
+	if (isKeyPressed(KEY_NSPIRE_1) && isKeyPressed(KEY_NSPIRE_9))
+	{
+		disableNoflicker();
+	}
 	
 	
 	//bkpt();
@@ -507,25 +526,7 @@ static void hookfunc()
 			return;
 		}
 	#endif
-	#ifdef MODULE_CLOCK
-		bool ee = isKeyPressed(KEY_NSPIRE_EE);
-		if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
-		{
-			settime();
-			wait_no_key_pressed();
-			return;
-		}
-		if (ctrl && ee)
-		{
-			miniclock_enabled = ! miniclock_enabled;
-			return;
-		}
-	#endif
 	*/
-	
-	
-	
-	
 	
 	
 	
@@ -575,20 +576,25 @@ static const unsigned int draw_hook_addrs[] =
  0x0, 0x0,
  0x0, 0x0,
  0x0, 0x0,
- 0x10023810, 0x100237d4,
+ 0x10023810, 0x100237d4, //0x100237d4
  0x0, 0x0
 };
 
 
-HOOK_DEFINE(drawhook) // TODO hook is only for HW W+, becaus it's apparently in the 240*320 compatibility code
+HOOK_DEFINE(drawhook)
 {
-	unsigned int *abt = 0x10;
+	 // TODO hook is only for HW W+, becaus it's apparently in the 240*320 compatibility code
 	
 	
-	uart_printf("abort handler: %x\n",*abt);
+	
+	//unsigned int *abt = 0x10;
+	//uart_printf("abort handler: %x\n",*abt);
 	
 	
 	//uart_printf("drawfunc\n");
+	// apparently not called when noflicker is on with immediate return
+	
+	
 	
 	for (int i = 0;i<drawfunclength;i++)
 	{
@@ -602,39 +608,15 @@ HOOK_DEFINE(drawhook) // TODO hook is only for HW W+, becaus it's apparently in 
 	
 	
 	
+	
+	
+	blitMirrorToScreen();
+	
+	
 	HOOK_RESTORE_RETURN(drawhook);
 };
 
 
-
-/*
-// 100230dc		10011174
-const unsigned int hook_addrs[] =
-{0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
- 0x0, 0x0, 0x0, 0x0,
- 0x0, 0x0, 0x0, 0x0,
- 0x0, 0x0, 0x0, 0x0,
- 0x0, 0x0,
- 0x0, 0x0,
- 0x0, 0x0,
- 0x0, 0x0,
- 0x0, 0x0,
- 0x100e112C, 0x100e0f68,		//0x10011178
- 0x0, 0x0
-};*/
-/* ndless adresses
-{0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
- 0x1002DE38, 0x1002DDC8, 0x1002D388, 0x1002D348,
- 0x1002E2C0, 0x1002E224, 0x0, 0x0,
- 0x0, 0x0, 0x1002D804, 0x1002D798,
- 0x1002D818, 0x1002D7C0,
- 0x1002F4EC, 0x1002F494,
- 0x1002F92C, 0x1002F8D4,
- 0x1002FF24, 0x1002FEC0,
- 0x1003108C, 0x10031034,
- 0x100310FC, 0x100310A4,
- 0x100311C4, 0x10031164
-};*/
 
 /*
 Functions passed to modules by argv:
@@ -676,6 +658,10 @@ int main(int argsn,char **argv)
 	
 	initModules();
 	
+	
+	
+	
+	
 	//needs ndless.cfg.tns to work
 	//creating it doesn't seem to work
 	//an empty config file has to be transferred to the calc once it seems
@@ -686,7 +672,7 @@ int main(int argsn,char **argv)
 	
 	
 	
-	initOSGCBUFF();
+	//initOSGCBUFF();
 	#ifdef precisetime
 		// init timer from nsSDL
 		*(volatile unsigned *)0x900B0018 &= ~(1 << 11);
@@ -701,12 +687,12 @@ int main(int argsn,char **argv)
 	
 	
 	
-	
+	/*
 	if (lcd_type() != SCR_240x320_565)
 	{
 		cr4 = false;
 	}
-	
+	*/
 	
 	
 	
@@ -817,6 +803,10 @@ int main(int argsn,char **argv)
 		initSleds();
 	#endif
 	*/
+	
+	
+	
+	enableNoflicker();
 	
 	
 	clear_cache();

@@ -15,6 +15,11 @@
 
 void checkKeys();
 void drawclock();
+void blitOSGC();
+void drawclockScreen();
+
+void test();
+
 
 static int clockx = 180,clocky = 1;
 static volatile unsigned long *v_RTC = (volatile unsigned long*) 0x90090000;
@@ -35,33 +40,65 @@ int main(int argc, char **argv)
 	clockg = createGraphics();
 	
 	addFunction((unsigned int) checkKeys);
-	addDrawFunction((unsigned int) drawclock);
+	//addFunction((unsigned int) drawclock); // doesn't work performance-wise on the calculator
+	//addDrawFunction((unsigned int) drawclock); // just flickers more
+	//addDrawFunction((unsigned int) drawclockScreen);
+	addDrawFunction((unsigned int) drawclockScreen);
+	//addDrawFunction((unsigned int) test);
+	
+	
+}
+
+
+void test()
+{
+	memset(REAL_SCREEN_BASE_ADDRESS,0,100);
 	
 	
 	
-	
-	
-	
+}
+
+
+void blitOSGC()
+{
+	/*
+	if (os_gc = NULL)
+		os_gc = gui_gc_global_GC();
+	gui_gc_begin(os_gc);
+	gui_gc_finish(os_gc);
+	*/
 }
 
 
 void checkKeys()
 {
 	
-	
-	
+	bool ctrl = isKeyPressed(KEY_NSPIRE_CTRL);
+	bool ee = isKeyPressed(KEY_NSPIRE_EE);
+	if (ctrl && ee && isKeyPressed(KEY_NSPIRE_G))
+	{
+		settime();
+		wait_no_key_pressed();
+		return;
+	}
+	if (ctrl && ee)
+	{
+		miniclock_enabled = ! miniclock_enabled;
+		return;
+	}
 	
 	
 	
 }
 
-
-void drawclock()
+void drawclockScreen()
 {
-	//uart_printf("clock\n");
-	//bkpt();
+	
 	if (! miniclock_enabled)
 		return;
+	
+	
+	
 	long val = *v_RTC;
 	
 	
@@ -103,18 +140,87 @@ void drawclock()
 	//write10pChar(clockg,clockx-20,clocky,(*timer)%10,digits10p);
 	
 	
-	volatile int *powp = 0x900B0018;
+	//volatile int *powp = 0x900B0018;
 	//uart_printf("powp: %x\n",*powp);
 	
 	blitGraphicsToScreen(clockg);
-	//bkpt();
+	
+	
+	
 	//blitGraphicsToOSGC(clockg);
-	//bkpt();
+	
+	
 	exitGraphics();
+	
+	
 	
 	
 }
 
+/*
+void drawclock()
+{
+	//uart_printf("clock\n");
+	//bkpt();
+	if (! miniclock_enabled)
+		return;
+	long val = *v_RTC;
+	
+	
+	initGraphics();
+	//saveScreenToGraphics(clockg);
+	saveOSGCToGraphics(clockg);
+	setGraphicsColor(clockg,0,0,0);
+	fillRect(clockg,clockx,clocky,70,10);
+	
+	
+	//fillRect(clockg,clockx-20,clocky,10,10);
+	
+	setGraphicsColor(clockg,255,255,255);
+	drawRect(clockg,clockx-1,clocky-1,72,12);
+	
+	
+	timestamp2date(val,&year,&month,&day,&hour,&minute,&second);
+	
+	setGraphicsColor(clockg,255,0,0);
+	write10pChar(clockg,clockx+60,clocky,second%10,digits10p);
+	write10pChar(clockg,clockx+50,clocky,(second/10)%10,digits10p);
+	
+	setPixel(clockg,clockx+47,clocky+3);
+	setPixel(clockg,clockx+47,clocky+7);
+	
+	
+	write10pChar(clockg,clockx+35,clocky,minute%10,digits10p);
+	write10pChar(clockg,clockx+25,clocky,(minute/10)%10,digits10p);
+	
+	
+	setPixel(clockg,clockx+23,clocky+3);
+	setPixel(clockg,clockx+23,clocky+7);
+	
+	
+	write10pChar(clockg,clockx+10,clocky,hour%10,digits10p);
+	write10pChar(clockg,clockx,clocky,(hour/10)%10,digits10p);
+	
+	
+	
+	//write10pChar(clockg,clockx-20,clocky,(*timer)%10,digits10p);
+	
+	
+	//volatile int *powp = 0x900B0018;
+	//uart_printf("powp: %x\n",*powp);
+	
+	//blitGraphicsToScreen(clockg);
+	
+	blitGraphicsToOSGC(clockg);
+	
+	
+	
+	
+	exitGraphics();
+	
+	
+}
+*/
 
 
 void settime()
