@@ -1,6 +1,7 @@
-#include "fiq.h"
-#include "physical_MM.h"
-#include "virtual_MM.h"
+#include "kernel.h"
+
+
+
 
 
 
@@ -9,14 +10,23 @@
 
 int main(int argsn,char **argc)
 {
+	if (argsn == 1 && argc == 0x53544c41) //STandaloneLAunch
+	{
+		
+		
+		
+	}
+	else
+	{
+		
+		
+		
+	}
 	
 	
 	
 	
-	
-	
-	
-	
+	scanPages();
 	
 	
 	

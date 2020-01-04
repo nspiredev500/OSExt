@@ -1,4 +1,5 @@
-#include "kernel.h"
+#ifndef ABORTS_H
+#define ABORTS_H
 
 
 
@@ -44,3 +45,5 @@
 
 
 
+
+#endif

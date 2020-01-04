@@ -1,5 +1,4 @@
-#include "watchdog.h"
-#include "fiq.h"
+#include "kernel.h"
 
 
 

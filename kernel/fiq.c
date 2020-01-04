@@ -1,8 +1,4 @@
-#include "fiq.h"
-#include <stdint.h>
-#include <stddef.h>
-#include <limits.h>
-#include <float.h>
+#include "kernel.h"
 
 static volatile uint32_t *fiq_address = (volatile uint32_t*) 0x30;
 //static const int MAXFIQ = 30;

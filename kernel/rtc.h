@@ -5,8 +5,8 @@
 
 
 
-
-
+uint32_t getRTCValue();
+void setRTCValue(uint32_t value);
 
 
 
