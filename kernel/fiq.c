@@ -16,14 +16,14 @@ int addFIQFunction(void (*function)())
 	{
 		return -1;
 	}
-	uint32_t cpsr asm("r0");
-	asm volatile("mrs r0, cpsr");
-	cpsr = cpsr & (~ (1 << 6)); // clear the fiq bit
-	asm volatile("msr cpsr, r0");
+	register uint32_t scpsr asm("r0");
+	asm volatile("mrs %[scpsr], cpsr":[scpsr] "=r" (scpsr)::);
+	scpsr = scpsr & (~ (1 << 6)); // clear the fiq bit
+	asm volatile("msr cpsr, %[scpsr]"::[scpsr] "r" (scpsr):);
 	fiqtable[fiqindex] = function;
 	fiqindex++;
-	cpsr = cpsr | (1 << 6); // set the fiq bit
-	asm volatile("msr cpsr, r0");
+	scpsr = scpsr | (1 << 6); // set the fiq bit
+	asm volatile("msr cpsr, %[scpsr]"::[scpsr] "r" (scpsr):);
 	return 0;
 }
 
