@@ -32,11 +32,13 @@ long last = 0;
 
 
 static Graphics *clockg;
-
+uint16_t *(*getcurrentmirror)() = 0;
 
 int main(int argc, char **argv)
 {
 	initModule(argv);
+	getcurrentmirror = searchFunction("getcurrentmirror");
+	
 	clockg = createGraphics();
 	
 	addFunction((unsigned int) checkKeys);
@@ -45,15 +47,6 @@ int main(int argc, char **argv)
 	//addDrawFunction((unsigned int) drawclockScreen);
 	addDrawFunction((unsigned int) drawclockScreen);
 	//addDrawFunction((unsigned int) test);
-	
-	
-}
-
-
-void test()
-{
-	memset(REAL_SCREEN_BASE_ADDRESS,0,100);
-	
 	
 	
 }
@@ -103,7 +96,6 @@ void drawclockScreen()
 	
 	
 	initGraphics();
-	saveScreenToGraphics(clockg);
 	setGraphicsColor(clockg,0,0,0);
 	fillRect(clockg,clockx,clocky,70,10);
 	
@@ -143,7 +135,8 @@ void drawclockScreen()
 	//volatile int *powp = 0x900B0018;
 	//uart_printf("powp: %x\n",*powp);
 	
-	blitGraphicsToScreen(clockg);
+	blitGraphicsRegionToBuffer(clockg,getcurrentmirror(),clockx-1,clocky-1,72,12);
+	
 	
 	
 	

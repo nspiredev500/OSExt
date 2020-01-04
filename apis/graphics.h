@@ -111,6 +111,18 @@ void blitGraphicsToBuffer(Graphics *g,void *bufferp)
 		}
 	}
 }
+void blitGraphicsRegionToBuffer(Graphics *g,void *bufferp,int xs,int ys,int w,int h)
+{
+	uint16_t *buffer = bufferp;
+	for (int x = xs;x<xs+w;x++)
+	{
+		for (int y = ys;y<ys+h;y++)
+		{
+			if (x >= 0 && x < 320 && y >= 0 && y < 240)
+				*(buffer+240*x+y) = *(g->buffer+240*x+y);
+		}
+	}
+}
 void blitGraphicsToOSGC(Graphics *g)
 {
 	uint16_t *osbuff = (((((char *****)os_gc)[9])[0])[0x8])[0]; // from ngc.c

@@ -8,6 +8,10 @@
 
 
 
+
+
+
+
 static uint32_t lcd_mirror_ptr[] = {0, 0, 0, 0, 0, 0,
                                                      0, 0, 0, 0,
                                                      0, 0, 0, 0,
@@ -39,12 +43,25 @@ uint16_t *real_lcd_framebuffer = NULL;
 static volatile uint32_t lcd_control = 0;
 
 
-
+bool noflicker = false;
+static uint32_t old_abort_handler;
 
 
 extern uint32_t sp_svc, lr_svc;
+extern uint32_t sp_svc_undef, lr_svc_undef, undef_inst_addr, undef_sp;
 
-void lcd_compat_abort(uint32_t *regs)
+bool undef_breakpoint = false;
+uint32_t replaced_instruction = 0;
+
+
+asm("undefined: udf #0");
+
+
+
+bool use_undef_access = true;
+int intmask = 0;
+
+int lcd_compat_abort(uint32_t *regs)
 {
     // Get the address that was tried to access
     uintptr_t fault_addr;
@@ -58,15 +75,105 @@ void lcd_compat_abort(uint32_t *regs)
         asm volatile("udf #0"); // Crash!
     
 	
+	if (! noflicker)
+		asm volatile("udf #0"); // Crash!
+	
+	
     register uint32_t *translated_addr = 0;
     if(fault_addr == 0xC0000010)
-        //translated_addr = (uint32_t*) &current_lcd_mirror;
-		translated_addr = (uint32_t*) &real_lcd_framebuffer;
+        translated_addr = (uint32_t*) &current_lcd_mirror;
     else
 	{
-        translated_addr = (uint32_t*) (fault_addr - 0xC0000000 + (uintptr_t) real_lcdc);
+		//uart_printf("fault_adr: 0x%x\n",fault_addr);
+		
+		
+		/*
+		uint32_t inst = *(uint32_t*)(regs[13] - 8);
+		
+		
+		
+		uint32_t *tt_base;
+		asm volatile("mrc p15, 0, %[tt_base], c2, c0, 0" : [tt_base] "=r" (tt_base));
+		// Map real lcdc at 0xC0000000
+		tt_base[0xC00] = 0xC0000C12;
+		// Flush TLB for 0xC0000000
+		asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (0xC0000000));
+		
+		
+		return 2;
+		uint32_t *regsasm asm("r0");
+		uint32_t savedlr asm("r1");
+		uint32_t savedsp asm("r2");
+		savedlr = lr_svc;
+		savedsp = sp_svc;
+		regsasm = regs;
+		
+		extern uint32_t instruction_executed;
+		instruction_executed = inst;
+		
+		clear_cache();
+		// this makes everything blue yellow and yellow blue?
+		asm volatile(
+		"bkpt\n"
+		"mov lr, r1\n"
+		"mov sp, r2\n"
+		"ldmia r0, {r0-r12, lr}\n"
+		"bkpt #0\n"
+		"instruction_executed: .word 0\n"
+		"\n":::"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","cpsr");
+		
+		clear_cache();
+		
+		
+		tt_base[(uint32_t) real_lcdc >> 20] = tt_base[0xC00];
+		tt_base[0xC00] = 0;
+		// Flush TLB for 0xC0000000 and real_lcdc
+		asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (0xC0000000));
+		asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (real_lcdc));
+		return 0;
+		*/
+		
+		
+		if (use_undef_access)
+		{
+			// remap the lcd for the next instruction, because we care only about the framebuffer in this case and I don't know whether this handler can emulate all instructions (It probably doesn't)
+			undef_breakpoint = true;
+			
+			//bkpt();
+			
+			/*
+			asm("mrs r0, spsr\n"
+			"bic r0, #0x40\n" // clear interrupt bit
+			"msr spsr, r0\n"
+			"mrs r0, cpsr\n"
+			"bic r0, #0x40\n"
+			"msr cpsr, r0":::"r0");
+			*/
+			//intmask = TCT_Local_Control_Interrupts(-1);
+			//bkpt();
+			
+			uint32_t *tt_base;
+			asm volatile("mrc p15, 0, %[tt_base], c2, c0, 0" : [tt_base] "=r" (tt_base));
+			// Map real lcdc at 0xC0000000
+			tt_base[0xC00] = 0xC0000C12;
+			// Flush TLB for 0xC0000000
+			asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (0xC0000000));
+			
+			
+			clear_cache();
+			
+			void undefined();
+			
+			uint32_t *inst_adr_next = (uint32_t*)(regs[13] - 4);
+			replaced_instruction = *inst_adr_next;
+			*inst_adr_next = *((uint32_t*)undefined);
+			
+			return 1;
+		}
+		else
+			translated_addr = (uint32_t*) (fault_addr - 0xC0000000 + (uintptr_t) real_lcdc);
 	}
-	translated_addr = (uint32_t*) (fault_addr - 0xC0000000 + (uintptr_t) real_lcdc);
+	//translated_addr = (uint32_t*) (fault_addr - 0xC0000000 + (uintptr_t) real_lcdc);
 	
 	
 	
@@ -74,6 +181,16 @@ void lcd_compat_abort(uint32_t *regs)
 	
     // Read instruction that caused fault
     uint32_t inst = *(uint32_t*)(regs[13] - 8);
+	
+	/*
+	uint32_t spsr asm("r0");
+	asm volatile("mrs r0, spsr");
+	uint32_t n = spsr & 0b10000000000000000000000000000000;
+	uint32_t z = spsr & 0b01000000000000000000000000000000;
+	uint32_t c = spsr & 0b00100000000000000000000000000000;
+	uint32_t v = spsr & 0b00010000000000000000000000000000;
+	uint32_t q = spsr & 0b00001000000000000000000000000000;
+	*/
 	
 	
 	
@@ -122,13 +239,14 @@ void lcd_compat_abort(uint32_t *regs)
 			if(fault_addr == 0xC0000018) // LCD control (mode etc.)
 			{
 				lcd_control = *translated_addr = *reg;
+				
 			}
 			else
 			{
 				// commenting this fixed the flickering!
 				//if(fault_addr > 0xC000000C) // Don't change the LCD timings
 				//{
-					if (translated_addr != 0xe0000010 && translated_addr != 0xe0000014) // preventing from modifying the frambuffer pointer via the old address
+					if (translated_addr != 0xe0000010 && translated_addr != 0xe0000014 && translated_addr != 0xe000001c) // preventing from modifying the frambuffer pointer via the old address
 						*translated_addr = *reg;
 				//}
 			}
@@ -136,46 +254,139 @@ void lcd_compat_abort(uint32_t *regs)
     }
 	//volatile uint32_t *buffup = 0xe0000010;
 	//*buffup = real_lcd_framebuffer;
+	
+	
+	
+	return 0;
 }
+
+
+void undef_handler(uint32_t *regs)
+{
+	
+	
+	
+	if (! undef_breakpoint)
+	{
+		ut_calc_reboot();
+	}
+	
+	
+	// demap the lcd
+	// Get address of translation table
+	//asm volatile("bkpt");
+	uint32_t *tt_base;
+	asm volatile("mrc p15, 0, %[tt_base], c2, c0, 0" : [tt_base] "=r" (tt_base));
+	// Map LCDC from 0xC0000000 to real_lcdc
+	tt_base[(uint32_t) real_lcdc >> 20] = tt_base[0xC00];
+	tt_base[0xC00] = 0;
+	// Flush TLB for 0xC0000000 and real_lcdc
+	asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (0xC0000000));
+	asm volatile("mcr p15, 0, %[base], c8, c7, 1" :: [base] "r" (real_lcdc));
+	
+	clear_cache();
+	
+	
+	// replace the undefined instruction with the real one
+	
+	
+	//asm volatile("bkpt");
+	uint32_t *inst_adr = (uint32_t*) undef_inst_addr;
+	//asm volatile("bkpt");
+	*inst_adr = replaced_instruction;
+	//asm volatile("bkpt");
+	undef_breakpoint = false;
+	
+	//TCT_Local_Control_Interrupts(intmask);
+}
+
+
+
+
+
 
 bool framebufferschanged = false;
 
-__attribute__ ((interrupt("FIQ"))) void framebuffer_change_fiq()
-{
-	volatile uint32_t *maskedint = 0xe0000024; // masked interrupt status
-	volatile uint32_t *clearint = 0xe0000028; // clear masked interrupt
-	if ((*maskedint & 0b01) != 0)
-	{
-		*clearint = *clearint | 0b01;
-	}
-	if ((*maskedint & 0b001) != 0) // next base address update
-	{
-		*clearint = *clearint | 0b001;
-		if (! framebufferschanged)
-		{
-			volatile uint32_t *buffup = 0xe0000010;
-			buffupreal = *buffup;
-			*buffup = real_lcd_framebuffer;
-			*(volatile uint32_t*) 0xDC00000C &= ~(1 << 21);
-			*(volatile uint32_t*) 0xDC000014 = 1 << 21;
-			framebufferschanged = true;
-		}
-	}
-	if ((*maskedint & 0b0001) != 0)
-	{
-		*clearint = *clearint | 0b0001;
-	}
-	if ((*maskedint & 0b00001) != 0)
-	{
-		*clearint = *clearint | 0b00001;
-	}
-	
-	
-	
-	
-}
 
-//extern unsigned int lcd_compat_abort_handler;
+
+char undef_stack[1024];
+char *undef_sp_ptr = undef_stack+512;
+
+
+asm(
+"sp_svc: .word 0\n"
+"lr_svc: .word 0\n"
+"lcd_compat_abort_handler:\n"
+"sub sp, sp, #8\n" // Somehow the OS uses this...
+    "push {r0-r12, lr}\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "str sp, sp_svc\n" // Save sp_svc
+            "str lr, lr_svc\n" // Save lr_svc
+        "msr cpsr_c, #0xd7\n" // Back to ABT mode
+        "mov r0, sp\n" // First arg, array of r0-12, lr
+        "bl lcd_compat_abort\n"
+		"cmp r0, #1\n"
+		"beq return_to_instruction\n"
+		//"cmp r0, #2\n"
+		//"beq execute_instruction\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "ldr sp, sp_svc\n" // Restore sp_svc
+            "ldr lr, lr_svc\n" // Restore lr_svc
+        "msr cpsr_c, #0xd7\n" // Back to ABT mode
+    "pop {r0-r12, lr}\n"
+"add sp, sp, #8\n"
+"subs pc, lr, #4\n"
+
+
+		"return_to_instruction: mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "ldr sp, sp_svc\n" // Restore sp_svc
+            "ldr lr, lr_svc\n" // Restore lr_svc
+        "msr cpsr_c, #0xd7\n" // Back to ABT mode
+    "pop {r0-r12, lr}\n"
+"add sp, sp, #8\n"
+"subs pc, lr, #8"
+);
+
+
+asm(
+"undef_sp: .word 0\n"
+"undef_inst_addr: .word 0\n"
+"sp_svc_undef: .word 0\n"
+"lr_svc_undef: .word 0\n"
+"lcd_undef_handler:\n"
+//"bkpt\n"
+	"ldr sp, undef_sp\n"
+    "push {r0-r12, lr}\n"
+		"sub lr, #4\n"
+		"str lr, undef_inst_addr\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "str sp, sp_svc_undef\n" // Save sp_svc
+            "str lr, lr_svc_undef\n" // Save lr_svc
+        "msr cpsr_c, #0b11011011\n" // Back to UNDEF mode
+        "mov r0, sp\n" // First arg, array of r0-12, lr
+		//"bkpt\n"
+        "bl undef_handler\n"
+		//"bkpt\n"
+        "mrs r0, spsr\n"
+        "orr r0, r0, #0xc0\n"
+        "msr cpsr_c, r0\n" // To SVC mode
+            "ldr sp, sp_svc_undef\n" // Restore sp_svc
+            "ldr lr, lr_svc_undef\n" // Restore lr_svc
+        "msr cpsr_c, #0b11011011\n" // Back to UNDEF mode
+    "pop {r0-r12, lr}\n"
+"add sp, sp, #8\n"
+//"bkpt\n"
+"subs pc, lr, #4");
+
+/*
 asm(
 "sp_svc: .word 0\n"
 "lr_svc: .word 0\n"
@@ -200,9 +411,7 @@ asm(
     "pop {r0-r12, lr}\n"
 "add sp, sp, #8\n"
 "subs pc, lr, #4");
-
-bool noflicker = false;
-static uint32_t old_abort_handler;
+*/
 
 
 void blitMirrorToScreen()
@@ -211,6 +420,18 @@ void blitMirrorToScreen()
 	
 	if (noflicker)
 	{
+		memcpy(real_lcd_framebuffer,current_lcd_mirror,320*240*2);
+		//memcpy(real_lcd_framebuffer,buffupreal,320*240*2);
+		
+		
+		
+		/*
+		uint16_t *tmp = current_lcd_mirror;
+		current_lcd_mirror = real_lcd_framebuffer;
+		real_lcd_framebuffer = tmp;
+		volatile uint32_t *buffup = 0xe0000010;
+		*buffup = real_lcd_framebuffer;
+		*/
 		
 		
 	}
@@ -284,7 +505,7 @@ void enableNoflicker() // somehow flickers horribly on the calculator
 	
 	//current_lcd_mirror = *(uint16_t**)nl_osvalue(lcd_mirror_ptr,32);
 	uart_printf("lcd mirror: %x\n",current_lcd_mirror);
-	
+	uart_printf("lcd real framebuffer: %x\n",real_lcd_framebuffer);
 	
 	
 	// Get address of translation table
@@ -303,29 +524,36 @@ void enableNoflicker() // somehow flickers horribly on the calculator
 	
 	
 	
+	void lcd_undef_handler();
+	
+	undef_sp = undef_sp_ptr;
+	
+	volatile uint32_t *undefined_instruction_address = 0x24;
+	*undefined_instruction_address = lcd_undef_handler;
+	
+	
+	noflicker = true;
+	
 	lcd_control = real_lcdc[6];
 	
 	//msleep(1000);
-	//maybe the controller isn't ready for the framebuffer pointer change yet?
 	
 	
+	volatile uint32_t *inter = 0xe000001c;
+	*inter = 0;
 	
 	
 	
 	volatile uint32_t *buffup = 0xe0000010;
 	buffupreal = *buffup;
 	memcpy(real_lcd_framebuffer,buffupreal,320*240*2);
+	memcpy(current_lcd_mirror,buffupreal,320*240*2);
 	*buffup = real_lcd_framebuffer;
 	volatile uint32_t *buffdown = 0xe0000014;
 	*buffdown = real_lcd_framebuffer;
 	
 	
-	memset(real_lcd_framebuffer,0,320*240*2);
-	msleep(1000);
-	memcpy(real_lcd_framebuffer,buffupreal,320*240*2);
-	msleep(1500);
-	*buffup = buffupreal;
-	*buffdown = buffupreal;
+	
 	
 	
 	/*
@@ -352,8 +580,8 @@ void enableNoflicker() // somehow flickers horribly on the calculator
 	
 	
 	
-	noflicker = true;
 	
+	clear_cache();
 	
 	
 	
@@ -399,10 +627,14 @@ void disableNoflicker()
 	if (! noflicker)
 		return;
 	
-	
+	/*
 	*(volatile uint32_t*) 0xDC00000C &= ~(1 << 21);
     *(volatile uint32_t*) 0xDC000014 = 1 << 21;
+	*/
 	
+	
+	volatile uint32_t *buffup = 0xe0000010;
+	*buffup = buffupreal;
 	
 	
 	uint32_t *tt_base;
@@ -423,8 +655,8 @@ void disableNoflicker()
 	
 	
 	
-	*((volatile uint32_t*)0x30) = old_abort_handler;
-	
+	//*((volatile uint32_t*)0x30) = old_abort_handler;
+	clear_cache();
 	noflicker = false;
 }
 

@@ -17,7 +17,11 @@
 
 #include "include/osext.h"
 
-
+//from ndless utils.c
+static void __attribute__ ((noreturn)) ut_calc_reboot(void) {
+	*(volatile unsigned*)0x900A0008 = 2; //CPU reset
+	__builtin_unreachable();
+}
 
 
 // definitions
@@ -378,9 +382,15 @@ HOOK_DEFINE(mainhook)
 		int hookcount = 0;
 	#endif
 #endif
+
+int undef_timer = 0;
 static bool cr4 = true;
 static void hookfunc()
 {
+	
+	
+	
+	
 	
 	
 	// works without flickering in the emulator and CX CAS HW W+ here, not in the drawhook
@@ -447,6 +457,18 @@ static void hookfunc()
 		}
 	}
 	
+	
+	
+	if (isKeyPressed(KEY_NSPIRE_HOME))
+	{
+		if (! use_undef_access)
+		{
+			use_undef_access = true;
+			uart_printf("undef breakpoint enabled\n");
+		}
+	}
+	
+	
 	#ifndef precisetime
 		time_t chook = time(NULL);
 		if (chook-lasthook > 0)
@@ -472,10 +494,53 @@ static void hookfunc()
 		}
 	}
 	
+	
+	
+	/*
+	if (use_undef_access)
+	{
+		volatile uint32_t *contrast = 0x900F0020;
+		if (undef_timer < 4)
+			undef_timer++;
+		uart_printf("contrast: %x\n",*contrast);
+		if (undef_timer >= 4 && (*contrast != 0x100 && *contrast != 0))
+		{
+			use_undef_access = false;
+			uart_printf("undef breakpoint disabled\n");
+		}
+	}
+	else
+	{
+		undef_timer = 0;
+	}
+	*/
+	
+	//uart_printf("mainfunc\n");
+	
+	
+	// still gets called when calculator crashes after on
+	
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_9) && isKeyPressed(KEY_NSPIRE_ENTER) && isKeyPressed(KEY_NSPIRE_COMMA))
+	{
+		ut_calc_reboot();
+	}
+	
 	if (isKeyPressed(KEY_NSPIRE_1) && isKeyPressed(KEY_NSPIRE_9))
 	{
 		disableNoflicker();
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	//bkpt();
@@ -583,6 +648,11 @@ static const unsigned int draw_hook_addrs[] =
 
 HOOK_DEFINE(drawhook)
 {
+	
+	ut_disable_watchdog();
+	int intmask = TCT_Local_Control_Interrupts(-1);
+	
+	
 	 // TODO hook is only for HW W+, becaus it's apparently in the 240*320 compatibility code
 	
 	
@@ -595,6 +665,23 @@ HOOK_DEFINE(drawhook)
 	// apparently not called when noflicker is on with immediate return
 	
 	
+	//volatile uint32_t *undef_handler = 0x24;
+	
+	//uart_printf("undef_handler: 0x%x\n",*undef_handler);
+	
+	
+	if (isKeyPressed(KEY_NSPIRE_CTRL) && isKeyPressed(KEY_NSPIRE_9) && isKeyPressed(KEY_NSPIRE_ENTER) && isKeyPressed(KEY_NSPIRE_COMMA))
+	{
+		ut_calc_reboot();
+	}
+	
+	
+	if (! noflicker)
+		return;
+	//bkpt();
+	memcpy(current_lcd_mirror,buffupreal,320*240*2);
+	
+	
 	
 	for (int i = 0;i<drawfunclength;i++)
 	{
@@ -605,7 +692,9 @@ HOOK_DEFINE(drawhook)
 		}
 	}
 	
-	
+	volatile uint32_t *buffup = 0xe0000010;
+	//memset(*buffup,0,100*100*2);
+	//memset(current_lcd_mirror,0,100*100*2);
 	
 	
 	
@@ -613,6 +702,9 @@ HOOK_DEFINE(drawhook)
 	blitMirrorToScreen();
 	
 	
+	//memset(*buffup,0,100*100*2);
+	
+	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(drawhook);
 };
 
@@ -630,6 +722,11 @@ bool setSyscall(void (*func)())	setting a syscall to func, returns 0 if syscall 
 void registerInternalFunc(char *name,void (*func)())
 void (*func()) requestInternalFunc(char *name); returns the function pointer or NULL if there was no function with that name
 */
+
+uint16_t* getcurrentmirror()
+{
+	return current_lcd_mirror;
+}
 
 
 int main(int argsn,char **argv)
@@ -714,7 +811,7 @@ int main(int argsn,char **argv)
 	shareFunction("loadModule",loadModule);
 	shareFunction("uart_printf",uart_printf);
 	shareFunction("isKeyPressed",isKeyPressed);
-	
+	shareFunction("getcurrentmirror",getcurrentmirror);
 	
 	
 	
@@ -807,6 +904,8 @@ int main(int argsn,char **argv)
 	
 	
 	enableNoflicker();
+	
+	
 	
 	
 	clear_cache();
