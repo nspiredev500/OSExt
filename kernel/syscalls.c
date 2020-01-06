@@ -4,7 +4,7 @@
 
 
 
-
+static volatile uint32_t *swi_addrs = (volatile uint32_t*) 0x28;
 
 
 

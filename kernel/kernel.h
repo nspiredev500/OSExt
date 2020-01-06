@@ -4,8 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <limits.h>
 #include <float.h>
+#include <syscall-list.h>
 
 #include "process.h"
 #include "thread.h"
@@ -22,7 +24,14 @@
 #include "panic.h"
 #include "uart.h"
 #include "memory.h"
+#include "reloc.h"
+#include "start.h"
+#include "string.h"
 
+
+
+extern uint32_t *_EXEC_START;
+extern uint32_t *_EXEC_END;
 
 
 #endif

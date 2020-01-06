@@ -8,8 +8,8 @@ GENZEHN = genzehn
 
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os
-LDFLAGS = -nostdlib -lgcc 
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE
+LDFLAGS = -nostdlib -lgcc -static-pie -T ldscript.ld
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))
@@ -27,7 +27,13 @@ all: osext.tns debug.elf
 
 HEADERS: ;
 
-.PHONY: clean
+.PHONY: clean cleanbuild remake
+
+
+
+
+remake: clean
+	$(MAKE) all
 
 osext.tns: osext.elf
 	cp osext.elf osext.elf.tmp && \
@@ -41,7 +47,11 @@ osext.elf: $(OBJS)
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) osext.elf debug.elf osext.tns
+
+cleanbuild:
+	rm -f $(OBJS) osext.elf debug.elf
+
 
 debug.elf: osext.elf
 	arm-none-eabi-objcopy --only-keep-debug osext.elf debug.elf
