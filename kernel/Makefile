@@ -8,7 +8,7 @@ GENZEHN = genzehn
 
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g
 LDFLAGS = -nostdlib -lgcc -static-pie -T ldscript.ld
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 

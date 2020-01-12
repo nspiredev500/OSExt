@@ -4,7 +4,11 @@
 
 
 
-//static uint32_t test = 20;
+static uint32_t test = 20;
+
+static uint32_t *test2 = &test;
+
+static uint32_t *test3 = NULL;
 
 
 
@@ -28,10 +32,17 @@ int main(int argsn,char **argc)
 	*/
 	
 	
+	//uart_printf("size: %d, %d, %d\n",sizeof(struct section_descriptor),sizeof(struct coarse_page_table_descriptor),sizeof(struct fine_page_table_descriptor));
 	
 	
 	
-	//uart_printf("&test: %d\n",&test);
+	//uart_printf("size: %d\n",sizeof(struct large_page_descriptor));
+	
+	
+	//uart_printf("test: %d\n",test);
+	//uart_printf("test2: %d\n",test2);
+	//uart_printf("test3: %d\n",test3);
+	
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
 	{
@@ -41,6 +52,8 @@ int main(int argsn,char **argc)
 	}
 	else
 	{
+		//test3 = ti_malloc(8);
+		//uart_printf("test3: %d\n",test3);
 		relocate_self();
 	}
 	return 0;

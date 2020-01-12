@@ -52,13 +52,13 @@ void uart_send_uint32(uint32_t a)
 	int digit = 0;
 	while (true)
 	{
-		if (a == 0)
-			break;
 		uint32_t tmp = (a % 10);
 		if (tmp > 9)
 			break;	// something has gone wrong
 		buff[digit] = 48+tmp;
 		a = a / 10;
+		if (a == 0)
+			break;
 		digit++;
 	}
 	for (int i = digit;i>=0;i--)
