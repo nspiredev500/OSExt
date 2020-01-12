@@ -12,8 +12,8 @@
 
 // page descriptors have to be in DMA memory, because they are what resolves the virtual addresses
 // temporary page descriptors for the remapped kernel, will be freed when a proper page table is set up by the kernel
-static struct large_pd *init_pds_unaligned = NULL;
-static struct large_pd *init_pds = NULL;
+static uint32_t *init_pds_unaligned = NULL;
+static uint32_t *init_pds = NULL;
 
 static const void *virtual_base_address = 0xf9c00000;
 
@@ -48,14 +48,14 @@ void relocate_self(void)
 	
 	uint32_t sections = (kernel_size/SECTIONSIZE)+1;
 	
-	init_pds_unaligned = ti_malloc(sizeof(struct large_pd)*sections*256+16+1024*2);
+	init_pds_unaligned = ti_malloc(sizeof(uint32_t)*sections*256+16+1024*2);
 	if (init_pds_unaligned == NULL)
 	{
 		free(malloced_chunk);
 		uart_send_string("Not enough memory!\n");
 		return;
 	}
-	k_memset(init_pds_unaligned,0,sizeof(struct large_pd)*sections*256+16+1024*2);
+	k_memset(init_pds_unaligned,0,sizeof(uint32_t)*sections*256+16+1024*2);
 	if ((((uint32_t) init_pds_unaligned) & 0b1111111111) != 0) // align to 1k boundrary
 	{
 		init_pds = (((uint32_t) init_pds_unaligned) & (~ 0b1111111111))+0b10000000000;
@@ -79,7 +79,7 @@ void relocate_self(void)
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uart_printf("tt_base: %d\n",tt_base);
-	struct coarse_ptd *tt = tt_base;
+	uint32_t *tt = tt_base;
 	
 	
 	
@@ -100,15 +100,15 @@ void relocate_self(void)
 	
 	for (int i = 0;i<sections;i++)
 	{
-		tt[(section+SECTIONSIZE*i)>>20] = newCPD(0,(init_pds+256*i));
+		tt[(section+SECTIONSIZE*i)>>20] = newCPTD(0,init_pds+256*i);
+		
+		
+		
 		/*
-		uint32_t tmp = ((uint32_t*)tt)[(section+SECTIONSIZE*i)>>20];
-		tmp = tmp & (~ 0b1111111111);
-		tmp = tmp | (((uint32_t)(init_pds+256*i)) & (~ 0b1111111111));
-		((uint32_t*)tt)[(section+SECTIONSIZE*i)>>20] = tmp;
-		*/
+		tt[(section+SECTIONSIZE*i)>>20] = newCPD(0,(init_pds+256*i));
 		uart_printf("descriptor: %d\n",(*((uint32_t*)&tt[(section+SECTIONSIZE*i)>>20]))&(~ 0b1111111111));
 		uart_printf("section: i: %d, index: %d, address: %d\n",i,(section+SECTIONSIZE*i)>>20,init_pds+256*i);
+		*/
 	}
 	
 	

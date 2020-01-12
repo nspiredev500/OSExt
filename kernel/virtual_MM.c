@@ -4,54 +4,25 @@
 
 
 
-struct coarse_ptd newCPD(unsigned char domain,uint32_t base_address)
-{
-	struct coarse_ptd c;
-	c.typ = 0b01;
-	c.zeros = 0b00;
-	c.one = 0b1;
-	c.domain = domain;
-	c.zero = 0b0;
-	c.base_address = base_address;
-	return c;
-}
-struct large_pd newLPD(unsigned char c,unsigned char b,unsigned char ap,uint16_t base_address)
-{
-	struct large_pd d;
-	d.typ = 0b01;
-	d.b = c;
-	d.c = c;
-	d.ap0 = ap & (0b11);
-	d.ap1 = ap & (0b11 >> 2);
-	d.ap2 = ap & (0b11 >> 4);
-	d.ap3 = ap & (0b11 >> 6);
-	d.zeros = 0b0000;
-	d.base_address = base_address;
-	return d;
-}
 
 
 
-/*
 uint32_t newCPTD(unsigned char domain,uint32_t base_address)
 {
-	
-	
-	
-	
-	
+	const uint32_t cptd_template = 0b100010000000000000000000000000;
+	uint32_t desc = cptd_template;
+	desc = desc | ((domain & 0b1111) << 5) | (base_address & (~ 0b1111111111));
+	return desc;
 }
 
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint16_t base_address)
 {
-	
-	
-	
-	
-	
-	
+	const uint32_t lpd_template = 0b10000000000000000000000000000000;
+	uint32_t desc = lpd_template;
+	desc = desc | ((c & 0b1) << 3) | ((b & 0b1) << 2) | (ap << 4) | (base_address & (~ 0xffffffff));
+	return desc;
 }
-*/
+
 
 
 
