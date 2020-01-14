@@ -39,9 +39,11 @@ int main(int argsn,char **argc)
 	//uart_printf("size: %d\n",sizeof(struct large_page_descriptor));
 	
 	
-	//uart_printf("test: %d\n",test);
-	//uart_printf("test2: %d\n",test2);
-	//uart_printf("test3: %d\n",test3);
+	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
+	
+	uart_printf("test: %d\n",test);
+	uart_printf("test2: %d\n",test2);
+	uart_printf("test3: %d\n",test3);
 	
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
@@ -65,9 +67,13 @@ int main(int argsn,char **argc)
 void initialize()
 {
 	uart_send_string("initializing\n");
+	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
 	
 	
 	
+	
+	// TODO move the descriptors to a permanent location
+	//free_init_pds();
 	
 	
 	

@@ -45,7 +45,7 @@ void *k_memcpy(void *str1,const void *str2, size_t n)
 	char *area2 = (char*) str2;
 	for (size_t i = 0;i<n;i++)
 	{
-		uart_printf("copy: source: %d, dest: %d\n",area2,area1);
+		//uart_printf("copy: source: %d, dest: %d\n",area2,area1);
 		*area1 = *area2;
 		area1++;
 		area2++;

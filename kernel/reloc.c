@@ -22,7 +22,15 @@ static const void *virtual_base_address = 0xf9c00000;
 static const uint32_t PAGESIZE = 1024*64;
 static const uint32_t SECTIONSIZE = 1024*1024;
 
-
+void free_init_pds()
+{
+	if (init_pds_unaligned != NULL)
+	{
+		ti_free(init_pds_unaligned);
+		init_pds = NULL;
+		init_pds_unaligned = NULL;
+	}
+}
 
 void relocate_self(void)
 {
@@ -34,7 +42,7 @@ void relocate_self(void)
 	
 	
 	
-	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+PAGESIZE*3); // extra size to align the kernel on a (large) page boundrary
+	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+PAGESIZE*4); // extra size to align the kernel on a (large) page boundrary
 	void *aligned = (void*) ((malloced_chunk & (~ 0xFFFF))+0x10000);
 	
 	if (malloced_chunk == NULL)
@@ -87,21 +95,21 @@ void relocate_self(void)
 	
 	
 	uint32_t section = ((uint32_t) virtual_base_address);
-	/*
-	for (uint32_t i = 0;i<kernel_size/PAGESIZE;i++)
+	
+	for (uint32_t i = 0;i<(kernel_size/PAGESIZE)+1;i++)
 	{
 		for (int a = 0;a<16;a++)
 		{
-			init_pds[a+i*16] = newLPD(1,1,0b01010101,(((uint32_t) aligned)+i*PAGESIZE)>>16);
+			init_pds[a+i*16] = newLPD(1,1,0b01010101,(((uint32_t) aligned)+i*PAGESIZE));
 		}
-		uart_printf("page: i: %d, address: %d, descriptor: %d\n",i,(((uint32_t) aligned)+i*PAGESIZE)>>16,init_pds[i]);
+		uart_printf("page: i: %d, address: %d, descriptor: %d, descaddr: %d\n",i,(((uint32_t) aligned)+i*PAGESIZE),init_pds[i],init_pds+i);
 	}
-	*/
+	
 	
 	for (int i = 0;i<sections;i++)
 	{
 		tt[(section+SECTIONSIZE*i)>>20] = newCPTD(0,init_pds+256*i);
-		
+		uart_printf("CPTD: %d, addr: %d, pages: %d\n",tt[(section+SECTIONSIZE*i)>>20],tt+((section+SECTIONSIZE*i)>>20),init_pds+256*i);
 		
 		
 		/*
@@ -111,7 +119,7 @@ void relocate_self(void)
 		*/
 	}
 	
-	
+	clear_caches();
 	
 	
 	invalidate_TLB();
@@ -119,11 +127,10 @@ void relocate_self(void)
 	
 	
 	
-	
-	
+	// every variable modified before this point will be copied into the new kernel
 	k_memcpy(virtual_base_address,_EXEC_START,kernel_size);
 	
-	return;
+	
 	
 	int (*new_entry)(int, char**) = (void (*)(void)) (((uint32_t) virtual_base_address)+offset);
 	
