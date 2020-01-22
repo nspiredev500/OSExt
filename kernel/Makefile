@@ -8,7 +8,9 @@ GENZEHN = genzehn
 
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g 
+# ignore unused things to clean warnings up
+GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
 LDFLAGS = -nostdlib -lgcc -static-pie -T ldscript.ld
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 
@@ -36,10 +38,10 @@ remake: clean
 	$(MAKE) all
 
 osext.tns: osext.elf
-	cp osext.elf osext.elf.tmp && \
-	arm-none-eabi-strip --strip-debug osext.elf.tmp && \
-	$(GENZEHN) $(ZEHNFLAGS) --input osext.elf.tmp --output osext.tns && \
-	rm -f osext.elf.tmp
+	cp osext.elf osext-nodebug.elf && \
+	arm-none-eabi-strip --strip-debug osext-nodebug.elf && \
+	$(GENZEHN) $(ZEHNFLAGS) --input osext-nodebug.elf --output osext.tns && \
+	rm osext-nodebug.elf
 
 
 osext.elf: $(OBJS) 

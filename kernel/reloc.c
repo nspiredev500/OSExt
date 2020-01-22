@@ -15,12 +15,11 @@
 static uint32_t *init_pds_unaligned = NULL;
 static uint32_t *init_pds = NULL;
 
-static const void *virtual_base_address = 0xf9c00000;
 
 
 
-static const uint32_t PAGESIZE = 1024*64;
-static const uint32_t SECTIONSIZE = 1024*1024;
+
+
 
 void free_init_pds()
 {
@@ -32,20 +31,33 @@ void free_init_pds()
 	}
 }
 
+
+// somehow the linker variables get changed by relocation, subtracting &_EXEC_START gives the right values
+
+
 void relocate_self(void)
 {
 	// TODO  relocate to a virtual address, by changing the translation table, flushing the tlb and the copying
-	uart_send_string("relocating\n");
-	uint32_t offset = ((uint32_t) main)-((uint32_t) _EXEC_START);
-	uint32_t kernel_size = ((uint32_t) _EXEC_END)-((uint32_t) _EXEC_START);
+	DEBUGPRINTF_1("relocating\n")
+	uint32_t offset = ((uint32_t) main)-((uint32_t) (&_EXEC_START));
+	uint32_t kernel_size = (uint32_t) ((&_EXEC_SIZE)-(&_EXEC_START));
+	DEBUGPRINTF_1("kernel size: %d\n",kernel_size,&_EXEC_SIZE-&_EXEC_START)
+	
+	
+	
+	DEBUGPRINTF_2("text: %d, data: %d, bss: %d\n",&_TEXT_SIZE-&_EXEC_START,&_DATA_SIZE-&_EXEC_START,&_BSS_SIZE-&_EXEC_START)
+	//DEBUGPRINTF_1("main: %d, exec_start: %d\n",main,&_EXEC_START)
+	
+	DEBUGPRINTF_2("got: %d, gotsize: %d\n",&_GOT_START-&_EXEC_START,&_GOT_SIZE)
 	
 	
 	
 	
-	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+PAGESIZE*4); // extra size to align the kernel on a (large) page boundrary
-	void *aligned = (void*) ((malloced_chunk & (~ 0xFFFF))+0x10000);
 	
-	if (malloced_chunk == NULL)
+	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+SMALL_PAGE_SIZE*4); // extra size to align the kernel on a (large) page boundrary
+	void *aligned = (void*) makeSmallPageAligned((void*) malloced_chunk);
+	
+	if (((void*) malloced_chunk) == NULL)
 	{
 		uart_send_string("Not enough memory!\n");
 		return;
@@ -54,25 +66,17 @@ void relocate_self(void)
 	
 	
 	
-	uint32_t sections = (kernel_size/SECTIONSIZE)+1;
+	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
 	
-	init_pds_unaligned = ti_malloc(sizeof(uint32_t)*sections*256+16+1024*2);
+	init_pds_unaligned = ti_calloc(sizeof(uint32_t)*sections*256+16+1024*2);
 	if (init_pds_unaligned == NULL)
 	{
-		free(malloced_chunk);
+		ti_free((void*) malloced_chunk);
 		uart_send_string("Not enough memory!\n");
 		return;
 	}
-	k_memset(init_pds_unaligned,0,sizeof(uint32_t)*sections*256+16+1024*2);
-	if ((((uint32_t) init_pds_unaligned) & 0b1111111111) != 0) // align to 1k boundrary
-	{
-		init_pds = (((uint32_t) init_pds_unaligned) & (~ 0b1111111111))+0b10000000000;
-	}
-	else
-	{
-		init_pds = init_pds_unaligned;
-	}
-	uart_printf("pds: %d\n",init_pds);
+	init_pds = makeSmallPageAligned(init_pds_unaligned);
+	DEBUGPRINTF_1("pds: %d\n",init_pds)
 	
 	
 	
@@ -83,11 +87,11 @@ void relocate_self(void)
 	
 	
 	register uint32_t tt_base asm("r0");
-	asm("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-	uart_printf("tt_base: %d\n",tt_base);
-	uint32_t *tt = tt_base;
+	DEBUGPRINTF_3("tt_base: %d\n",tt_base)
+	uint32_t *tt = (uint32_t*) tt_base;
 	
 	
 	
@@ -96,27 +100,17 @@ void relocate_self(void)
 	
 	uint32_t section = ((uint32_t) virtual_base_address);
 	
-	for (uint32_t i = 0;i<(kernel_size/PAGESIZE)+1;i++)
+	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+1;i++)
 	{
-		for (int a = 0;a<16;a++)
-		{
-			init_pds[a+i*16] = newLPD(1,1,0b01010101,(((uint32_t) aligned)+i*PAGESIZE));
-		}
-		uart_printf("page: i: %d, address: %d, descriptor: %d, descaddr: %d\n",i,(((uint32_t) aligned)+i*PAGESIZE),init_pds[i],init_pds+i);
+		init_pds[i] = newSPD(1,1,0b01010101,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE));
+		DEBUGPRINTF_3("page: i: %d, address: %d, descriptor: %d, descaddr: %d\n",i,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE),init_pds[i],init_pds+i)
 	}
 	
 	
-	for (int i = 0;i<sections;i++)
+	for (uint32_t i = 0;i<sections;i++)
 	{
-		tt[(section+SECTIONSIZE*i)>>20] = newCPTD(0,init_pds+256*i);
-		uart_printf("CPTD: %d, addr: %d, pages: %d\n",tt[(section+SECTIONSIZE*i)>>20],tt+((section+SECTIONSIZE*i)>>20),init_pds+256*i);
-		
-		
-		/*
-		tt[(section+SECTIONSIZE*i)>>20] = newCPD(0,(init_pds+256*i));
-		uart_printf("descriptor: %d\n",(*((uint32_t*)&tt[(section+SECTIONSIZE*i)>>20]))&(~ 0b1111111111));
-		uart_printf("section: i: %d, index: %d, address: %d\n",i,(section+SECTIONSIZE*i)>>20,init_pds+256*i);
-		*/
+		tt[(section+SECTION_SIZE*i)>>20] = newCPTD(0,(uint32_t) (init_pds+256*i));
+		DEBUGPRINTF_3("CPTD: %d, addr: %d, pages: %d\n",tt[(section+SECTION_SIZE*i)>>20],tt+((section+SECTION_SIZE*i)>>20),init_pds+256*i)
 	}
 	
 	clear_caches();
@@ -128,23 +122,23 @@ void relocate_self(void)
 	
 	
 	// every variable modified before this point will be copied into the new kernel
-	k_memcpy(virtual_base_address,_EXEC_START,kernel_size);
+	k_memcpy((void*) virtual_base_address,&_EXEC_START,kernel_size);
 	
 	
 	
-	int (*new_entry)(int, char**) = (void (*)(void)) (((uint32_t) virtual_base_address)+offset);
+	int (*new_entry)(int, char**) = (int (*)(int, char**)) (((uint32_t) virtual_base_address)+offset);
 	
-	uart_printf("relocated to %d\n",aligned);
+	DEBUGPRINTF_1("relocated to %d\n",aligned);
 	
-	uart_printf("unaligned: %d\n",malloced_chunk);
+	DEBUGPRINTF_1("unaligned: %d\n",malloced_chunk);
 	
 	
-	uart_send_string("entering relocated kernel\n");
+	DEBUGPRINTF_1("entering relocated kernel\n");
 	
 	clear_caches();
 	
 	new_entry(1,(char**)0x53544c41);
-	uart_send_string("return from relocated kernel\n");
+	DEBUGPRINTF_1("return from relocated kernel\n");
 	
 	
 	

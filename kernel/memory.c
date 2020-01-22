@@ -1,7 +1,7 @@
 #include "kernel.h"
 
 
-static inline int wa_syscall(int nr, int p1)
+static inline int wa_syscall(int nr, uint32_t p1)
 {
 	register int r0 asm("r0") = p1;
   
@@ -16,14 +16,34 @@ static inline int wa_syscall(int nr, int p1)
 
 void *ti_malloc(uint32_t size) // not 8-byte-aligned !
 {
-	return wa_syscall(e_malloc,size);
+	return (void*) wa_syscall(e_malloc,size);
 }
 
 void ti_free(void *ptr)
 {
-	return wa_syscall(e_free,ptr);
+	wa_syscall(e_free,(uint32_t) ptr);
 }
 
+void *ti_calloc(uint32_t size) // not 8-byte-aligned !
+{
+	void* p = (void*) wa_syscall(e_malloc,size);
+	if (p == NULL)
+	{
+		return NULL;
+	}
+	k_memset(p,0,(size_t) size);
+	return p;
+}
+
+
+void* alignAddress(void* address,uint32_t alignment)
+{
+	
+	
+	
+	
+	
+}
 
 
 void *k_memset(void *str,int c, size_t n)
@@ -73,6 +93,21 @@ int k_memcmp(const void *str1, const void *str2, size_t n)
 	}
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

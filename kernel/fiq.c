@@ -23,7 +23,7 @@ int addFIQFunction(void (*function)())
 	return 0;
 }
 
-
+// TODO but the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
 void installFIQHandler()
 {
 	// TODO make the fiq handler

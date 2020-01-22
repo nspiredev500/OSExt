@@ -9,9 +9,9 @@ static void __attribute__ ((noreturn)) reset(void) {
 }
 
 
-void __attribute__ ((noreturn)) panic(void)
+void __attribute__ ((noreturn)) panic(char *msg)
 {
-	
+	uart_send_string(msg);
 	
 	
 	

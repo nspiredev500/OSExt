@@ -2,7 +2,7 @@
 #define PANIC_H
 
 
-void kernel_panic();
+void kernel_panic(char *msg);
 
 
 

@@ -3,52 +3,42 @@
 
 
 
-
+// some variables to test relocation
 static uint32_t test = 20;
 
 static uint32_t *test2 = &test;
 
 static uint32_t *test3 = NULL;
-
-
-
+// stack grows downwards!
+/*
+void teststack(void* t)
+{
+	int h = 1;
+	if (&h < t)
+	{
+		uart_printf("stack grows downwards!\n");
+	}
+	else
+	{
+		uart_printf("stack grows upwards!\n");
+	}
+}
+*/
+// because we return with main, every error here is still recoverable without a kernel panic
 int main(int argsn,char **argc)
 {
-	
-	
-	//test to see whether the pointer gets updated by relocation
-	/*
-	char buff[40];
-	uint32_t len = uint_to_ascii(&test,buff);
-	uart_send_string_length(buff,len);
-	uart_send('\n');
-	*/
-	
-	/*
-	char buff[40];
-	uint32_t len = uint_to_ascii(_EXEC_START,buff);
-	uart_send_string_length(buff,len);
-	uart_send('\n');
-	*/
-	
-	
-	//uart_printf("size: %d, %d, %d\n",sizeof(struct section_descriptor),sizeof(struct coarse_page_table_descriptor),sizeof(struct fine_page_table_descriptor));
-	
-	
-	
-	//uart_printf("size: %d\n",sizeof(struct large_page_descriptor));
-	
-	
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
 	
-	uart_printf("test: %d\n",test);
-	uart_printf("test2: %d\n",test2);
-	uart_printf("test3: %d\n",test3);
+	//int t = 0;
+	//teststack(&t);
+	
+	
+	
 	
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
 	{
-		uart_send_string("relocated\n");
+		DEBUGPRINTF_1("relocated\n")
 		// relocation finished or already done by loader
 		initialize();
 	}
@@ -63,11 +53,22 @@ int main(int argsn,char **argc)
 
 
 
-
+// because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
-	uart_send_string("initializing\n");
+	DEBUGPRINTF_1("initializing\n")
 	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
+	
+	
+	
+	
+	allocPageblock(64);
+	allocPageblock(64);
+	allocPageblock(64); // reserve 0.75mb
+	
+	
+	
+	initializeKernelSpace();
 	
 	
 	
