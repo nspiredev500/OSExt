@@ -28,8 +28,9 @@
 #include "start.h"
 #include "string.h"
 #include "math.h"
-#include "dma.h"
-#include "heap.h"
+#include "slab.h"
+#include "LinkedList.h"
+
 
 
 

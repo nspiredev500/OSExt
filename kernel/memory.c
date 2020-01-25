@@ -45,6 +45,16 @@ void* alignAddress(void* address,uint32_t alignment)
 	
 }
 
+void* align4Bytes(void* address)
+{
+	uint32_t adr = (uint32_t) address;
+	if ((adr & 0b11) == 0)
+	{
+		return address;
+	}
+	return (void*) ((adr & (~ 0b11)) + 0b100);
+}
+
 
 void *k_memset(void *str,int c, size_t n)
 {
@@ -94,10 +104,10 @@ int k_memcmp(const void *str1, const void *str2, size_t n)
 	return 0;
 }
 
-
-
-
-
+void* (*memset)(void* str,int c,size_t n) = k_memset;
+void* (*memcpy)(void* str,void* str2,size_t n) = k_memcpy;
+void* (*memmove)(void* str,void* str2,size_t n) = k_memcpy;
+int (*memcmp)(void* str,void* str2,size_t n) = k_memcmp;
 
 
 

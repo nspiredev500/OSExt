@@ -22,9 +22,15 @@ uint32_t k_pow(uint32_t a,uint32_t b)
 	}
 	return sum;
 }
-uint32_t k_pow_of_2(uint32_t exp)
+
+uint32_t pow_of_2(uint32_t exp)
 {
-	return 0xffffffff >> (32-exp);
+	return 0b1 << exp;
+}
+
+uint32_t set_bits(uint32_t b)
+{
+	return 0xffffffff >> (32-b);
 }
 
 

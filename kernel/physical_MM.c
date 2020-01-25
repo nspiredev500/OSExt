@@ -9,10 +9,13 @@ const uint32_t SECTION_SIZE = 1024*1024;
 struct pageblock {
 	void* unaligned;
 	void* start; // first page
-	uint16_t size; // number of pages in block
-	uint64_t used; // one bit per page, so no more than 64 pages per block
+	uint8_t size; // number of pages in block
+	uint64_t used; // one bit per page
+	uint64_t used2;
 	uint64_t dirty; // one bit per page
+	uint64_t dirty2;
 	uint64_t pageout;
+	uint64_t pageout2;
 };
 
 
@@ -76,25 +79,10 @@ static void removePageblock(struct pageblock block)
 // use ti_malloc, so the ti-os doesn't use those pages
 bool allocPageblock(uint32_t size)
 {
-	// TODO malloc pages, plus alignment
-	
-	if (size > 64)
+	if (size > 128)
 	{
 		return false;
 	}
-	
-	/*
-	// TODO first malloc some space and check the pointer, then malloc the chunk before a page boundrary, then malloc the pages and free the chunk before them
-	void *tmp = ti_malloc(8);
-	if (tmp == NULL)
-	{
-		return false;
-	}
-	// void *aligned = (void*) ((malloced_chunk & (~ 0xFFFF))+0x10000);
-	uint32_t padding = (((uint32_t) tmp)-((((uint32_t) tmp) & (~ 0xffff))+0x10000))-0xff;
-	ti_free(tmp);
-	*/
-	
 	struct pageblock b;
 	b.unaligned = ti_malloc(SMALL_PAGE_SIZE*(size+2));
 	if (b.unaligned == NULL)
@@ -106,22 +94,85 @@ bool allocPageblock(uint32_t size)
 	b.used = 0b0;
 	b.dirty = 0b0;
 	b.pageout = 0b0;
+	b.used2 = 0b0;
+	b.dirty2 = 0b0;
+	b.pageout2 = 0b0;
 	if (! addPageBlock(b))
 	{
 		ti_free(b.unaligned);
+		return false;
 	}
 	return true;
 }
 
-void* DMAPageblock(uint32_t size)
+
+void* useConsecutivePages(uint32_t size,uint32_t alignment)
 {
-	void* unaligned = ti_malloc(SMALL_PAGE_SIZE*(size+2));
-	if (unaligned == NULL)
+	uint32_t alignmentbits = 0;
+	for (uint32_t i = alignment;i & 0b1 != 1;i>>1)
 	{
-		return NULL;
+		alignmentbits++;
 	}
-	return makeSmallPageAligned(unaligned);
+	alignmentbits = set_bits(alignmentbits);
+	for (int i = 0;i<blockindex;i++)
+	{
+		void *page = pages[blockindex].start;
+		for (int a = 0;a<pages[blockindex].size;a++)
+		{
+			if (((uint32_t)page) & alignmentbits == 0)
+			{
+				bool free = true;
+				for (int b = 0;b<size;b++)
+				{
+					if (isPageUsed(page+SMALL_PAGE_SIZE*b))
+					{
+						free = false;
+						break;
+					}
+				}
+				if (free)
+				{
+					for (int b = 0;b<size;b++)
+					{
+						setPageUsed(page+SMALL_PAGE_SIZE*b);
+					}
+					return page;
+				}
+			}
+			page = page + SMALL_PAGE_SIZE;
+		}
+	}
+	return NULL;
 }
+
+
+// allocates 4 small pages on a 16kb boundary
+void* allocVirtualAddressSpace()
+{
+	return useConsecutivePages(4,0x4000);
+	/*
+	for (int i = 0;i<blockindex;i++)
+	{
+		void *page = pages[blockindex].start;
+		for (int a = 0;a<pages[blockindex].size;a++)
+		{
+			// check if it is on a 16kb boundary and it and the next 3 pages aren't used
+			if (page & 0x3fff == 0 && ! isPageUsed(page) && ! isPageUsed(page+SMALL_PAGE_SIZE) && ! isPageUsed(page+SMALL_PAGE_SIZE*2) && ! isPageUsed(page+SMALL_PAGE_SIZE*3))
+			{
+				setPageUsed(page);
+				setPageUsed(page+SMALL_PAGE_SIZE);
+				setPageUsed(page+SMALL_PAGE_SIZE*2);
+				setPageUsed(page+SMALL_PAGE_SIZE*3);
+				return page;
+			}
+			page = page + SMALL_PAGE_SIZE;
+		}
+	}
+	return NULL;
+	*/
+}
+
+
 
 
 // pageblock is not visible in the other files, and freeing pageblocks should only
@@ -133,6 +184,41 @@ static void freePageblock(struct pageblock block)
 }
 
 
+static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
+{
+	uint64_t *p;
+	if (i < 64)
+	{
+		p = a;
+	}
+	else
+	{
+		p = b;
+		i -= 64;
+	}
+	if (value)
+	{
+		*p = *p | (0b1 << i);
+	}
+	else
+	{
+		*p = *p & (~ (0b1 << i));
+	}
+}
+static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
+{
+	uint64_t *p;
+	if (i < 64)
+	{
+		p = a;
+	}
+	else
+	{
+		p = b;
+		i -= 64;
+	}
+	return (*p >> i) & 0b1;
+}
 
 
 
@@ -142,24 +228,40 @@ void* usePage()
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
 		struct pageblock b = pages[blockindex];
-		if (b.used < k_pow_of_2(b.size))
+		if (b.used < set_bits(b.size))
 		{
 			for (uint32_t i = 0;i<b.size;i++)
 			{
-				if (((b.used >> i) & 0b1) == 0)
+				if (getBit128(&b.used,&b.used2,i) == 0)
 				{
+					setBit128(&b.used,&b.used2,i,true);
 					void* page = b.start+i*SMALL_PAGE_SIZE;
 					return page;
 				}
 			}
-			
-			
 		}
 	}
 	return NULL;
 }
 
-
+void setPageUsed(void* page)
+{
+	for (uint32_t i = 0;i<blockindex;i++)
+	{
+		struct pageblock b = pages[blockindex];
+		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		{
+			for (uint32_t i = 0;i<b.size;i++)
+			{
+				if (page == b.start+SMALL_PAGE_SIZE*i)
+				{
+					setBit128(&b.used,&b.used2,i,true);
+					return;
+				}
+			}
+		}
+	}
+}
 
 
 void setPageUnused(void* page)
@@ -173,13 +275,40 @@ void setPageUnused(void* page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					b.used = b.used & (~ (0b1 << i));
+					setBit128(&b.used,&b.used2,i,false);
 					return;
 				}
 			}
 		}
 	}
 }
+// returns whether a page is used, or true if not found (so you don't use a unallocated page)
+bool isPageUsed(void *page)
+{
+	for (uint32_t i = 0;i<blockindex;i++)
+	{
+		struct pageblock b = pages[blockindex];
+		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		{
+			for (uint32_t i = 0;i<b.size;i++)
+			{
+				if (page == b.start+SMALL_PAGE_SIZE*i)
+				{
+					if (getBit128(&b.used,&b.used2,i) != 0)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
+
 
 bool isDirty(void *page)
 {
@@ -192,7 +321,7 @@ bool isDirty(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					if ((b.dirty & (0b1 << i)) != 0)
+					if (getBit128(&b.dirty,&b.dirty2,i) != 0)
 					{
 						return true;
 					}
@@ -218,7 +347,7 @@ void clearDirty(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					b.dirty = b.dirty & (~ (0b1 << i));
+					setBit128(&b.dirty,&b.dirty2,i,false);
 					return;
 				}
 			}
@@ -237,7 +366,7 @@ void setDirty(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					b.dirty = b.dirty | (0b1 << i);
+					setBit128(&b.dirty,&b.dirty2,i,true);
 					return;
 				}
 			}
@@ -256,7 +385,7 @@ bool isPagedOut(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					if ((b.pageout & (0b1 << i)) != 0)
+					if (getBit128(&b.pageout,&b.pageout2,i) != 0)
 					{
 						return true;
 					}
@@ -282,7 +411,7 @@ void clearPageout(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					b.pageout = b.pageout & (~ (0b1 << i));
+					setBit128(&b.pageout,&b.pageout2,i,false);
 					return;
 				}
 			}
@@ -301,7 +430,7 @@ void setPagedOut(void *page)
 			{
 				if (page == b.start+SMALL_PAGE_SIZE*i)
 				{
-					b.pageout = b.pageout | (0b1 << i);
+					setBit128(&b.pageout,&b.pageout2,i,true);
 					return;
 				}
 			}

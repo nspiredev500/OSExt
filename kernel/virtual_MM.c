@@ -1,14 +1,15 @@
 #include "kernel.h"
 
 
-
-const void *virtual_base_address = (const void*) 0xf9c00000;
+const void *virtual_base_address = (const void*) 0xe0000000;
 
 
 // store the coarse page descriptors as a table to reuse them
 // in every virtual address space, to save memory and have the kernel mapped at all times
-static uint32_t kernel_cpdts_size = 0;
-static uint32_t **kernel_cpdts = NULL;
+
+
+
+
 
 
 struct address_space kernel_space;
@@ -20,6 +21,11 @@ void initializeKernelSpace()
 	{
 		return;
 	}
+	
+	initSlabAllocator();
+	
+	
+	
 	register uint32_t tt_base asm("r0");
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	kernel_space.tt = (uint32_t*) tt_base;

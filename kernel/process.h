@@ -10,11 +10,10 @@ struct Process;
 
 
 struct Process {
-	struct Thread main;
-	unsigned char status;
-	unsigned short pid;
-	unsigned int nthreads; // additional threads
+	uint8_t status;
+	uint16_t pid;
 	struct Thread *threads;
+	struct Process *next;
 };
 
 

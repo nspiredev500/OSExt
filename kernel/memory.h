@@ -11,7 +11,7 @@ void *k_memcpy(void *str1,const void *str2, size_t n);
 int k_memcmp(const void *str1, const void *str2, size_t n);
 
 
-
+void* align4Bytes(void* address);
 
 
 

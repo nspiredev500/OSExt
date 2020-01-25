@@ -3,6 +3,26 @@
 
 
 
+
+
+asm(
+".extern (main)\n"
+"__init_lr: .word 0 \n"
+"__init_sp: .word 0 \n"
+"__entry: .global __entry\n"
+//" .long 0xE1212374\n" // bkpt
+" str lr, __init_lr\n"
+" str sp, __init_sp\n"
+" b main"
+);
+
+
+
+
+
+
+
+
 // some variables to test relocation
 static uint32_t test = 20;
 
@@ -35,7 +55,6 @@ int main(int argsn,char **argc)
 	
 	
 	
-	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
 	{
 		DEBUGPRINTF_1("relocated\n")
@@ -62,9 +81,10 @@ void initialize()
 	
 	
 	
-	allocPageblock(64);
-	allocPageblock(64);
-	allocPageblock(64); // reserve 0.75mb
+	allocPageblock(128);
+	allocPageblock(128); // allocate 1mb
+	
+	
 	
 	
 	

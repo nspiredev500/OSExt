@@ -86,7 +86,7 @@ extern "C" int zehn_load(NUC_FILE *file, void **mem_ptr, int (**entry)(int,char*
 	if(nuc_fread(&header, sizeof(header), 1, file) != 1)
 		return 1;
 	
-	//printf("Zehn header: signature: %x\nversion: %u\nsize: %u\nalloc_size: %u\n",header.signature,header.version,header.file_size,header.alloc_size);
+	printf("Zehn header: signature: %x\nversion: %u\nsize: %u\nalloc_size: %u\n",header.signature,header.version,header.file_size,header.alloc_size);
 	
 	
 	if(header.signature != ZEHN_SIGNATURE || header.version != ZEHN_VERSION || header.file_size > header.alloc_size)

@@ -1,17 +1,23 @@
 DEBUG = FALSE
 
-GCC = nspire-gcc
-AS  = nspire-as
-GXX = nspire-g++
-LD  = nspire-ld
+#GCC = nspire-gcc
+#AS  = nspire-as
+#GXX = nspire-g++
+#LD  = nspire-ld
+GCC = arm-none-eabi-gcc
+AS = arm-none-eabi-as
+GXX = arm-none-eabi-g++
+LD = arm-none-eabi-gcc
 GENZEHN = genzehn
 
 
+NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g 
+
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE)
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
-LDFLAGS = -nostdlib -lgcc -static-pie -T ldscript.ld
+LDFLAGS = -nostdlib -static-libgcc -lgcc -static-pie -T ldscript.ld
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))

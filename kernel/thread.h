@@ -11,8 +11,9 @@ struct Thread;
 
 struct Thread {
 	uint32_t regs[16];
-	unsigned short tid;
-	unsigned char status;
+	uint16_t tid;
+	uint8_t status;
+	struct Thread *next;
 };
 
 

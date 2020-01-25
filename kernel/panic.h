@@ -3,6 +3,10 @@
 
 
 void kernel_panic(char *msg);
+void setNotReturnable();
+void abort(void);
+
+
 
 
 
