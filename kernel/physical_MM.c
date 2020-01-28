@@ -102,6 +102,8 @@ bool allocPageblock(uint32_t size)
 		ti_free(b.unaligned);
 		return false;
 	}
+	DEBUGPRINTF_2("pageblock added, size: %d\n",b.size)
+	DEBUGPRINTF_2("pageblock 0, size: %d\n",pages[0].size)
 	return true;
 }
 
@@ -113,7 +115,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 	{
 		alignmentbits++;
 	}
-	alignmentbits = set_bits(alignmentbits);
+	alignmentbits = set_bits32(alignmentbits);
 	for (int i = 0;i<blockindex;i++)
 	{
 		void *page = pages[blockindex].start;
@@ -199,10 +201,12 @@ static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 	if (value)
 	{
 		*p = *p | (0b1 << i);
+		DEBUGPRINTF_3("newp: %d\n",*p)
 	}
 	else
 	{
 		*p = *p & (~ (0b1 << i));
+		DEBUGPRINTF_3("newp: %d\n",*p)
 	}
 }
 static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
@@ -217,7 +221,7 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 		p = b;
 		i -= 64;
 	}
-	return (*p >> i) & 0b1;
+	return ((*p) >> i) & 0b1;
 }
 
 
@@ -225,21 +229,25 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 // get a pointer to a unused page and set it to used
 void* usePage()
 {
+	DEBUGPRINTF_3("blockindex: %d\n",blockindex)
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
-		if (b.used < set_bits(b.size))
-		{
-			for (uint32_t i = 0;i<b.size;i++)
+		struct pageblock *b = &pages[i];
+		DEBUGPRINTF_3("used: %d, size: %d\n",b->used,b->size)
+		//if (b.used < set_bits64(b.size) || b.used2 < set_bits64(b.size-64) )
+		//{
+			for (uint32_t a = 0;a<b->size;a++)
 			{
-				if (getBit128(&b.used,&b.used2,i) == 0)
+				DEBUGPRINTF_1("a: %d, used: %d, used2: %d\n",a,b->used,b->used2)
+				if (getBit128(&b->used,&b->used2,a) == 0)
 				{
-					setBit128(&b.used,&b.used2,i,true);
-					void* page = b.start+i*SMALL_PAGE_SIZE;
+					setBit128(&b->used,&b->used2,a,true);
+					void* page = b->start+a*SMALL_PAGE_SIZE;
+					DEBUGPRINTF_3("page: %d\n",page)
 					return page;
 				}
 			}
-		}
+		//}
 	}
 	return NULL;
 }

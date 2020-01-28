@@ -40,12 +40,42 @@ bool removeLinkedListEntry(LinkedList **list, LinkedList *e)
 	return false;
 }
 
+LinkedList* getLinkedListEntry(LinkedList **list,uint32_t index)
+{
+	LinkedList *next = *list;
+	if (next == NULL)
+	{
+		return NULL;
+	}
+	for (uint32_t i = 0;i<index;i++)
+	{
+		next = next->next;
+		if (next == NULL)
+		{
+			return NULL;
+		}
+	}
+	return next;
+}
 
 
-
-
-
-
+LinkedList* searchLinkedListEntry(LinkedList **list,void* data,uint32_t *index)
+{
+	int i = 0;
+	LinkedList *next = *list;
+	while (next != NULL)
+	{
+		if (next->data == data)
+		{
+			*index = i;
+			return next;
+		}
+		next = next->next;
+		i++;
+	}
+	*index = 0;
+	return NULL;
+}
 
 
 

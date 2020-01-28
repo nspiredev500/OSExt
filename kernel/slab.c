@@ -5,9 +5,10 @@
 
 
 const void *kernel_heap_start = (const void*) 0xe8000000;
+void* kernel_heap_next_page = (void*) (0xe8000000);
+
 
 typedef struct cache_entry cache_entry;
-
 typedef struct cache_entry {
 	cache_entry *next;
 	void *data;
@@ -89,14 +90,24 @@ static cache_entry *process_cache_unused = NULL;
 static cache_entry *thread_cache = NULL;
 static cache_entry *thread_cache_unused = NULL;
 
+static cache_entry *linkedlist_cache = NULL;
+static cache_entry *linkedlist_cache_unused = NULL;
 
 
-static void refillCacheEntries(void *page,cache_entry **cache,uint32_t size)
+
+static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size);
+static void refillCacheEntries(cache_entry **cache,uint32_t size);
+static void refillUnusedCacheEntriesWithPage(void *page);
+static void refillUnusedCacheEntries();
+
+
+
+static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size)
 {
 	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
 	{
 		// TODO allocate new page and refill the cache entries
-		
+		panic("not enough empty cache entries left!\n");
 	}
 	for (int i = 0;i<SMALL_PAGE_SIZE;i+=size)
 	{
@@ -108,7 +119,17 @@ static void refillCacheEntries(void *page,cache_entry **cache,uint32_t size)
 	}
 }
 
-static void refillUnusedCacheEntries(void *page)
+static void refillCacheEntries(cache_entry **cache,uint32_t size)
+{
+	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
+	{
+		// TODO allocate new page and refill the cache entries
+		panic("not enough empty cache entries left!\n");
+	}
+	
+}
+
+static void refillUnusedCacheEntriesWithPage(void *page)
 {
 	for (int i = 0;i<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
 	{
@@ -120,11 +141,38 @@ static void refillUnusedCacheEntries(void *page)
 	}
 }
 
+static void refillUnusedCacheEntries()
+{
+	if (((uint32_t) kernel_heap_next_page) % SECTION_SIZE == 0) // new coarse page table needed
+	{
+		if (cpt_cache_unused == NULL)
+		{
+			panic("no coarse page table cached for refilling unused cache entries!");
+		}
+		uint32_t tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+		uint32_t *tt = (uint32_t*) tt_base;
+		
+		
+		uint32_t* cpt = requestCPT();
+		
+		k_memset(cpt,0,256*4);
+		
+		
+		
+		
+		
+		
+		
+	}
+}
 
 void initSlabAllocator()
 {
-	uint32_t *tmp_pds_unaligned = ti_malloc(256*4+16);
-	uint32_t *tmp_pds = (uint32_t*) ((((uint32_t)tmp_pds_unaligned) & (~ 0b11))+ 0b100);
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	
+	
+	uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
+	uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
 	
 	register uint32_t tt_base asm("r0");
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
@@ -133,7 +181,7 @@ void initSlabAllocator()
 	uint32_t *tt = (uint32_t*) tt_base;
 	
 	
-	k_memset(tmp_pds_unaligned,0,256*4+16);
+	k_memset(tmp_pds_unaligned,0,256*4+1024*2);
 	
 	
 	
@@ -151,37 +199,55 @@ void initSlabAllocator()
 	
 	
 	
-	page = usePage();
+	void* page2 = usePage();
 	
-	if (page == NULL)
+	if (page2 == NULL)
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	tmp_pds[1] = newSPD(1,1,0b01010101,page);
-	
-	invalidate_TLB();
+	tmp_pds[1] = newSPD(1,1,0b01010101,page2);
 	
 	
 	
-	refillUnusedCacheEntries(kernel_heap_start);
-	refillCacheEntries(kernel_heap_start+SMALL_PAGE_SIZE,&cpt_cache_unused,1024);
+	void* page3 = usePage();
 	
-	cache_entry *e = cpt_cache_unused;
-	if (e == NULL)
+	if (page3 == NULL)
 	{
-		DEBUGPRINTF_1("no coarse page table available for allocator!\n");
+		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	removeCacheEntry(&cpt_cache_unused,e);
-	addCacheEntry(&cpt_cache,e);
+	tmp_pds[2] = newSPD(1,1,0b01010101,page3);
 	
-	k_memcpy(e->data,tmp_pds,sizeof(uint32_t)*2);
-	tt[((uint32_t) kernel_heap_start)>>20] = newCPTD(0,e->data);
+	void* page4 = usePage();
+	
+	if (page4 == NULL)
+	{
+		DEBUGPRINTF_1("no page available for the slab allocator!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
+	tmp_pds[3] = newSPD(1,1,0b01010101,page4);
+	
+	
+	clear_caches();
 	
 	invalidate_TLB();
+	
+	DEBUGPRINTF_1("first 4 pages allocated!\n");
+	//asm(".long 0xE1212374"); // bkpt
+	
+	refillUnusedCacheEntriesWithPage(kernel_heap_start);
+	refillCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE,&cpt_cache_unused,1024);
+	refillUnusedCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE*2);
+	refillCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE*3,&linkedlist_cache_unused,sizeof(LinkedList));
+	kernel_heap_next_page += SMALL_PAGE_SIZE*4;
+	
+	
+	
+	migrateKernelCPT(kernel_heap_start,tmp_pds,4);
 	
 	
 	
@@ -225,11 +291,37 @@ void ensureFreeCacheEntries(cache_entry **cache)
 }
 
 
-uint32_t* requestCPT()
+
+LinkedList* requestLinkedListEntry()
+{
+	if (linkedlist_cache_unused == NULL)
+	{
+		refillCacheEntries(&linkedlist_cache_unused,1024);
+	}
+	cache_entry *c = linkedlist_cache_unused;
+	removeCacheEntry(&linkedlist_cache_unused,c);
+	addCacheEntry(&linkedlist_cache,c);
+	return c->data;
+}
+
+void freeLinkedListEntry(void* list)
 {
 	
 	
 	
+	
+}
+
+uint32_t* requestCPT()
+{
+	if (cpt_cache_unused == NULL)
+	{
+		refillCacheEntries(&cpt_cache_unused,1024);
+	}
+	cache_entry *c = cpt_cache_unused;
+	removeCacheEntry(&cpt_cache_unused,c);
+	addCacheEntry(&cpt_cache,c);
+	return c->data;
 }
 
 void freeCPT(void* cpt)

@@ -11,6 +11,9 @@
 
 #include "process.h"
 #include "thread.h"
+#include "LinkedList.h"
+
+
 
 #include "scheduler.h"
 #include "watchdog.h"
@@ -29,9 +32,6 @@
 #include "string.h"
 #include "math.h"
 #include "slab.h"
-#include "LinkedList.h"
-
-
 
 
 
@@ -66,6 +66,11 @@ const uint32_t SECTION_SIZE;
 
 
 #define DEBUGLEVEL 3
+
+
+
+
+
 
 #if DEBUGLEVEL == 0
 	#define DEBUGPRINTF_1(...) 

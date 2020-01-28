@@ -13,6 +13,10 @@ struct address_space {
 	struct cpt *page_tables; // for mapped pages,except kernel pages, because these page tables can be reused
 };
 
+void addVirtualKernelPage(void* page, void* virtual_address);
+void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
+
+
 
 uint32_t newCPTD(unsigned char domain,uint32_t base_address);
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
@@ -22,7 +26,7 @@ void invalidate_TLB();
 void clear_caches();
 
 
-
+void* getPhysicalAddress(uint32_t* space,void* address);
 
 
 
