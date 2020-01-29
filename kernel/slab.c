@@ -47,16 +47,25 @@ static void addCacheEntry(cache_entry **list, cache_entry *e)
 // return true if the cache entry was found (and removed)
 static bool removeCacheEntry(cache_entry **list, cache_entry *e)
 {
+	if (*list == NULL)
+	{
+		return false;
+	}
 	if (*list == e)
 	{
 		*list = (*list)->next;
 		return true;
 	}
 	cache_entry *next = *list;
-	while (next->next != NULL)
+	while (next != NULL)
 	{
 		if (next->next == e)
 		{
+			if (next->next == NULL)
+			{
+				next->next = NULL;
+				return true;
+			}
 			next->next = (next->next)->next; // override the next value so it points after the removed entry
 			return true;
 		}
@@ -64,6 +73,31 @@ static bool removeCacheEntry(cache_entry **list, cache_entry *e)
 	}
 	return false;
 }
+
+static cache_entry* removeCacheEntryByData(cache_entry **list, void *data)
+{
+	if (*list == NULL)
+	{
+		return NULL;
+	}
+	cache_entry *next = *list;
+	while (next != NULL)
+	{
+		if (next->data == data)
+		{
+			if (next->next == NULL)
+			{
+				next->next = NULL;
+				return next;
+			}
+			next->next = (next->next)->next; // override the next value so it points after the removed entry
+			return next;
+		}
+		next = next->next;
+	}
+	return NULL;
+}
+
 
 // we need a cache for the cache entries, too
 static cache_entry *unused_entries = NULL;
@@ -74,9 +108,13 @@ static cache_entry *cpt_cache = NULL;
 static cache_entry *cpt_cache_unused = NULL;
 
 
-// virtual address space cache
+// address space struct cache
 static cache_entry *address_space_cache = NULL;
 static cache_entry *address_space_cache_unused = NULL;
+
+// virtual address space cache
+static cache_entry *translation_table_cache = NULL;
+static cache_entry *translation_table_cache_unused = NULL;
 
 
 static cache_entry *lcd_framebuffer_cache = NULL;
@@ -101,7 +139,7 @@ static void refillUnusedCacheEntriesWithPage(void *page);
 static void refillUnusedCacheEntries();
 
 
-
+// only supports small structures that fir into one page
 static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size)
 {
 	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
@@ -119,13 +157,20 @@ static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t s
 	}
 }
 
+
+
 static void refillCacheEntries(cache_entry **cache,uint32_t size)
 {
 	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
 	{
-		// TODO allocate new page and refill the cache entries
-		panic("not enough empty cache entries left!\n");
+		if (cache == &cpt_cache_unused)
+		{
+			panic("not enough unused cache entries and trying to refill cpt entries!");
+		}
+		refillUnusedCacheEntries();
 	}
+	
+	
 	
 }
 
@@ -143,27 +188,14 @@ static void refillUnusedCacheEntriesWithPage(void *page)
 
 static void refillUnusedCacheEntries()
 {
-	if (((uint32_t) kernel_heap_next_page) % SECTION_SIZE == 0) // new coarse page table needed
+	void *page = usePage();
+	if (page == NULL)
 	{
-		if (cpt_cache_unused == NULL)
-		{
-			panic("no coarse page table cached for refilling unused cache entries!");
-		}
-		uint32_t tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-		uint32_t *tt = (uint32_t*) tt_base;
-		
-		
-		uint32_t* cpt = requestCPT();
-		
-		k_memset(cpt,0,256*4);
-		
-		
-		
-		
-		
-		
-		
+		panic("no free page for cache entries!\n");
 	}
+	addVirtualKernelPage(page,kernel_heap_next_page);
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	refillUnusedCacheEntriesWithPage(page);
 }
 
 void initSlabAllocator()
@@ -290,66 +322,64 @@ void ensureFreeCacheEntries(cache_entry **cache)
 	}
 }
 
+static void* requestCacheEntry(cache_entry **cache_used,cache_entry **cache_unused)
+{
+	if (*cache_unused == NULL)
+	{
+		refillCacheEntries(cache_unused,1024);
+	}
+	cache_entry *c = *cache_unused;
+	removeCacheEntry(cache_unused,c);
+	addCacheEntry(cache_used,c);
+	return c->data;
+}
+
+static void freeCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,void *dat)
+{
+	cache_entry *e = removeCacheEntryByData(cache_unused,dat);
+	if (e == NULL)
+	{
+		return;
+	}
+	addCacheEntry(cache_used,e);
+}
 
 
 LinkedList* requestLinkedListEntry()
 {
-	if (linkedlist_cache_unused == NULL)
-	{
-		refillCacheEntries(&linkedlist_cache_unused,1024);
-	}
-	cache_entry *c = linkedlist_cache_unused;
-	removeCacheEntry(&linkedlist_cache_unused,c);
-	addCacheEntry(&linkedlist_cache,c);
-	return c->data;
+	return (LinkedList*) requestCacheEntry(&linkedlist_cache,&linkedlist_cache_unused);
 }
 
 void freeLinkedListEntry(void* list)
 {
-	
-	
-	
-	
+	freeCacheEntry(&linkedlist_cache,&linkedlist_cache_unused,list);
 }
 
 uint32_t* requestCPT()
 {
-	if (cpt_cache_unused == NULL)
-	{
-		refillCacheEntries(&cpt_cache_unused,1024);
-	}
-	cache_entry *c = cpt_cache_unused;
-	removeCacheEntry(&cpt_cache_unused,c);
-	addCacheEntry(&cpt_cache,c);
-	return c->data;
+	return (uint32_t*) requestCacheEntry(&cpt_cache,&cpt_cache_unused);
 }
 
 void freeCPT(void* cpt)
 {
-	
-	
-	
-	
+	freeCacheEntry(&cpt_cache,&cpt_cache_unused,cpt);
 }
 
 
 
-uint32_t* requestAddressSpace()
+struct address_space* requestAddressSpace()
 {
-	
-	
-	
-	
+	return (address_space*) requestCacheEntry(&address_space_cache,&address_space_cache_unused);
 }
 
 
 void freeAddressSpace(void *space)
 {
-	
-	
-	
-	
+	freeCacheEntry(&address_space_cache,&address_space_cache_unused,space);
 }
+
+
+
 
 
 void* requestLCDFramebuffer()

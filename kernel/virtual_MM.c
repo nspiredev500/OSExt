@@ -4,16 +4,7 @@
 const void *virtual_base_address = (const void*) 0xe0000000;
 
 
-// store the coarse page descriptors as a table to reuse them
-// in every virtual address space, to save memory and have the kernel mapped at all times
-
-
-static LinkedList *kernel_cpts = NULL; // store the coarse page tables itself (1K table)
-static LinkedList *kernel_cptds = NULL; // store the corresponding addresses for the coarse page tables (address to pass to newCPTD)
-
-static uint32_t *kernel_tt_base = NULL;
-
-struct address_space kernel_space;
+static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
 
 void initializeKernelSpace()
@@ -23,16 +14,24 @@ void initializeKernelSpace()
 		return;
 	}
 	
-	initSlabAllocator();
-	
 	register uint32_t tt_base asm("r0");
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uint32_t *tt = (uint32_t*) tt_base;
 	
-	kernel_tt_base = tt_base;
+	kernel_space.tt = tt_base;
 	
+	
+	kernel_space.cpts = NULL;
+	kernel_space.cptds = NULL;
+	
+	initSlabAllocator();
+	
+	
+	
+	// map the first sections where the interrupt vectors are as user mode no access
+	tt[0] = newSD(0,0,0,0b01,0xa4000000);
 	
 	
 	
@@ -44,29 +43,32 @@ void initializeKernelSpace()
 
 void createAddressSpace()
 {
-	
+	// TODO map the kernel pages and the first page, because the interrupt vectors are there
 	
 	
 	
 	
 	
 }
+
+
+// only used to initialize the memory allocator and the virtual memory manager
 void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 {
 	section = section & (~ 0xfffff);
 	LinkedList *cptd = requestLinkedListEntry();
 	cptd->data = (void*) section;
-	addLinkedListEntry(&kernel_cptds,cptd);
+	addLinkedListEntry(&kernel_space.cptds,cptd);
 	
 	LinkedList *cpt = requestLinkedListEntry();
 	cpt->data = requestCPT();
 	k_memset(cpt->data,0,1024);
-	addLinkedListEntry(&kernel_cpts,cpt);
+	addLinkedListEntry(&kernel_space.cpts,cpt);
 	
 	k_memcpy(cpt->data,migrate_cpt,pages);
 	
 	
-	kernel_tt_base[section >> 20] = newCPTD(0,cpt->data);
+	kernel_space.tt[section >> 20] = newCPTD(0,cpt->data);
 	
 	clear_caches();
 	invalidate_TLB();
@@ -76,24 +78,26 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 }
 
 
-static void addVirtualKernelPageNoInvalidateTLB(void* page, void* virtual_address)
+
+
+void addVirtualKernelPage(void* page, void* virtual_address)
 {
 	uint32_t section = ((uint32_t) page) & (~ 0xfffff);
 	uint32_t index = 0;
-	LinkedList *sec = searchLinkedListEntry(&kernel_cptds,(void*) section,&index);
+	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
 	if (sec == NULL)
 	{
 		
 		LinkedList *cptd = requestLinkedListEntry();
 		cptd->data = (void*) section;
-		addLinkedListEntry(&kernel_cptds,cptd);
+		addLinkedListEntry(&kernel_space.cptds,cptd);
 		
 		LinkedList *cpt = requestLinkedListEntry();
 		cpt->data = requestCPT();
 		k_memset(cpt->data,0,1024);
-		addLinkedListEntry(&kernel_cpts,cpt);
+		addLinkedListEntry(&kernel_space.cpts,cpt);
 		
-		kernel_tt_base[section >> 20] = newCPTD(0,cpt->data);
+		kernel_space.tt[section >> 20] = newCPTD(0,cpt->data);
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
@@ -108,7 +112,7 @@ static void addVirtualKernelPageNoInvalidateTLB(void* page, void* virtual_addres
 	}
 	else
 	{
-		LinkedList *cpt = getLinkedListEntry(&kernel_cpts,index);
+		LinkedList *cpt = getLinkedListEntry(&kernel_space.cpts,index);
 		if (cpt == NULL)
 		{
 			panic("no corresponding coarse page table for descriptor!\n");
@@ -118,12 +122,6 @@ static void addVirtualKernelPageNoInvalidateTLB(void* page, void* virtual_addres
 		table_index = table_index / SMALL_PAGE_SIZE;
 		table[table_index] = newSPD(1,1,0b01010101,page);
 	}
-}
-
-
-void addVirtualKernelPage(void* page, void* virtual_address)
-{
-	addVirtualKernelPageNoInvalidateTLB(page,virtual_address);
 	clear_caches();
 	invalidate_TLB();
 }
@@ -138,6 +136,10 @@ static void expandKernelCPDTs()
 	
 }
 
+uint32_t* getKernel_TT_Base()
+{
+	return kernel_space.tt;
+}
 
 void* getPhysicalAddress(uint32_t* space,void* address)
 {
@@ -189,6 +191,15 @@ uint32_t newCPTD(unsigned char domain,uint32_t base_address)
 	desc = desc | ((domain & 0b1111) << 5) | (base_address & (~ 0b1111111111));
 	return desc;
 }
+
+uint32_t newSD(unsigned char c,unsigned char b,unsigned char domain,unsigned char ap,uint32_t base_address)
+{
+	const uint32_t sd_template = 0b00000000000000000000000000010010;
+	uint32_t desc = sd_template;
+	desc = desc | ((c & 0b1) << 3) | ((b & 0b1) << 2) | ((domain & 0b1111) << 5) | ((ap & 0b11) << 10) | (base_address & (~ 0b11111111111111111111));
+	return desc;
+}
+
 
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address)
 {

@@ -83,11 +83,11 @@ void initialize()
 	
 	allocPageblock(128);
 	allocPageblock(128); // allocate 1mb
-	/*
+	
 	uint32_t domains asm("r0") = 0;
 	asm volatile("mrc p15, 0, r0, c3, c0, 0":"=r" (domains));
 	DEBUGPRINTF_3("domains: %d\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
-	*/
+	
 	
 	
 	

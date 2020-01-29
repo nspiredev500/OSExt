@@ -1,16 +1,14 @@
 #ifndef VIRTUAL_MM_H
 #define VIRTUAL_MM_H
 
-// coarse page table
-struct cpt;
-struct cpt {
-	uint32_t *table; // the actual table has to be in dma memory
-	struct cpt *next;
-};
+#include "LinkedList.h"
+
+
 
 struct address_space {
 	uint32_t *tt;
-	struct cpt *page_tables; // for mapped pages,except kernel pages, because these page tables can be reused
+	LinkedList *cpts; // store the coarse page tables itself (1K table)
+	LinkedList *cptds; // store the corresponding addresses for the coarse page tables (address to pass to newCPTD)
 };
 
 void addVirtualKernelPage(void* page, void* virtual_address);
@@ -21,11 +19,15 @@ void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 uint32_t newCPTD(unsigned char domain,uint32_t base_address);
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
 uint32_t newSPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
+uint32_t newSD(unsigned char c,unsigned char b,unsigned char domain,unsigned char ap,uint32_t base_address);
+
+
+
 
 void invalidate_TLB();
 void clear_caches();
 
-
+uint32_t* getKernel_TT_Base();
 void* getPhysicalAddress(uint32_t* space,void* address);
 
 
