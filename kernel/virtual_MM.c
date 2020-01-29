@@ -41,15 +41,44 @@ void initializeKernelSpace()
 
 
 
-void createAddressSpace()
+struct address_space* createAddressSpace()
 {
-	// TODO map the kernel pages and the first page, because the interrupt vectors are there
+	struct address_space *space = requestAddressSpace();
+	space->tt = requestTranslationTable();
+	space->cptds = NULL;
+	space->cpts = NULL
 	
+	// map the kernel pages and the first page, because the interrupt vectors are there
+	space->tt[0] = kernel_space->tt[0];
 	
+	uint32_t i = 0;
+	LinkedList *cptd = NULL;
+	while ((cptd = getLinkedListEntry(&kernel_space->cptds,i)) != NULL)
+	{
+		space->tt[((uint32_t) (cptd->data))>>20] = kernel_space->tt[((uint32_t) (cptd->data))>>20];
+		i++;
+	}
 	
-	
-	
+	return space;
 }
+// you should switch out of the address space before destroying it
+void destroyAddressSpace(struct address_space *space)
+{
+	uint32_t i = 0;
+	LinkedList *cpt = NULL;
+	while ((cptd = getLinkedListEntry(&space->cptds,i)) != NULL)
+	{
+		cpt = getLinkedListEntry(&space->cpts,i);
+		freePagesFromCoarsePageTable(cpt->data);
+		freeCPT(cpt->data);
+		i++;
+	}
+	destroyLinkedList(&space->cpts);
+	destroyLinkedList(&space->cptds);
+	freeTranslationTable(space->tt);
+}
+
+
 
 
 // only used to initialize the memory allocator and the virtual memory manager
@@ -128,14 +157,6 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 
 
 
-static void expandKernelCPDTs()
-{
-	
-	
-	
-	
-}
-
 uint32_t* getKernel_TT_Base()
 {
 	return kernel_space.tt;
@@ -183,6 +204,26 @@ void* getPhysicalAddress(uint32_t* space,void* address)
 	return NULL;
 }
 
+
+
+void freePagesFromCoarsePageTable(uint32_t *cpt)
+{
+	for (uint32_t i = 0;i<1024;i++)
+	{
+		uint32_t type = cpt[i] & 0b11;
+		if (type == 0b1 | type == 0b11)
+		{
+			panic("tiny or large page found in coarse page table while freeing!\n");
+		}
+		if (type = 0b0)
+		{
+			continue;
+		}
+		uint32_t descriptor = cpt[i];
+		void *page = (void*) (descriptor & (~ 0b111111111111));
+		setPageUnused(page);
+	}
+}
 
 uint32_t newCPTD(unsigned char domain,uint32_t base_address)
 {

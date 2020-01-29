@@ -83,9 +83,17 @@ LinkedList* searchLinkedListEntry(LinkedList **list,void* data,uint32_t *index)
 }
 
 
-
-
-
+void destroyLinkedList(LinkedList **list)
+{
+	LinkedList *next = *list;
+	LinkedList *last = *list;
+	while (next != NULL)
+	{
+		last = next;
+		next = next->next;
+		freeLinkedList(last);
+	}
+}
 
 
 

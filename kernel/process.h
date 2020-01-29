@@ -1,19 +1,18 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-#include "thread.h"
+#include "LinkedList.h"
+#include "virtual_mm.h"
 
 
 
 struct Process;
-
-
-
 struct Process {
+	struct address_space space;
 	uint8_t status;
+	uint8_t priviledges;
 	uint16_t pid;
-	struct Thread *threads;
-	struct Process *next;
+	LinkedList *threads;
 };
 
 
