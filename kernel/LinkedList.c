@@ -28,10 +28,15 @@ bool removeLinkedListEntry(LinkedList **list, LinkedList *e)
 		return true;
 	}
 	LinkedList *next = *list;
-	while (next->next != NULL)
+	while (next != NULL)
 	{
 		if (next->next == e)
 		{
+			if (next->next == NULL)
+			{
+				next->next = NULL;
+				return true;
+			}
 			next->next = (next->next)->next; // override the next value so it points after the removed entry
 			return true;
 		}

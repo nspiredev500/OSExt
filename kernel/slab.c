@@ -27,22 +27,6 @@ static void addCacheEntry(cache_entry **list, cache_entry *e)
 	*list = e;
 }
 
-/*
-static void addCacheEntry(cache_entry **list, cache_entry *e)
-{
-	if (*list == NULL)
-	{
-		*list = e;
-		return;
-	}
-	cache_entry *next = *list;
-	while (next->next != NULL)
-	{
-		next = next->next;
-	}
-	next->next = e;
-}
-*/
 
 // return true if the cache entry was found (and removed)
 static bool removeCacheEntry(cache_entry **list, cache_entry *e)
@@ -133,6 +117,8 @@ static cache_entry *linkedlist_cache_unused = NULL;
 
 
 
+
+
 static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size);
 static void refillCacheEntries(cache_entry **cache,uint32_t size);
 static void refillUnusedCacheEntriesWithPage(void *page);
@@ -169,9 +155,51 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 		}
 		refillUnusedCacheEntries();
 	}
-	
-	
-	
+	// filter out all the things that need more than one page
+	if (size > SMALL_PAGE_SIZE)
+	{
+		uint32_t alignment = 0;
+		if (cache == &translation_table_cache_unused)
+		{
+			alignment = 1024*16;
+		}
+		void *data = useConsecutivePages(size/SMALL_PAGE_SIZE,alignment);
+		if (data == NULL)
+		{
+			panic("not enough consecutive pages for cache entry found!\n");
+		}
+		
+		// map the pages to the heap
+		void* pagecounter = data;
+		void* heap_pagecounter = kernel_heap_next_page;
+		for (int i = 0;i<size/SMALL_PAGE_SIZE;i++)
+		{
+			addVirtualKernelPage(pagecounter,heap_pagecounter);
+			heap_pagecounter += SMALL_PAGE_SIZE;
+			pagecounter += SMALL_PAGE_SIZE;
+		}
+		
+		
+		
+		
+		cache_entry *e = unused_entries;
+		removeCacheEntry(&unused_entries,e);
+		unused_entries_count--;
+		
+		e->data = kernel_heap_next_page;
+		
+		kernel_heap_next_page += size;
+		addCacheEntry(cache,e);
+		return;
+	}
+	void *page = usePage();
+	if (page == NULL)
+	{
+		panic("no free page for cache entries!\n");
+	}
+	addVirtualKernelPage(page,kernel_heap_next_page);
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	refillCacheEntriesWithPage(page,cache,size);
 }
 
 static void refillUnusedCacheEntriesWithPage(void *page)
@@ -322,11 +350,16 @@ void ensureFreeCacheEntries(cache_entry **cache)
 	}
 }
 
-static void* requestCacheEntry(cache_entry **cache_used,cache_entry **cache_unused)
+static void* requestCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,uint32_t size)
 {
 	if (*cache_unused == NULL)
 	{
-		refillCacheEntries(cache_unused,1024);
+		refillCacheEntries(cache_unused,size);
+	}
+	// refill the cpt cache even before it is empty, because you need cpts to refill the unused entries and could get into a loop
+	if (cache_unused == &cpt_cache_unused && cpt_cache_unused->next == NULL || cpt_cache_unused->next->next == NULL)
+	{
+		refillCacheEntries(cache_unused,size);
 	}
 	cache_entry *c = *cache_unused;
 	removeCacheEntry(cache_unused,c);
@@ -347,7 +380,7 @@ static void freeCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,v
 
 LinkedList* requestLinkedListEntry()
 {
-	return (LinkedList*) requestCacheEntry(&linkedlist_cache,&linkedlist_cache_unused);
+	return (LinkedList*) requestCacheEntry(&linkedlist_cache,&linkedlist_cache_unused,sizeof(LinkedList));
 }
 
 void freeLinkedListEntry(void* list)
@@ -357,7 +390,7 @@ void freeLinkedListEntry(void* list)
 
 uint32_t* requestCPT()
 {
-	return (uint32_t*) requestCacheEntry(&cpt_cache,&cpt_cache_unused);
+	return (uint32_t*) requestCacheEntry(&cpt_cache,&cpt_cache_unused,1024);
 }
 
 void freeCPT(void* cpt)
@@ -369,7 +402,7 @@ void freeCPT(void* cpt)
 
 struct address_space* requestAddressSpace()
 {
-	return (address_space*) requestCacheEntry(&address_space_cache,&address_space_cache_unused);
+	return (struct address_space*) requestCacheEntry(&address_space_cache,&address_space_cache_unused,sizeof(struct address_space));
 }
 
 
@@ -379,63 +412,49 @@ void freeAddressSpace(void *space)
 }
 
 
+uint32_t* requestTranslationTable()
+{
+	return (uint32_t*) requestCacheEntry(&translation_table_cache,&translation_table_cache_unused,1024*16);
+}
 
+void freeTranslationTable(uint32_t *tt)
+{
+	return freeCacheEntry(&translation_table_cache,&translation_table_cache_unused,tt);
+}
 
 
 void* requestLCDFramebuffer()
 {
-	
-	
-	
+	return requestCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,SMALL_PAGE_SIZE*75); // 320*240*4
 }
 
 
 void freeLCDFramebuffer(void* buff)
 {
-	
-	
-	
-	
-	
+	freeCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,buff);
 }
-
 
 
 struct Process* requestProcess()
 {
-	
-	
-	
-	
-	
+	return (struct Process*) requestCacheEntry(&process_cache,&process_cache_unused,sizeof(struct Process));
 }
 
 void freeProcess(void* proc)
 {
-	
-	
-	
-	
+	freeCacheEntry(&process_cache,&process_cache_unused,proc);
 }
-
-
 
 
 struct Thread* requestThread()
 {
-	
-	
-	
-	
+	return (struct Thread*) requestCacheEntry(&thread_cache,&thread_cache_unused,sizeof(struct Thread));
 }
 
 
 void freeThread(void* thread)
 {
-	
-	
-	
-	
+	freeCacheEntry(&thread_cache,&thread_cache_unused,thread);
 }
 
 
