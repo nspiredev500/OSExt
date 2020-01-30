@@ -11,10 +11,21 @@ struct address_space {
 	LinkedList *cptds; // store the corresponding addresses for the coarse page tables (address to pass to newCPTD)
 };
 
+void initializeKernelSpace();
+
+
 void addVirtualKernelPage(void* page, void* virtual_address);
 void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 
 
+
+struct address_space* createAddressSpace();
+// you should switch out of the address space before destroying it
+void destroyAddressSpace(struct address_space *space);
+
+
+
+void freePagesFromCoarsePageTable(uint32_t *cpt);
 
 uint32_t newCPTD(unsigned char domain,uint32_t base_address);
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);

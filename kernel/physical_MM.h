@@ -23,7 +23,6 @@ void setPagedOut(void *page);
 
 
 void* useConsecutivePages(uint32_t size,uint32_t alignment);
-void* allocVirtualAddressSpace();
 
 
 

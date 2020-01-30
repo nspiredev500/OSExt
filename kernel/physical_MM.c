@@ -33,14 +33,14 @@ struct pageblock pages[MAXPAGEBLOCKS];
 
 void* makeLargePageAligned(void *ptr)
 {
-	if ((((uint32_t) ptr) & (~ 0xFFFF)) == ptr)
+	if ((((uint32_t) ptr) & (~ 0xFFFF)) == (uint32_t) ptr)
 		return ptr;
 	return (void*) ((((uint32_t) ptr) & (~ 0xFFFF))+0x10000);
 }
 
 void* makeSmallPageAligned(void *ptr)
 {
-	if ((((uint32_t) ptr) & (~ 0xFFF)) == ptr)
+	if ((((uint32_t) ptr) & (~ 0xFFF)) == (uint32_t) ptr)
 		return ptr;
 	return (void*) ((((uint32_t) ptr) & (~ 0xFFF))+0x1000);
 }
@@ -111,20 +111,20 @@ bool allocPageblock(uint32_t size)
 void* useConsecutivePages(uint32_t size,uint32_t alignment)
 {
 	uint32_t alignmentbits = 0;
-	for (uint32_t i = alignment;i & 0b1 != 1;i>>1)
+	for (uint32_t i = alignment;(i & 0b1) != 1;i = i>>1)
 	{
 		alignmentbits++;
 	}
 	alignmentbits = set_bits32(alignmentbits);
-	for (int i = 0;i<blockindex;i++)
+	for (uint32_t i = 0;i<blockindex;i++)
 	{
 		void *page = pages[blockindex].start;
-		for (int a = 0;a<pages[blockindex].size;a++)
+		for (uint32_t a = 0;a<pages[blockindex].size;a++)
 		{
-			if (((uint32_t)page) & alignmentbits == 0)
+			if (((uint32_t) page & alignmentbits) == 0)
 			{
 				bool free = true;
-				for (int b = 0;b<size;b++)
+				for (uint32_t b = 0;b<size;b++)
 				{
 					if (isPageUsed(page+SMALL_PAGE_SIZE*b))
 					{
@@ -134,7 +134,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 				}
 				if (free)
 				{
-					for (int b = 0;b<size;b++)
+					for (uint32_t b = 0;b<size;b++)
 					{
 						setPageUsed(page+SMALL_PAGE_SIZE*b);
 					}
@@ -148,31 +148,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 }
 
 
-// allocates 4 small pages on a 16kb boundary
-void* allocVirtualAddressSpace()
-{
-	return useConsecutivePages(4,0x4000);
-	/*
-	for (int i = 0;i<blockindex;i++)
-	{
-		void *page = pages[blockindex].start;
-		for (int a = 0;a<pages[blockindex].size;a++)
-		{
-			// check if it is on a 16kb boundary and it and the next 3 pages aren't used
-			if (page & 0x3fff == 0 && ! isPageUsed(page) && ! isPageUsed(page+SMALL_PAGE_SIZE) && ! isPageUsed(page+SMALL_PAGE_SIZE*2) && ! isPageUsed(page+SMALL_PAGE_SIZE*3))
-			{
-				setPageUsed(page);
-				setPageUsed(page+SMALL_PAGE_SIZE);
-				setPageUsed(page+SMALL_PAGE_SIZE*2);
-				setPageUsed(page+SMALL_PAGE_SIZE*3);
-				return page;
-			}
-			page = page + SMALL_PAGE_SIZE;
-		}
-	}
-	return NULL;
-	*/
-}
+
 
 
 

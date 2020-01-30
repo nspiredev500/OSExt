@@ -19,7 +19,7 @@ void addLinkedListEntry(LinkedList **list, LinkedList *e)
 }
 
 
-// return true if the cache entry was found (and removed)
+// return true if the entry was found (and removed)
 bool removeLinkedListEntry(LinkedList **list, LinkedList *e)
 {
 	if (*list == e)
@@ -91,7 +91,7 @@ void destroyLinkedList(LinkedList **list)
 	{
 		last = next;
 		next = next->next;
-		freeLinkedList(last);
+		freeLinkedListEntry(last);
 	}
 }
 

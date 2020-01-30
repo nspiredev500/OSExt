@@ -53,8 +53,8 @@ extern char _GOT_SIZE;
 
 
 
-const void *virtual_base_address;
-const void *kernel_heap_start;
+void* const virtual_base_address;
+void* const kernel_heap_start;
 
 
 

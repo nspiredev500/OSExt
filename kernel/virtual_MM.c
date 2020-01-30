@@ -1,7 +1,7 @@
 #include "kernel.h"
 
 
-const void *virtual_base_address = (const void*) 0xe0000000;
+void* const virtual_base_address = (void* const) 0xe0000000;
 
 
 static struct address_space kernel_space;
@@ -20,7 +20,7 @@ void initializeKernelSpace()
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uint32_t *tt = (uint32_t*) tt_base;
 	
-	kernel_space.tt = tt_base;
+	kernel_space.tt = tt;
 	
 	
 	kernel_space.cpts = NULL;
@@ -46,16 +46,16 @@ struct address_space* createAddressSpace()
 	struct address_space *space = requestAddressSpace();
 	space->tt = requestTranslationTable();
 	space->cptds = NULL;
-	space->cpts = NULL
+	space->cpts = NULL;
 	
 	// map the kernel pages and the first page, because the interrupt vectors are there
-	space->tt[0] = kernel_space->tt[0];
+	space->tt[0] = kernel_space.tt[0];
 	
 	uint32_t i = 0;
 	LinkedList *cptd = NULL;
-	while ((cptd = getLinkedListEntry(&kernel_space->cptds,i)) != NULL)
+	while ((cptd = getLinkedListEntry(&kernel_space.cptds,i)) != NULL)
 	{
-		space->tt[((uint32_t) (cptd->data))>>20] = kernel_space->tt[((uint32_t) (cptd->data))>>20];
+		space->tt[((uint32_t) (cptd->data))>>20] = kernel_space.tt[((uint32_t) (cptd->data))>>20];
 		i++;
 	}
 	
@@ -66,7 +66,7 @@ void destroyAddressSpace(struct address_space *space)
 {
 	uint32_t i = 0;
 	LinkedList *cpt = NULL;
-	while ((cptd = getLinkedListEntry(&space->cptds,i)) != NULL)
+	while ((cpt = getLinkedListEntry(&space->cptds,i)) != NULL)
 	{
 		cpt = getLinkedListEntry(&space->cpts,i);
 		freePagesFromCoarsePageTable(cpt->data);
@@ -97,7 +97,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	k_memcpy(cpt->data,migrate_cpt,pages);
 	
 	
-	kernel_space.tt[section >> 20] = newCPTD(0,cpt->data);
+	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) cpt->data);
 	
 	clear_caches();
 	invalidate_TLB();
@@ -126,12 +126,12 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		k_memset(cpt->data,0,1024);
 		addLinkedListEntry(&kernel_space.cpts,cpt);
 		
-		kernel_space.tt[section >> 20] = newCPTD(0,cpt->data);
+		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) cpt->data);
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
 		uint32_t *table = cpt->data;
-		table[table_index] = newSPD(1,1,0b01010101,page);
+		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
 		
 		
 		
@@ -149,7 +149,7 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		uint32_t *table = cpt->data;
 		uint32_t table_index = ((uint32_t) (virtual_address-section));
 		table_index = table_index / SMALL_PAGE_SIZE;
-		table[table_index] = newSPD(1,1,0b01010101,page);
+		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
 	}
 	clear_caches();
 	invalidate_TLB();
@@ -211,11 +211,11 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 	for (uint32_t i = 0;i<1024;i++)
 	{
 		uint32_t type = cpt[i] & 0b11;
-		if (type == 0b1 | type == 0b11)
+		if (type == 0b1 || type == 0b11)
 		{
 			panic("tiny or large page found in coarse page table while freeing!\n");
 		}
-		if (type = 0b0)
+		if (type == 0b0)
 		{
 			continue;
 		}

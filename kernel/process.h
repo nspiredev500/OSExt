@@ -8,7 +8,7 @@
 
 struct Process;
 struct Process {
-	struct address_space space;
+	struct address_space *space;
 	uint8_t status;
 	uint8_t priviledges;
 	uint16_t pid;
