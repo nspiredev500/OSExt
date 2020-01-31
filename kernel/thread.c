@@ -23,6 +23,18 @@ void destroyThread(struct Thread *t)
 
 
 
+void runThread(struct Thread *t)
+{
+	// assumes the context switch is already done
+	register uint32_t *regs asm("r0") = t->regs;
+	
+	
+	
+	
+	
+	
+	
+}
 
 
 

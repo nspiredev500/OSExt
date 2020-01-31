@@ -14,10 +14,11 @@ GENZEHN = genzehn
 NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE)
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej
+# -march=armv5tej-s
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
-LDFLAGS = -nostdlib -static-libgcc -lgcc -static-pie -T ldscript.ld
+LDFLAGS = -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))

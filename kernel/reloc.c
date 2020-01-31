@@ -31,6 +31,11 @@ void free_init_pds()
 	}
 }
 
+void* get_init_pds()
+{
+	return init_pds;
+}
+
 
 // somehow the linker variables get changed by relocation, subtracting &_EXEC_START gives the right values
 
@@ -68,7 +73,7 @@ void relocate_self(void)
 	
 	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
 	
-	init_pds_unaligned = ti_calloc(sizeof(uint32_t)*sections*256+16+1024*2);
+	init_pds_unaligned = ti_calloc(sizeof(uint32_t)*sections*256+16+SMALL_PAGE_SIZE*2);
 	if (init_pds_unaligned == NULL)
 	{
 		ti_free((void*) malloced_chunk);
@@ -100,7 +105,7 @@ void relocate_self(void)
 	
 	uint32_t section = ((uint32_t) virtual_base_address);
 	
-	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+1;i++)
+	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+2;i++)
 	{
 		init_pds[i] = newSPD(1,1,0b01010101,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE));
 		DEBUGPRINTF_3("page: i: %d, address: %d, descriptor: %d, descaddr: %d\n",i,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE),init_pds[i],init_pds+i)

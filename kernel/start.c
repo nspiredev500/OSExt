@@ -78,16 +78,19 @@ void initialize()
 	DEBUGPRINTF_1("initializing\n")
 	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
 	
-	
+	physical_mm_self_test();
 	
 	
 	allocPageblock(128);
 	allocPageblock(128); // allocate 1mb
 	
+	
+	
+	/*
 	register uint32_t domains asm("r0") = 0;
 	asm volatile("mrc p15, 0, r0, c3, c0, 0":"=r" (domains));
 	DEBUGPRINTF_3("domains: %d\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
-	
+	*/
 	
 	
 	
@@ -96,15 +99,16 @@ void initialize()
 	initializeKernelSpace();
 	
 	
+	virtual_mm_self_test();
 	
 	
-	// TODO move the descriptors to a permanent location
-	//free_init_pds();
+	run_self_test();
 	
 	
 	
 	
 	
+	free_init_pds();
 }
 
 

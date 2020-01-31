@@ -15,7 +15,7 @@ struct Thread {
 struct Thread* createThread(uint16_t tid);
 void destroyThread(struct Thread *t);
 
-
+void runThread(struct Thread *t);
 
 
 

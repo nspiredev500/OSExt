@@ -32,30 +32,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void physical_mm_self_test();
 
 
 #endif

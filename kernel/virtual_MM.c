@@ -7,6 +7,15 @@ void* const virtual_base_address = (void* const) 0xe0000000;
 static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
 
+
+
+
+
+// will be mapped when a user requests a read from a new page, it contains only zeros
+static void* null_page = NULL;
+
+
+
 void initializeKernelSpace()
 {
 	if (kernel_space_initialized)
@@ -35,11 +44,36 @@ void initializeKernelSpace()
 	
 	
 	
+	null_page = usePage();
+	if (null_page == NULL)
+	{
+		panic("no page for the null-page!\n");
+	}
+	k_memset(null_page,0,SMALL_PAGE_SIZE);
+	
+	
+	uint32_t *init_pds = get_init_pds();
+	uint32_t kernel_size = (uint32_t) ((&_EXEC_SIZE)-(&_EXEC_START));
+	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
+	uint32_t section = ((uint32_t) virtual_base_address);
+	for (uint32_t i = 0;i<sections;i++)
+	{
+		DEBUGPRINTF_3("migrating section %d\n",section+SECTION_SIZE*i)
+		migrateKernelCPT(section+SECTION_SIZE*i,init_pds+(256*i),256);
+	}
+	
+	
+	
 	kernel_space_initialized = true;
 }
 
 
-
+void changeAddressSpace(struct address_space *space)
+{
+	register uint32_t tt asm("r0") = (uint32_t) space->tt;
+	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
+	invalidate_TLB();
+}
 
 struct address_space* createAddressSpace()
 {
@@ -84,26 +118,32 @@ void destroyAddressSpace(struct address_space *space)
 // only used to initialize the memory allocator and the virtual memory manager
 void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 {
+	if (pages > SECTION_SIZE/SMALL_PAGE_SIZE)
+	{
+		pages = SECTION_SIZE/SMALL_PAGE_SIZE;
+	}
 	section = section & (~ 0xfffff);
+	
+	
+	DEBUGPRINTF_3("migrating %d pages from section %d from page table %d",pages,section,migrate_cpt)
+	
 	LinkedList *cptd = requestLinkedListEntry();
 	cptd->data = (void*) section;
 	addLinkedListEntry(&kernel_space.cptds,cptd);
 	
 	LinkedList *cpt = requestLinkedListEntry();
 	cpt->data = requestCPT();
+	DEBUGPRINTF_3(" to page table %d\n",getPhysicalAddress(kernel_space.tt,cpt->data))
 	k_memset(cpt->data,0,1024);
 	addLinkedListEntry(&kernel_space.cpts,cpt);
 	
-	k_memcpy(cpt->data,migrate_cpt,pages);
+	k_memcpy(cpt->data,migrate_cpt,pages*sizeof(uint32_t));
 	
 	
-	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) cpt->data);
+	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
 	
 	clear_caches();
 	invalidate_TLB();
-	
-	
-	
 }
 
 
@@ -111,12 +151,13 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
+	DEBUGPRINTF_3("mapping %d to %d",page,virtual_address)
 	uint32_t section = ((uint32_t) page) & (~ 0xfffff);
 	uint32_t index = 0;
 	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
 	if (sec == NULL)
 	{
-		
+		DEBUGPRINTF_3("adding coarse page table descriptor for section %d\n",section)
 		LinkedList *cptd = requestLinkedListEntry();
 		cptd->data = (void*) section;
 		addLinkedListEntry(&kernel_space.cptds,cptd);
@@ -126,7 +167,7 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		k_memset(cpt->data,0,1024);
 		addLinkedListEntry(&kernel_space.cpts,cpt);
 		
-		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) cpt->data);
+		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
@@ -292,8 +333,13 @@ void clear_caches()
 
 
 
-
-
+void virtual_mm_self_test()
+{
+	
+	
+	
+	
+}
 
 
 

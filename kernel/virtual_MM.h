@@ -22,7 +22,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 struct address_space* createAddressSpace();
 // you should switch out of the address space before destroying it
 void destroyAddressSpace(struct address_space *space);
-
+void changeAddressSpace(struct address_space *space);
 
 
 void freePagesFromCoarsePageTable(uint32_t *cpt);
@@ -42,7 +42,7 @@ uint32_t* getKernel_TT_Base();
 void* getPhysicalAddress(uint32_t* space,void* address);
 
 
-
+void virtual_mm_self_test();
 
 
 #endif

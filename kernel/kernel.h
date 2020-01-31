@@ -7,8 +7,11 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
+// from the ndless-sdk include directory
 #include <syscall-list.h>
 
+
+#include "mutex.h"
 #include "process.h"
 #include "thread.h"
 #include "LinkedList.h"
@@ -32,7 +35,7 @@
 #include "string.h"
 #include "math.h"
 #include "slab.h"
-
+#include "self_test.h"
 
 
 extern char _EXEC_START;

@@ -9,7 +9,7 @@ const uint32_t SECTION_SIZE = 1024*1024;
 struct pageblock {
 	void* unaligned;
 	void* start; // first page
-	uint8_t size; // number of pages in block
+	uint32_t size; // number of pages in block
 	uint64_t used; // one bit per page
 	uint64_t used2;
 	uint64_t dirty; // one bit per page
@@ -103,7 +103,6 @@ bool allocPageblock(uint32_t size)
 		return false;
 	}
 	DEBUGPRINTF_2("pageblock added, size: %d\n",b.size)
-	DEBUGPRINTF_2("pageblock 0, size: %d\n",pages[0].size)
 	return true;
 }
 
@@ -177,12 +176,12 @@ static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 	if (value)
 	{
 		*p = *p | (0b1 << i);
-		DEBUGPRINTF_3("newp: %d\n",*p)
+		DEBUGPRINTF_3("newp1: %d, newp2: %d\n",*((uint32_t*) p), *(((uint32_t*) p)+1))
 	}
 	else
 	{
 		*p = *p & (~ (0b1 << i));
-		DEBUGPRINTF_3("newp: %d\n",*p)
+		DEBUGPRINTF_3("newp1: %d, newp2: %d\n",*((uint32_t*) p), *(((uint32_t*) p)+1))
 	}
 }
 static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
@@ -209,12 +208,12 @@ void* usePage()
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
 		struct pageblock *b = &pages[i];
-		DEBUGPRINTF_3("used: %d, size: %d\n",b->used,b->size)
+		DEBUGPRINTF_3("used: %d, size: %d\n",(uint32_t) b->used,(uint32_t) b->size)
 		//if (b.used < set_bits64(b.size) || b.used2 < set_bits64(b.size-64) )
 		//{
 			for (uint32_t a = 0;a<b->size;a++)
 			{
-				DEBUGPRINTF_1("a: %d, used: %d, used2: %d\n",a,b->used,b->used2)
+				DEBUGPRINTF_1("a: %d, used: %d, used2: %d\n",a,(uint32_t) b->used,(uint32_t) b->used2)
 				if (getBit128(&b->used,&b->used2,a) == 0)
 				{
 					setBit128(&b->used,&b->used2,a,true);
@@ -425,8 +424,15 @@ void setPagedOut(void *page)
 
 
 
-
-
+void physical_mm_self_test()
+{
+	
+	
+	
+	
+	
+	
+}
 
 
 

@@ -23,7 +23,9 @@ static void addCacheEntry(cache_entry **list, cache_entry *e)
 		*list = e;
 		return;
 	}
+	//asm(".long 0xE1212374"); // bkpt
 	e->next = *list;
+	
 	*list = e;
 }
 
@@ -115,6 +117,8 @@ static cache_entry *thread_cache_unused = NULL;
 static cache_entry *linkedlist_cache = NULL;
 static cache_entry *linkedlist_cache_unused = NULL;
 
+static cache_entry *uint32_cache = NULL;
+static cache_entry *uint32_cache_unused = NULL;
 
 
 
@@ -136,6 +140,10 @@ static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t s
 	for (uint32_t i = 0;i<SMALL_PAGE_SIZE;i+=size)
 	{
 		cache_entry *e = unused_entries;
+		if (e == NULL)
+		{
+			panic("no empty cache entries left!\n");
+		}
 		removeCacheEntry(&unused_entries,e);
 		unused_entries_count--;
 		e->data = page+i;
@@ -204,6 +212,8 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 
 static void refillUnusedCacheEntriesWithPage(void *page)
 {
+	DEBUGPRINTF_3("page used for refilling: %d\n",page);
+	k_memset(page,0,SMALL_PAGE_SIZE);
 	for (uint32_t i = 0;i<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
 	{
 		cache_entry *e = (page+i);
@@ -245,7 +255,7 @@ void initSlabAllocator()
 	
 	
 	
-	tt[(uint32_t) kernel_heap_start >>20] = newCPTD(0,(uint32_t) tmp_pds);
+	tt[(uint32_t) kernel_heap_start >> 20] = newCPTD(0,(uint32_t) tmp_pds);
 	
 	void* page = usePage();
 	
@@ -306,7 +316,6 @@ void initSlabAllocator()
 	kernel_heap_next_page += SMALL_PAGE_SIZE*4;
 	
 	
-	
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
 	
@@ -343,6 +352,42 @@ static void freeCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,v
 	}
 	addCacheEntry(cache_used,e);
 }
+
+
+
+
+
+
+
+void slab_allocator_self_test()
+{
+	
+	
+	
+	
+	
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -429,69 +474,15 @@ void freeThread(void* thread)
 }
 
 
+uint32_t* request4Bytes()
+{
+	return (uint32_t*) requestCacheEntry(&uint32_cache,&uint32_cache_unused,sizeof(uint32_t));
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void free4Bytes(uint32_t* b)
+{
+	freeCacheEntry(&uint32_cache,&uint32_cache_unused,b);
+}
 
 
 

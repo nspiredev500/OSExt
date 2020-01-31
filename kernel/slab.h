@@ -9,6 +9,19 @@ void initSlabAllocator();
 
 
 
+
+
+
+void slab_allocator_self_test();
+
+
+
+
+
+
+
+
+
 LinkedList* requestLinkedListEntry();
 void freeLinkedListEntry(void* list);
 
@@ -36,20 +49,8 @@ struct Thread* requestThread();
 void freeThread(void* thread);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+uint32_t* request4Bytes();
+void free4Bytes(uint32_t* b);
 
 
 
