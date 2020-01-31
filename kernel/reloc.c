@@ -46,14 +46,14 @@ void relocate_self(void)
 	DEBUGPRINTF_1("relocating\n")
 	uint32_t offset = ((uint32_t) main)-((uint32_t) (&_EXEC_START));
 	uint32_t kernel_size = (uint32_t) ((&_EXEC_SIZE)-(&_EXEC_START));
-	DEBUGPRINTF_1("kernel size: %d\n",kernel_size,&_EXEC_SIZE-&_EXEC_START)
+	DEBUGPRINTF_1("kernel size: 0x%x\n",kernel_size,&_EXEC_SIZE-&_EXEC_START)
 	
 	
 	
-	DEBUGPRINTF_2("text: %d, data: %d, bss: %d\n",&_TEXT_SIZE-&_EXEC_START,&_DATA_SIZE-&_EXEC_START,&_BSS_SIZE-&_EXEC_START)
-	//DEBUGPRINTF_1("main: %d, exec_start: %d\n",main,&_EXEC_START)
+	DEBUGPRINTF_2("text: 0x%x, data: 0x%x, bss: 0x%x\n",&_TEXT_SIZE-&_EXEC_START,&_DATA_SIZE-&_EXEC_START,&_BSS_SIZE-&_EXEC_START)
+	//DEBUGPRINTF_1("main: 0x%x, exec_start: 0x%x\n",main,&_EXEC_START)
 	
-	DEBUGPRINTF_2("got: %d, gotsize: %d\n",&_GOT_START-&_EXEC_START,&_GOT_SIZE)
+	DEBUGPRINTF_2("got: 0x%x, gotsize: 0x%x\n",&_GOT_START-&_EXEC_START,&_GOT_SIZE)
 	
 	
 	
@@ -81,7 +81,7 @@ void relocate_self(void)
 		return;
 	}
 	init_pds = makeSmallPageAligned(init_pds_unaligned);
-	DEBUGPRINTF_1("pds: %d\n",init_pds)
+	DEBUGPRINTF_1("pds: 0x%x\n",init_pds)
 	
 	
 	
@@ -95,7 +95,7 @@ void relocate_self(void)
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-	DEBUGPRINTF_3("tt_base: %d\n",tt_base)
+	DEBUGPRINTF_3("tt_base: 0x%x\n",tt_base)
 	uint32_t *tt = (uint32_t*) tt_base;
 	
 	
@@ -108,14 +108,14 @@ void relocate_self(void)
 	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+2;i++)
 	{
 		init_pds[i] = newSPD(1,1,0b01010101,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE));
-		DEBUGPRINTF_3("page: i: %d, address: %d, descriptor: %d, descaddr: %d\n",i,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE),init_pds[i],init_pds+i)
+		DEBUGPRINTF_3("page: i: 0x%x, address: 0x%x, descriptor: 0x%x, descaddr: 0x%x\n",i,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE),init_pds[i],init_pds+i)
 	}
 	
 	
 	for (uint32_t i = 0;i<sections;i++)
 	{
 		tt[(section+SECTION_SIZE*i)>>20] = newCPTD(0,(uint32_t) (init_pds+256*i));
-		DEBUGPRINTF_3("CPTD: %d, addr: %d, pages: %d\n",tt[(section+SECTION_SIZE*i)>>20],tt+((section+SECTION_SIZE*i)>>20),init_pds+256*i)
+		DEBUGPRINTF_3("CPTD: 0x%x, addr: 0x%x, pages: 0x%x\n",tt[(section+SECTION_SIZE*i)>>20],tt+((section+SECTION_SIZE*i)>>20),init_pds+256*i)
 	}
 	
 	clear_caches();
@@ -133,9 +133,9 @@ void relocate_self(void)
 	
 	int (*new_entry)(int, char**) = (int (*)(int, char**)) (((uint32_t) virtual_base_address)+offset);
 	
-	DEBUGPRINTF_1("relocated to %d\n",aligned);
+	DEBUGPRINTF_1("relocated to 0x%x\n",aligned);
 	
-	DEBUGPRINTF_1("unaligned: %d\n",malloced_chunk);
+	DEBUGPRINTF_1("unaligned: 0x%x\n",malloced_chunk);
 	
 	
 	DEBUGPRINTF_1("entering relocated kernel\n");

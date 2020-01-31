@@ -102,7 +102,7 @@ bool allocPageblock(uint32_t size)
 		ti_free(b.unaligned);
 		return false;
 	}
-	DEBUGPRINTF_2("pageblock added, size: %d\n",b.size)
+	DEBUGPRINTF_2("pageblock added, size: 0x%x\n",b.size)
 	return true;
 }
 
@@ -176,12 +176,12 @@ static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 	if (value)
 	{
 		*p = *p | (0b1 << i);
-		DEBUGPRINTF_3("newp1: %d, newp2: %d\n",*((uint32_t*) p), *(((uint32_t*) p)+1))
+		DEBUGPRINTF_3("newp1: 0x%llx, newp2: 0x%llx\n",*a, *b)
 	}
 	else
 	{
 		*p = *p & (~ (0b1 << i));
-		DEBUGPRINTF_3("newp1: %d, newp2: %d\n",*((uint32_t*) p), *(((uint32_t*) p)+1))
+		DEBUGPRINTF_3("newp1: 0x%llx, newp2: 0x%llx\n",*a, *b)
 	}
 }
 static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
@@ -204,25 +204,22 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 // get a pointer to a unused page and set it to used
 void* usePage()
 {
-	DEBUGPRINTF_3("blockindex: %d\n",blockindex)
+	//DEBUGPRINTF_3("blockindex: 0x%x\n",blockindex)
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
 		struct pageblock *b = &pages[i];
-		DEBUGPRINTF_3("used: %d, size: %d\n",(uint32_t) b->used,(uint32_t) b->size)
-		//if (b.used < set_bits64(b.size) || b.used2 < set_bits64(b.size-64) )
-		//{
-			for (uint32_t a = 0;a<b->size;a++)
+		//DEBUGPRINTF_3("used: 0x%x, size: 0x%x\n",(uint32_t) b->used,(uint32_t) b->size)
+		for (uint32_t a = 0;a<b->size;a++)
+		{
+			//DEBUGPRINTF_1("a: 0x%x, used: 0x%x, used2: 0x%x\n",a,(uint32_t) b->used,(uint32_t) b->used2)
+			if (getBit128(&b->used,&b->used2,a) == 0)
 			{
-				DEBUGPRINTF_1("a: %d, used: %d, used2: %d\n",a,(uint32_t) b->used,(uint32_t) b->used2)
-				if (getBit128(&b->used,&b->used2,a) == 0)
-				{
-					setBit128(&b->used,&b->used2,a,true);
-					void* page = b->start+a*SMALL_PAGE_SIZE;
-					DEBUGPRINTF_3("page: %d\n",page)
-					return page;
-				}
+				setBit128(&b->used,&b->used2,a,true);
+				void* page = b->start+a*SMALL_PAGE_SIZE;
+				//DEBUGPRINTF_3("page: 0x%x\n",page)
+				return page;
 			}
-		//}
+		}
 	}
 	return NULL;
 }
@@ -231,7 +228,7 @@ void setPageUsed(void* page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -251,7 +248,7 @@ void setPageUnused(void* page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -270,7 +267,7 @@ bool isPageUsed(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -293,11 +290,11 @@ bool isPageUsed(void *page)
 }
 
 
-bool isDirty(void *page)
+bool isPageDirty(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -319,11 +316,11 @@ bool isDirty(void *page)
 	return false;
 }
 
-void clearDirty(void *page)
+void clearPageDirty(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -338,11 +335,11 @@ void clearDirty(void *page)
 	}
 }
 
-void setDirty(void *page)
+void setPageDirty(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -361,7 +358,7 @@ bool isPagedOut(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -383,11 +380,11 @@ bool isPagedOut(void *page)
 	return false;
 }
 
-void clearPageout(void *page)
+void clearPagedOut(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -406,7 +403,7 @@ void setPagedOut(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[blockindex];
+		struct pageblock b = pages[i];
 		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
 		{
 			for (uint32_t i = 0;i<b.size;i++)
@@ -424,14 +421,76 @@ void setPagedOut(void *page)
 
 
 
-void physical_mm_self_test()
+bool physical_mm_self_test()
 {
+	DEBUGPRINTLN_1("starting physical memory manager self test\n")
+	
+	// test pageblock allocation and deallocation
+	allocPageblock(10);
+	if (pages[0].size != 10)
+	{
+		DEBUGPRINTLN_1("size doesn't match up with pageblock allocation!")
+		return false;
+	}
+	if (pages[0].used != 0)
+	{
+		DEBUGPRINTLN_1("used is not 0!")
+		return false;
+	}
+	if (pages[0].pageout != 0)
+	{
+		DEBUGPRINTLN_1("pageout is not 0!")
+		return false;
+	}
+	if (pages[0].dirty != 0)
+	{
+		DEBUGPRINTLN_1("dirty is not 0!")
+		return false;
+	}
+	void *page = usePage();
+	if (! isPageUsed(page))
+	{
+		DEBUGPRINTLN_1("isPageUsed not working!")
+		return false;
+	}
+	setPageDirty(page);
+	if (! isPageDirty(page))
+	{
+		DEBUGPRINTLN_1("isPageDirty or setDirty not working!")
+		return false;
+	}
+	setPagedOut(page);
+	if (! isPagedOut(page))
+	{
+		DEBUGPRINTLN_1("isPagedOut or setPagedOut not working!")
+		return false;
+	}
+	for (uint32_t i = 0;i<30;i++)
+	{
+		void *p = usePage();
+		if (i == 10 && p != NULL)
+		{
+			DEBUGPRINTLN_1("returning too many pages from a pageblock!")
+			return false;
+		}
+	}
 	
 	
 	
+	removePageblock(pages[0]);
+	if (blockindex != 0)
+	{
+		DEBUGPRINTLN_1("blockindex is not 0 after removing!")
+		return false;
+	}
 	
 	
 	
+	DEBUGPRINTLN_1("\nfinished physical memory manager sel test\n\n\n")
+	
+	
+	
+	return true;
 }
 
 

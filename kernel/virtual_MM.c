@@ -58,7 +58,7 @@ void initializeKernelSpace()
 	uint32_t section = ((uint32_t) virtual_base_address);
 	for (uint32_t i = 0;i<sections;i++)
 	{
-		DEBUGPRINTF_3("migrating section %d\n",section+SECTION_SIZE*i)
+		DEBUGPRINTF_3("migrating section 0x%x\n",section+SECTION_SIZE*i)
 		migrateKernelCPT(section+SECTION_SIZE*i,init_pds+(256*i),256);
 	}
 	
@@ -125,7 +125,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	section = section & (~ 0xfffff);
 	
 	
-	DEBUGPRINTF_3("migrating %d pages from section %d from page table %d",pages,section,migrate_cpt)
+	DEBUGPRINTF_3("migrating 0x%x pages from section 0x%x from page table 0x%x",pages,section,migrate_cpt)
 	
 	LinkedList *cptd = requestLinkedListEntry();
 	cptd->data = (void*) section;
@@ -133,7 +133,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	
 	LinkedList *cpt = requestLinkedListEntry();
 	cpt->data = requestCPT();
-	DEBUGPRINTF_3(" to page table %d\n",getPhysicalAddress(kernel_space.tt,cpt->data))
+	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(kernel_space.tt,cpt->data))
 	k_memset(cpt->data,0,1024);
 	addLinkedListEntry(&kernel_space.cpts,cpt);
 	
@@ -151,13 +151,13 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
-	DEBUGPRINTF_3("mapping %d to %d",page,virtual_address)
+	DEBUGPRINTF_3("mapping 0x%x to 0x%x",page,virtual_address)
 	uint32_t section = ((uint32_t) page) & (~ 0xfffff);
 	uint32_t index = 0;
 	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
 	if (sec == NULL)
 	{
-		DEBUGPRINTF_3("adding coarse page table descriptor for section %d\n",section)
+		DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
 		LinkedList *cptd = requestLinkedListEntry();
 		cptd->data = (void*) section;
 		addLinkedListEntry(&kernel_space.cptds,cptd);
@@ -209,39 +209,39 @@ void* getPhysicalAddress(uint32_t* space,void* address)
 	uint32_t descriptor = space[adr >> 20];
 	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
 	{
-		DEBUGPRINTF_3("invalid descriptor: %d\n",adr >> 20)
+		DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
 		return NULL;
 	}
 	if ((descriptor  & 0b11) == 0b10)
 	{
 		uint32_t section_base =  ((descriptor >> 20) << 20);
-		DEBUGPRINTF_3("phys. address: %d\n",(section_base + ((adr << 12) >> 12)))
+		DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
 		return (void*) (section_base + ((adr << 12) >> 12));
 	}
 	if ((descriptor  & 0b11) == 0b01) // coarse page table
 	{
-		DEBUGPRINTF_3("coarse page table: %d\n",adr >> 20)
+		DEBUGPRINTF_3("coarse page table: 0x%x\n",adr >> 20)
 		uint32_t *cpt_base = (uint32_t*) (descriptor & (~ 0b1111111111));
-		DEBUGPRINTF_3("coarse page table: %d\n",descriptor)
-		DEBUGPRINTF_3("coarse page table base: %d\n",cpt_base)
+		DEBUGPRINTF_3("coarse page table: 0x%x\n",descriptor)
+		DEBUGPRINTF_3("coarse page table base: 0x%x\n",cpt_base)
 		uint32_t index = ((adr & 0b11111111000000000000) >> 10)/4;
-		DEBUGPRINTF_3("coarse page table index: %d\n",index)
+		DEBUGPRINTF_3("coarse page table index: 0x%x\n",index)
 		uint32_t page_descriptor = cpt_base[index];
 		
-		DEBUGPRINTF_3("small page descriptor: %d\n",page_descriptor)
+		DEBUGPRINTF_3("small page descriptor: 0x%x\n",page_descriptor)
 		uint32_t page_offset = adr & 0b111111111111;
 		uint32_t phys = (page_descriptor & (~ 0b111111111111)) + page_offset;
-		DEBUGPRINTF_3("phys. address: %d\n",phys)
+		DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
 		return (void*) phys;// for small pages
 		// TODO for large pages
 	}
 	if ((descriptor  & 0b11) == 0b11) // fine page table
 	{
-		DEBUGPRINTF_3("fine page table: %d\n",adr >> 20)
+		DEBUGPRINTF_3("fine page table: 0x%x\n",adr >> 20)
 		// never used anyways
 		return NULL;
 	}
-	DEBUGPRINTF_3("no known descriptor type: %d, %d\n",adr >> 20, descriptor)
+	DEBUGPRINTF_3("no known descriptor type: 0x%x, 0x%x\n",adr >> 20, descriptor)
 	return NULL;
 }
 

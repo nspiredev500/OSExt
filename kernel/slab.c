@@ -212,7 +212,7 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 
 static void refillUnusedCacheEntriesWithPage(void *page)
 {
-	DEBUGPRINTF_3("page used for refilling: %d\n",page);
+	DEBUGPRINTF_3("page used for refilling: 0x%x\n",page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
 	for (uint32_t i = 0;i<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
 	{

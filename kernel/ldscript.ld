@@ -28,6 +28,14 @@ SECTIONS
 		KEEP(*(.eh_frame))
 	}
 	
+	/* from ndless linker script
+	*/
+	.ARM.extab   : { KEEP(*(.ARM.extab* .gnu.linkonce.armextab.*)) }
+	PROVIDE_HIDDEN (__exidx_start = .);
+	.ARM.exidx   : { KEEP(*(.ARM.exidx* .gnu.linkonce.armexidx.*)) }
+	PROVIDE_HIDDEN (__exidx_end = .);
+	
+	
 	
 	.bss : {
 		PROVIDE(__bss_start = .);
@@ -35,13 +43,6 @@ SECTIONS
 		PROVIDE(_end = .);
     }
 	
-	
-	/* from ndless linker script
-	*/
-	.ARM.extab   : { KEEP(*(.ARM.extab* .gnu.linkonce.armextab.*)) }
-	PROVIDE_HIDDEN (__exidx_start = .);
-	.ARM.exidx   : { KEEP(*(.ARM.exidx* .gnu.linkonce.armexidx.*)) }
-	PROVIDE_HIDDEN (__exidx_end = .);
 	
 	
 	
@@ -56,7 +57,7 @@ SECTIONS
 	_TEXT_SIZE = SIZEOF (.text);
 	_DATA_SIZE = SIZEOF (.data);
 	_BSS_SIZE = SIZEOF (.bss);
-	_EXEC_SIZE = SIZEOF (.text) + SIZEOF (.data) + SIZEOF (.bss) + SIZEOF (.got);
+	_EXEC_SIZE = SIZEOF (.text) + SIZEOF (.data) + SIZEOF (.bss) + SIZEOF (.got) + SIZEOF (.ARM.extab) + SIZEOF (.ARM.exidx);
 	_GOT_START = ADDR (.got);
 	_GOT_SIZE = SIZEOF (.got);
 }

@@ -98,6 +98,28 @@ const uint32_t SECTION_SIZE;
 
 
 
+#if DEBUGLEVEL == 0
+	#define DEBUGPRINTLN_1(...) 
+	#define DEBUGPRINTLN_2(...) 
+	#define DEBUGPRINTLN_3(...) 
+#endif
+#if DEBUGLEVEL == 1
+	#define DEBUGPRINTLN_1(...) uart_println(__VA_ARGS__);
+	#define DEBUGPRINTLN_2(...) 
+	#define DEBUGPRINTLN_3(...) 
+#endif
+#if DEBUGLEVEL == 2
+	#define DEBUGPRINTLN_1(...) uart_println(__VA_ARGS__);
+	#define DEBUGPRINTLN_2(...) uart_println(__VA_ARGS__);
+	#define DEBUGPRINTLN_3(...) 
+#endif
+#if DEBUGLEVEL == 3
+	#define DEBUGPRINTLN_1(...) uart_println(__VA_ARGS__);
+	#define DEBUGPRINTLN_2(...) uart_println(__VA_ARGS__);
+	#define DEBUGPRINTLN_3(...) uart_println(__VA_ARGS__);
+#endif
+
+
 
 
 

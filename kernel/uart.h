@@ -10,8 +10,8 @@ void uart_send_string(char *string);
 void uart_send_string_length(char *string,int length);
 void uart_send(char c);
 char uart_rec();
-
-
+void uart_send_uint32_base(uint32_t a,uint32_t base);
+void uart_println(char *str,...);
 
 
 

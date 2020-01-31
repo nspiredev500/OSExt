@@ -13,12 +13,12 @@ bool isPageUsed(void *page);
 void setPageUnused(void* page);
 void setPageUsed(void* page);
 
-bool isDirty(void *page);
-void clearDirty(void *page);
-void setDirty(void *page);
+bool isPageDirty(void *page);
+void clearPageDirty(void *page);
+void setPageDirty(void *page);
 
 bool isPagedOut(void *page);
-void clearPageout(void *page);
+void clearPagedOut(void *page);
 void setPagedOut(void *page);
 
 
@@ -32,7 +32,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment);
 
 
 
-void physical_mm_self_test();
+bool physical_mm_self_test();
 
 
 #endif

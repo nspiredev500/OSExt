@@ -64,7 +64,7 @@ int main(int argsn,char **argc)
 	else
 	{
 		//test3 = ti_malloc(8);
-		//uart_printf("test3: %d\n",test3);
+		//uart_printf("test3: 0x%x\n",test3);
 		relocate_self();
 	}
 	return 0;
@@ -89,17 +89,17 @@ void initialize()
 	/*
 	register uint32_t domains asm("r0") = 0;
 	asm volatile("mrc p15, 0, r0, c3, c0, 0":"=r" (domains));
-	DEBUGPRINTF_3("domains: %d\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
+	DEBUGPRINTF_3("domains: 0x%x\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
 	*/
 	
 	
-	
+	virtual_mm_self_test();
 	
 	
 	initializeKernelSpace();
 	
 	
-	virtual_mm_self_test();
+	
 	
 	
 	run_self_test();
