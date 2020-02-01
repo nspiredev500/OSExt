@@ -75,24 +75,37 @@ int main(int argsn,char **argc)
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
-	DEBUGPRINTF_1("initializing\n")
+	void* framebuffer = (void*) *LCD_UPBASE;
+	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
+	
+	debug_shell_println("finished relocating");
+	debug_shell_println("initializing");
 	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
 	
 	
+	/*
+	for (uint32_t i = 0;i<50;i++)
+	{
+		debug_shell_println("i: %d",i);
+	}
+	*/
 	
-	
-	
-	
+	debug_shell_println("performing physical memory manager self test");
 	bool b = physical_mm_self_test();
 	if (! b)
 	{
+		debug_shell_println("error in physical memory manager self test         aborting");
+		keypad_press_release_barrier();
 		free_init_pds();
 		return;
 	}
 	
+	debug_shell_println("allocating memory");
 	allocPageblock(128);
-	allocPageblock(128); // allocate 1mb
-	
+	allocPageblock(128);
+	allocPageblock(128);
+	allocPageblock(128); // allocate 2mb
+	debug_shell_println("done");
 	
 	
 	/*
@@ -101,30 +114,46 @@ void initialize()
 	DEBUGPRINTF_3("domains: 0x%x\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
 	*/
 	
-	
+	debug_shell_println("performing virtual memory manager self test");
 	b = virtual_mm_self_test();
 	if (! b)
 	{
+		debug_shell_println("error in virtual memory manager self test         aborting");
+		keypad_press_release_barrier();
 		free_init_pds();
 		return;
 	}
 	
+	debug_shell_println("initializing kernel space");
 	initializeKernelSpace();
+	free_init_pds();
+	debug_shell_println("done");
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	
 	
+	debug_shell_println("running general self test");
 	b = run_self_test();
 	if (! b)
 	{
-		free_init_pds();
+		debug_shell_println("error in general self test         aborting");
+		keypad_press_release_barrier();
 		return;
 	}
 	
 	
 	
 	
-	free_init_pds();
+	
+	
+	
+	
+	
+	debug_shell_println("osext installed");
+	debug_shell_println("press any key to exit");
+	// to be able to read the messages
+	keypad_press_release_barrier();
 }
 
 

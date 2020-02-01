@@ -450,7 +450,7 @@ void freeTranslationTable(uint32_t *tt)
 
 void* requestLCDFramebuffer()
 {
-	return requestCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,SMALL_PAGE_SIZE*75); // 320*240*4
+	return requestCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,SMALL_PAGE_SIZE*37); // 320*240*2
 }
 
 void freeLCDFramebuffer(void* buff)

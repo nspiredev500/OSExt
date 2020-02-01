@@ -37,15 +37,6 @@ void *ti_calloc(uint32_t size) // not 8-byte-aligned !
 
 
 
-/*
-void* alignAddress(void* address,uint32_t alignment)
-{
-	
-}
-*/
-
-
-
 void* align4Bytes(void* address)
 {
 	uint32_t adr = (uint32_t) address;
@@ -109,20 +100,4 @@ void* (*memset)(void* str,int c,size_t n) = k_memset;
 void* (*memcpy)(void* str,const void* str2,size_t n) = k_memcpy;
 void* (*memmove)(void* str,const void* str2,size_t n) = k_memcpy;
 int (*memcmp)(const void* str,const void* str2,size_t n) = k_memcmp;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

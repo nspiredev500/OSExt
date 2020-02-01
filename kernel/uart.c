@@ -41,13 +41,13 @@ void uart_printf(char *str,...)
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'x')
 			{
-				uart_send_uint32_base(va_arg(va,uint64_t),16);
+				uart_send_uint64_base(va_arg(va,uint64_t),16);
 				c += 4;
 				continue;
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'd')
 			{
-				uart_send_uint32_base(va_arg(va,uint64_t),10);
+				uart_send_uint64_base(va_arg(va,uint64_t),10);
 				c += 4;
 				continue;
 			}
@@ -58,10 +58,8 @@ void uart_printf(char *str,...)
 	va_end(va);
 }
 
-void uart_println(char *str,...)
+void uart_printf_va(char *str,va_list va)
 {
-	va_list va;
-	va_start(va,str);
 	char *c = str;
 	while (true)
 	{
@@ -104,9 +102,24 @@ void uart_println(char *str,...)
 		uart_send(*c);
 		c++;
 	}
-	uart_send('\n');
-	va_end(va);
 }
+
+
+void uart_println(char *str,...)
+{
+	va_list va;
+	va_start(va,str);
+	uart_printf_va(str,va);
+	va_end(va);
+	uart_send('\n');
+}
+
+void uart_println_va(char *str,va_list va)
+{
+	uart_printf_va(str,va);
+	uart_send('\n');
+}
+
 
 void uart_send_uint64_base(uint64_t a,uint32_t base)
 {

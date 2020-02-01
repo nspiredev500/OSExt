@@ -59,7 +59,7 @@ void relocate_self(void)
 	
 	
 	
-	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+SMALL_PAGE_SIZE*4); // extra size to align the kernel on a (large) page boundrary
+	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+SMALL_PAGE_SIZE*6); // extra size to align the kernel on a (large) page boundrary
 	void *aligned = (void*) makeSmallPageAligned((void*) malloced_chunk);
 	
 	if (((void*) malloced_chunk) == NULL)
@@ -73,7 +73,7 @@ void relocate_self(void)
 	
 	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
 	
-	init_pds_unaligned = ti_calloc(sizeof(uint32_t)*sections*256+16+SMALL_PAGE_SIZE*2);
+	init_pds_unaligned = ti_calloc(sizeof(uint32_t)*sections*256+16+SMALL_PAGE_SIZE*3);
 	if (init_pds_unaligned == NULL)
 	{
 		ti_free((void*) malloced_chunk);

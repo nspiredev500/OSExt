@@ -84,7 +84,7 @@ bool allocPageblock(uint32_t size)
 		return false;
 	}
 	struct pageblock b;
-	b.unaligned = ti_malloc(SMALL_PAGE_SIZE*(size+2));
+	b.unaligned = ti_malloc(SMALL_PAGE_SIZE*(size+3));
 	if (b.unaligned == NULL)
 	{
 		return false;

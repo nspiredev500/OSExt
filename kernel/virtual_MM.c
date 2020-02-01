@@ -56,7 +56,7 @@ void initializeKernelSpace()
 	uint32_t kernel_size = (uint32_t) ((&_EXEC_SIZE)-(&_EXEC_START));
 	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
 	uint32_t section = ((uint32_t) virtual_base_address);
-	uint32_t pages_left = kernel_size/SMALL_PAGE_SIZE;
+	uint32_t pages_left = (kernel_size/SMALL_PAGE_SIZE)+1;
 	DEBUGPRINTLN_1("pages for kernel: %d",pages_left)
 	for (uint32_t i = 0;i<sections;i++)
 	{
@@ -147,14 +147,16 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(kernel_space.tt,cpt->data))
 	DEBUGPRINTLN_3("memsetting page table")
 	k_memset(cpt->data,0,1024);
+	DEBUGPRINTLN_3("adding linkedlist entry to kernel cpts")
 	addLinkedListEntry(&kernel_space.cpts,cpt);
-	
+	DEBUGPRINTLN_3("copying small page descriptors")
 	k_memcpy(cpt->data,migrate_cpt,pages*sizeof(uint32_t));
 	
-	
+	DEBUGPRINTLN_3("setting the coarse page table descriptor")
 	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
-	
+	DEBUGPRINTLN_3("clearing the caches")
 	clear_caches();
+	DEBUGPRINTLN_3("invalidating tlb")
 	invalidate_TLB();
 }
 

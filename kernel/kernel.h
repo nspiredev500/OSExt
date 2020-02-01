@@ -15,6 +15,8 @@
 #include "process.h"
 #include "thread.h"
 #include "LinkedList.h"
+#include "chars.h"
+#include "digits.h"
 
 
 
@@ -36,6 +38,11 @@
 #include "math.h"
 #include "slab.h"
 #include "self_test.h"
+#include "keypad.h"
+#include "debug_shell.h"
+
+
+
 
 
 extern char _EXEC_START;
@@ -58,7 +65,7 @@ extern char _GOT_SIZE;
 
 void* const virtual_base_address;
 void* const kernel_heap_start;
-
+volatile void** LCD_UPBASE;
 
 
 const uint32_t SMALL_PAGE_SIZE;
