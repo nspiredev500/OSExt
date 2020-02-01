@@ -150,8 +150,15 @@ static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t s
 		addCacheEntry(cache,e);
 	}
 }
+void ensureCPTCapacity()
+{
+	refillCacheEntries(&cpt_cache_unused,1024);
+}
 
-
+void ensureLinkedListCapacity()
+{
+	refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
+}
 
 static void refillCacheEntries(cache_entry **cache,uint32_t size)
 {

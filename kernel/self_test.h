@@ -2,7 +2,7 @@
 #define SELF_TEST_H
 
 
-void run_self_test();
+bool run_self_test();
 
 
 

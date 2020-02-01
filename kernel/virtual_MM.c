@@ -56,10 +56,15 @@ void initializeKernelSpace()
 	uint32_t kernel_size = (uint32_t) ((&_EXEC_SIZE)-(&_EXEC_START));
 	uint32_t sections = (kernel_size/SECTION_SIZE)+1;
 	uint32_t section = ((uint32_t) virtual_base_address);
+	uint32_t pages_left = kernel_size/SMALL_PAGE_SIZE;
+	DEBUGPRINTLN_1("pages for kernel: %d",pages_left)
 	for (uint32_t i = 0;i<sections;i++)
 	{
+		uint32_t pages = 256;
+		if (i == sections-1)
+			pages = pages_left % 256;
 		DEBUGPRINTF_3("migrating section 0x%x\n",section+SECTION_SIZE*i)
-		migrateKernelCPT(section+SECTION_SIZE*i,init_pds+(256*i),256);
+		migrateKernelCPT(section+SECTION_SIZE*i,init_pds+(256*i),pages);
 	}
 	
 	
@@ -114,7 +119,7 @@ void destroyAddressSpace(struct address_space *space)
 
 
 
-
+// IMPORTANT make sure to have enough linkedlist entries and a cpt entry
 // only used to initialize the memory allocator and the virtual memory manager
 void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 {
@@ -125,15 +130,22 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	section = section & (~ 0xfffff);
 	
 	
-	DEBUGPRINTF_3("migrating 0x%x pages from section 0x%x from page table 0x%x",pages,section,migrate_cpt)
+	DEBUGPRINTF_3("migrating %d pages from section 0x%x from page table 0x%x",pages,section,migrate_cpt)
 	
+	
+	DEBUGPRINTLN_3("requesting linkedlist entry")
 	LinkedList *cptd = requestLinkedListEntry();
+	DEBUGPRINTLN_3("writing section to linkedlist entry")
 	cptd->data = (void*) section;
+	DEBUGPRINTLN_3("adding linkedlist entry to kernel cptds")
 	addLinkedListEntry(&kernel_space.cptds,cptd);
 	
+	DEBUGPRINTLN_3("requesting linkedlist entry")
 	LinkedList *cpt = requestLinkedListEntry();
+	DEBUGPRINTLN_3("requesting cptd for entry")
 	cpt->data = requestCPT();
 	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(kernel_space.tt,cpt->data))
+	DEBUGPRINTLN_3("memsetting page table")
 	k_memset(cpt->data,0,1024);
 	addLinkedListEntry(&kernel_space.cpts,cpt);
 	
@@ -158,6 +170,10 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 	if (sec == NULL)
 	{
 		DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
+		
+		ensureCPTCapacity();
+		ensureLinkedListCapacity();
+		
 		LinkedList *cptd = requestLinkedListEntry();
 		cptd->data = (void*) section;
 		addLinkedListEntry(&kernel_space.cptds,cptd);
@@ -254,7 +270,7 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 		uint32_t type = cpt[i] & 0b11;
 		if (type == 0b1 || type == 0b11)
 		{
-			panic("tiny or large page found in coarse page table while freeing!\n");
+			panic("tiny or large page found in coarse page table while freeing coarse page table!\n");
 		}
 		if (type == 0b0)
 		{
@@ -262,7 +278,7 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 		}
 		uint32_t descriptor = cpt[i];
 		void *page = (void*) (descriptor & (~ 0b111111111111));
-		setPageUnused(page);
+		setPageUsedBit(page,false);
 	}
 }
 
@@ -333,12 +349,16 @@ void clear_caches()
 
 
 
-void virtual_mm_self_test()
+bool virtual_mm_self_test()
 {
 	
 	
 	
 	
+	
+	
+	
+	return true;
 }
 
 

@@ -8,7 +8,7 @@
 
 
 
-void run_self_test()
+bool run_self_test()
 {
 	
 	
@@ -19,7 +19,7 @@ void run_self_test()
 	
 	
 	
-	
+	return true;
 }
 
 

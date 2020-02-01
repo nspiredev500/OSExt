@@ -78,8 +78,17 @@ void initialize()
 	DEBUGPRINTF_1("initializing\n")
 	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
 	
-	physical_mm_self_test();
 	
+	
+	
+	
+	
+	bool b = physical_mm_self_test();
+	if (! b)
+	{
+		free_init_pds();
+		return;
+	}
 	
 	allocPageblock(128);
 	allocPageblock(128); // allocate 1mb
@@ -93,17 +102,24 @@ void initialize()
 	*/
 	
 	
-	virtual_mm_self_test();
-	
+	b = virtual_mm_self_test();
+	if (! b)
+	{
+		free_init_pds();
+		return;
+	}
 	
 	initializeKernelSpace();
 	
 	
 	
 	
-	
-	run_self_test();
-	
+	b = run_self_test();
+	if (! b)
+	{
+		free_init_pds();
+		return;
+	}
 	
 	
 	

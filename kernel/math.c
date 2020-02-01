@@ -23,6 +23,23 @@ uint32_t k_pow(uint32_t a,uint32_t b)
 	return sum;
 }
 
+uint32_t signedtounsigned32(int32_t i)
+{
+	if (i < 0)
+		return (uint32_t) (-i);
+	else
+		return (uint32_t) i;
+}
+
+uint64_t signedtounsigned64(int64_t i)
+{
+	if (i < 0)
+		return (uint64_t) (-i);
+	else
+		return (uint64_t) i;
+}
+
+
 uint32_t pow_of_2(uint32_t exp)
 {
 	return 0b1 << exp;

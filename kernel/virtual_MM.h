@@ -42,7 +42,7 @@ uint32_t* getKernel_TT_Base();
 void* getPhysicalAddress(uint32_t* space,void* address);
 
 
-void virtual_mm_self_test();
+bool virtual_mm_self_test();
 
 
 #endif

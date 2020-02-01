@@ -10,9 +10,8 @@ uint32_t pow_of_2(uint32_t exp);
 void* make4ByteAligned(void* p);
 void* make1KAligned(void* p);
 
-
-
-
+uint32_t signedtounsigned32(int32_t i);
+uint64_t signedtounsigned64(int64_t i);
 
 
 

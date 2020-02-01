@@ -105,7 +105,7 @@ void relocate_self(void)
 	
 	uint32_t section = ((uint32_t) virtual_base_address);
 	
-	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+2;i++)
+	for (uint32_t i = 0;i<(kernel_size/SMALL_PAGE_SIZE)+1;i++)
 	{
 		init_pds[i] = newSPD(1,1,0b01010101,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE));
 		DEBUGPRINTF_3("page: i: 0x%x, address: 0x%x, descriptor: 0x%x, descaddr: 0x%x\n",i,(((uint32_t) aligned)+i*SMALL_PAGE_SIZE),init_pds[i],init_pds+i)

@@ -10,12 +10,8 @@ void addLinkedListEntry(LinkedList **list, LinkedList *e)
 		*list = e;
 		return;
 	}
-	LinkedList *next = *list;
-	while (next->next != NULL)
-	{
-		next = next->next;
-	}
-	next->next = e;
+	e->next = *list;
+	*list = e;
 }
 
 

@@ -10,16 +10,13 @@ void* makeSmallPageAligned(void *ptr);
 bool allocPageblock(uint32_t size);
 void* usePage();
 bool isPageUsed(void *page);
-void setPageUnused(void* page);
-void setPageUsed(void* page);
+void setPageUsedBit(void* page, bool used);
 
 bool isPageDirty(void *page);
-void clearPageDirty(void *page);
-void setPageDirty(void *page);
+void setPageDirtyBit(void *page, bool dirty);
 
 bool isPagedOut(void *page);
-void clearPagedOut(void *page);
-void setPagedOut(void *page);
+void setPagedOutBit(void *page,bool pagedout);
 
 
 void* useConsecutivePages(uint32_t size,uint32_t alignment);

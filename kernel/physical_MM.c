@@ -61,11 +61,11 @@ static void removePageblock(struct pageblock block)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		if (pages[blockindex].unaligned == block.unaligned)
+		if (pages[i].unaligned == block.unaligned)
 		{
 			for (uint32_t a = i;a<blockindex-1;a++)
 			{
-				pages[blockindex] = pages[blockindex+1];
+				pages[a] = pages[a+1];
 			}
 			blockindex--;
 			return;
@@ -135,7 +135,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 				{
 					for (uint32_t b = 0;b<size;b++)
 					{
-						setPageUsed(page+SMALL_PAGE_SIZE*b);
+						setPageUsedBit(page+SMALL_PAGE_SIZE*b,true);
 					}
 					return page;
 				}
@@ -176,12 +176,10 @@ static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 	if (value)
 	{
 		*p = *p | (0b1 << i);
-		DEBUGPRINTF_3("newp1: 0x%llx, newp2: 0x%llx\n",*a, *b)
 	}
 	else
 	{
 		*p = *p & (~ (0b1 << i));
-		DEBUGPRINTF_3("newp1: 0x%llx, newp2: 0x%llx\n",*a, *b)
 	}
 }
 static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
@@ -196,7 +194,7 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 		p = b;
 		i -= 64;
 	}
-	return ((*p) >> i) & 0b1;
+	return (*p) & (0b1 << i);
 }
 
 
@@ -204,85 +202,55 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 // get a pointer to a unused page and set it to used
 void* usePage()
 {
-	//DEBUGPRINTF_3("blockindex: 0x%x\n",blockindex)
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock *b = &pages[i];
-		//DEBUGPRINTF_3("used: 0x%x, size: 0x%x\n",(uint32_t) b->used,(uint32_t) b->size)
-		for (uint32_t a = 0;a<b->size;a++)
+		struct pageblock *b = pages+i;
+		uint32_t ones = signedtounsigned32(__builtin_popcountll(b->used) + __builtin_popcountll(b->used2));
+		if (ones < b->size) // a page in the block is free
 		{
-			//DEBUGPRINTF_1("a: 0x%x, used: 0x%x, used2: 0x%x\n",a,(uint32_t) b->used,(uint32_t) b->used2)
-			if (getBit128(&b->used,&b->used2,a) == 0)
+			for (uint32_t a = 0;a<b->size;a++)
 			{
-				setBit128(&b->used,&b->used2,a,true);
-				void* page = b->start+a*SMALL_PAGE_SIZE;
-				//DEBUGPRINTF_3("page: 0x%x\n",page)
-				return page;
+				if (! getBit128(&b->used,&b->used2,a))
+				{
+					setBit128(&b->used,&b->used2,a,true);
+					return b->start+SMALL_PAGE_SIZE*a;
+				}
 			}
 		}
 	}
 	return NULL;
 }
 
-void setPageUsed(void* page)
+void setPageUsedBit(void* page,bool used)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.used,&b.used2,i,true);
-					return;
-				}
-			}
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			setBit128(&b->used,&b->used2,offset,used);
 		}
 	}
 }
 
 
-void setPageUnused(void* page)
-{
-	for (uint32_t i = 0;i<blockindex;i++)
-	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
-		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.used,&b.used2,i,false);
-					return;
-				}
-			}
-		}
-	}
-}
 // returns whether a page is used, or true if not found (so you don't use a unallocated page)
 bool isPageUsed(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			if (getBit128(&b->used,&b->used2,offset) == 1)
 			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					if (getBit128(&b.used,&b.used2,i) != 0)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-				}
+				return true;
+			}
+			else
+			{
+				return false;
 			}
 		}
 	}
@@ -294,62 +262,34 @@ bool isPageDirty(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			if (getBit128(&b->dirty,&b->dirty2,offset) == 1)
 			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					if (getBit128(&b.dirty,&b.dirty2,i) != 0)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-				}
+				return true;
+			}
+			else
+			{
+				return false;
 			}
 		}
 	}
 	return false;
 }
 
-void clearPageDirty(void *page)
-{
-	for (uint32_t i = 0;i<blockindex;i++)
-	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
-		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.dirty,&b.dirty2,i,false);
-					return;
-				}
-			}
-		}
-	}
-}
 
-void setPageDirty(void *page)
+
+void setPageDirtyBit(void *page,bool dirty)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.dirty,&b.dirty2,i,true);
-					return;
-				}
-			}
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			setBit128(&b->dirty,&b->dirty2,offset,dirty);
 		}
 	}
 }
@@ -358,62 +298,33 @@ bool isPagedOut(void *page)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			if (getBit128(&b->pageout,&b->pageout2,offset) == 1)
 			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					if (getBit128(&b.pageout,&b.pageout2,i) != 0)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-				}
+				return true;
+			}
+			else
+			{
+				return false;
 			}
 		}
 	}
 	return false;
 }
 
-void clearPagedOut(void *page)
-{
-	for (uint32_t i = 0;i<blockindex;i++)
-	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
-		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.pageout,&b.pageout2,i,false);
-					return;
-				}
-			}
-		}
-	}
-}
 
-void setPagedOut(void *page)
+void setPagedOutBit(void *page,bool pagedout)
 {
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		struct pageblock b = pages[i];
-		if (page >= b.start && page <= b.start+SMALL_PAGE_SIZE*b.size)
+		struct pageblock *b = pages+i;
+		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
-			for (uint32_t i = 0;i<b.size;i++)
-			{
-				if (page == b.start+SMALL_PAGE_SIZE*i)
-				{
-					setBit128(&b.pageout,&b.pageout2,i,true);
-					return;
-				}
-			}
+			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			setBit128(&b->pageout,&b->pageout2,offset,pagedout);
 		}
 	}
 }
@@ -447,28 +358,51 @@ bool physical_mm_self_test()
 		DEBUGPRINTLN_1("dirty is not 0!")
 		return false;
 	}
+	uint64_t a1 = 0, a2 = 0;
+	setBit128(&a1,&a2,0,true);
+	if (a1 != 1)
+	{
+		DEBUGPRINTLN_1("setBit128 not working!")
+		return false;
+	}
+	a1 = 0;
+	a2 = 0;
+	setBit128(&a1,&a2,64,true);
+	if (a2 != 1)
+	{
+		DEBUGPRINTLN_1("setBit128 not working!")
+		return false;
+	}
+	a1 = 0;
+	a2 = 0;
+	setBit128(&a1,&a2,3,true);
+	if (a1 != (1 << 3))
+	{
+		DEBUGPRINTLN_1("setBit128 not working! expected: 0x%llx, got: 0x%llx",(uint64_t) 1 << 3,a1)
+		return false;
+	}
 	void *page = usePage();
 	if (! isPageUsed(page))
 	{
 		DEBUGPRINTLN_1("isPageUsed not working!")
 		return false;
 	}
-	setPageDirty(page);
+	setPageDirtyBit(page,true);
 	if (! isPageDirty(page))
 	{
-		DEBUGPRINTLN_1("isPageDirty or setDirty not working!")
+		DEBUGPRINTLN_1("isPageDirty or setDirty not working! expected: 1, got: 0x%llx, 0x%llx",pages[0].dirty,pages[0].dirty2)
 		return false;
 	}
-	setPagedOut(page);
+	setPagedOutBit(page,true);
 	if (! isPagedOut(page))
 	{
 		DEBUGPRINTLN_1("isPagedOut or setPagedOut not working!")
 		return false;
 	}
-	for (uint32_t i = 0;i<30;i++)
+	for (uint32_t i = 0;i<15;i++)
 	{
 		void *p = usePage();
-		if (i == 10 && p != NULL)
+		if (i >= 9 && p != NULL) // one page already used for the tests
 		{
 			DEBUGPRINTLN_1("returning too many pages from a pageblock!")
 			return false;
@@ -480,13 +414,13 @@ bool physical_mm_self_test()
 	removePageblock(pages[0]);
 	if (blockindex != 0)
 	{
-		DEBUGPRINTLN_1("blockindex is not 0 after removing!")
+		DEBUGPRINTLN_1("blockindex is not 0 after removing! blockindex: %d",blockindex)
 		return false;
 	}
 	
 	
 	
-	DEBUGPRINTLN_1("\nfinished physical memory manager sel test\n\n\n")
+	DEBUGPRINTLN_1("\nfinished physical memory manager self test\n\n\n")
 	
 	
 	
