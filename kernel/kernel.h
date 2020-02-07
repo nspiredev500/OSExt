@@ -17,7 +17,7 @@
 #include "LinkedList.h"
 #include "chars.h"
 #include "digits.h"
-
+#include "ascii.h"
 
 
 #include "scheduler.h"

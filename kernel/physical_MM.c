@@ -109,19 +109,14 @@ bool allocPageblock(uint32_t size)
 
 void* useConsecutivePages(uint32_t size,uint32_t alignment)
 {
-	uint32_t alignmentbits = 0;
-	for (uint32_t i = alignment;(i & 0b1) != 1;i = i>>1)
-	{
-		alignmentbits++;
-	}
-	alignmentbits = set_bits32(alignmentbits);
 	for (uint32_t i = 0;i<blockindex;i++)
 	{
-		void *page = pages[blockindex].start;
-		for (uint32_t a = 0;a<pages[blockindex].size;a++)
+		void *page = pages[i].start;
+		for (uint32_t a = 0;a<pages[i].size;a++)
 		{
-			if (((uint32_t) page & alignmentbits) == 0)
+			if (((uint32_t) page % alignment) == 0)
 			{
+				DEBUGPRINTLN_1("aligned page found: 0x%x",page)
 				bool free = true;
 				for (uint32_t b = 0;b<size;b++)
 				{
@@ -135,7 +130,9 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 				{
 					for (uint32_t b = 0;b<size;b++)
 					{
+						DEBUGPRINTLN_1("setting page 0x%x used",page+SMALL_PAGE_SIZE*b)
 						setPageUsedBit(page+SMALL_PAGE_SIZE*b,true);
+						DEBUGPRINTLN_1("used: %d",isPageUsed(page+SMALL_PAGE_SIZE*b))
 					}
 					return page;
 				}
@@ -175,11 +172,11 @@ static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 	}
 	if (value)
 	{
-		*p = *p | (0b1 << i);
+		*p = *p | ((uint64_t) 0b1 << (uint64_t) i);
 	}
 	else
 	{
-		*p = *p & (~ (0b1 << i));
+		*p = *p & (~ ((uint64_t) 0b1 << (uint64_t) i));
 	}
 }
 static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
@@ -194,7 +191,7 @@ static uint32_t getBit128(uint64_t *a,uint64_t *b,uint32_t i)
 		p = b;
 		i -= 64;
 	}
-	return (*p) & (0b1 << i);
+	return (uint32_t) (((*p) >> i) & 0b1);
 }
 
 
@@ -229,6 +226,7 @@ void setPageUsedBit(void* page,bool used)
 		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
 			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
+			DEBUGPRINTLN_1("page offset: %d",offset)
 			setBit128(&b->used,&b->used2,offset,used);
 		}
 	}
@@ -362,7 +360,12 @@ bool physical_mm_self_test()
 	setBit128(&a1,&a2,0,true);
 	if (a1 != 1)
 	{
-		DEBUGPRINTLN_1("setBit128 not working!")
+		DEBUGPRINTLN_1("setBit128 0 not working!")
+		return false;
+	}
+	if (getBit128(&a1,&a2,0) != 1)
+	{
+		DEBUGPRINTLN_1("getBit128 0 not working!")
 		return false;
 	}
 	a1 = 0;
@@ -370,7 +373,12 @@ bool physical_mm_self_test()
 	setBit128(&a1,&a2,64,true);
 	if (a2 != 1)
 	{
-		DEBUGPRINTLN_1("setBit128 not working!")
+		DEBUGPRINTLN_1("setBit128 64 not working!")
+		return false;
+	}
+	if (getBit128(&a1,&a2,64) != 1)
+	{
+		DEBUGPRINTLN_1("getBit128 64 not working!")
 		return false;
 	}
 	a1 = 0;
@@ -378,7 +386,12 @@ bool physical_mm_self_test()
 	setBit128(&a1,&a2,3,true);
 	if (a1 != (1 << 3))
 	{
-		DEBUGPRINTLN_1("setBit128 not working! expected: 0x%llx, got: 0x%llx",(uint64_t) 1 << 3,a1)
+		DEBUGPRINTLN_1("setBit128 3 not working! expected: 0x%llx, got: 0x%llx",(uint64_t) 1 << 3,a1)
+		return false;
+	}
+	if (getBit128(&a1,&a2,3) != 1)
+	{
+		DEBUGPRINTLN_1("getBit128 3 not working!")
 		return false;
 	}
 	void *page = usePage();
@@ -418,7 +431,24 @@ bool physical_mm_self_test()
 		return false;
 	}
 	
+	allocPageblock(10);
 	
+	void * cons_pages = useConsecutivePages(10,0);
+	if (cons_pages == NULL)
+	{
+		DEBUGPRINTLN_1("useConsecutivePages not working!")
+		return false;
+	}
+	
+	for (uint32_t i = 0;i<10;i++)
+	{
+		if (! isPageUsed(cons_pages+SMALL_PAGE_SIZE*i))
+		{
+			DEBUGPRINTLN_1("useConsecutivePages not setting all pages to used! i: %d",i)
+			return false;
+		}
+	}
+	removePageblock(pages[0]);
 	
 	DEBUGPRINTLN_1("\nfinished physical memory manager self test\n\n\n")
 	

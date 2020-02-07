@@ -12,7 +12,7 @@ void initSlabAllocator();
 
 
 
-void slab_allocator_self_test();
+bool slab_allocator_self_test();
 
 
 void ensureCPTCapacity();

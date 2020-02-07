@@ -19,7 +19,7 @@ void framebuffer_write10pchar(void *buff,int xx,int yy,uint32_t r, uint32_t g,ui
 
 void lcd_write10pstring(char* string,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[][10][10],char d[][10][10]);
 void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[][10][10],char d[][10][10]);
-
+void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[128][10][10]);
 
 
 

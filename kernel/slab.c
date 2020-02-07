@@ -132,17 +132,21 @@ static void refillUnusedCacheEntries();
 // only supports small structures that fir into one page
 static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size)
 {
+	DEBUGPRINTF_3("page used for refilling: 0x%x\n",page);
 	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
 	{
-		// TODO allocate new page and refill the cache entries
-		panic("not enough empty cache entries left!\n");
+		refillUnusedCacheEntries();
+		//panic("not enough empty cache entries left!\n");
 	}
-	for (uint32_t i = 0;i<SMALL_PAGE_SIZE;i+=size)
+	for (uint32_t i = 0;i<SMALL_PAGE_SIZE-(SMALL_PAGE_SIZE % size);i+=size) // - SMALL_PAGE_SIZE % size to make it fit into the page and not accidentally overflow
 	{
 		cache_entry *e = unused_entries;
 		if (e == NULL)
 		{
-			panic("no empty cache entries left!\n");
+			refillUnusedCacheEntries();
+			i -= size;
+			continue;
+			//panic("no empty cache entries left!\n");
 		}
 		removeCacheEntry(&unused_entries,e);
 		unused_entries_count--;
@@ -178,7 +182,19 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 		{
 			alignment = 1024*16;
 		}
+		refillUnusedCacheEntries();
+		refillUnusedCacheEntries();
+		refillCacheEntries(&cpt_cache_unused,1024);
+		refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
+		refillUnusedCacheEntries();
+		refillUnusedCacheEntries();
+		refillCacheEntries(&cpt_cache_unused,1024);
+		refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
+		// caches can't be refilled while remapping the block
+		
 		void *data = useConsecutivePages(size/SMALL_PAGE_SIZE,alignment);
+		DEBUGPRINTF_3("page base for entry: 0x%x\n",data);
+		DEBUGPRINTF_1("cache entry size: 0x%x\n",size)
 		if (data == NULL)
 		{
 			panic("not enough consecutive pages for cache entry found!\n");
@@ -187,13 +203,17 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 		// map the pages to the heap
 		void* pagecounter = data;
 		void* heap_pagecounter = kernel_heap_next_page;
+		
+		kernel_heap_next_page += size;
+		
+		DEBUGPRINTF_1("remapping pages for cache entry\n")
 		for (uint32_t i = 0;i<size/SMALL_PAGE_SIZE;i++)
 		{
 			addVirtualKernelPage(pagecounter,heap_pagecounter);
 			heap_pagecounter += SMALL_PAGE_SIZE;
 			pagecounter += SMALL_PAGE_SIZE;
 		}
-		
+		DEBUGPRINTF_1("finished remapping pages\n")
 		
 		
 		
@@ -201,9 +221,9 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 		removeCacheEntry(&unused_entries,e);
 		unused_entries_count--;
 		
-		e->data = kernel_heap_next_page;
+		e->data = kernel_heap_next_page -= size;
 		
-		kernel_heap_next_page += size;
+		
 		addCacheEntry(cache,e);
 		return;
 	}
@@ -214,7 +234,7 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 	}
 	addVirtualKernelPage(page,kernel_heap_next_page);
 	kernel_heap_next_page += SMALL_PAGE_SIZE;
-	refillCacheEntriesWithPage(page,cache,size);
+	refillCacheEntriesWithPage(kernel_heap_next_page-SMALL_PAGE_SIZE,cache,size);
 }
 
 static void refillUnusedCacheEntriesWithPage(void *page)
@@ -240,7 +260,7 @@ static void refillUnusedCacheEntries()
 	}
 	addVirtualKernelPage(page,kernel_heap_next_page);
 	kernel_heap_next_page += SMALL_PAGE_SIZE;
-	refillUnusedCacheEntriesWithPage(page);
+	refillUnusedCacheEntriesWithPage(kernel_heap_next_page-SMALL_PAGE_SIZE);
 }
 
 void initSlabAllocator()
@@ -366,7 +386,7 @@ static void freeCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,v
 
 
 
-void slab_allocator_self_test()
+bool slab_allocator_self_test()
 {
 	
 	
@@ -374,7 +394,7 @@ void slab_allocator_self_test()
 	
 	
 	
-	
+	return true;
 }
 
 

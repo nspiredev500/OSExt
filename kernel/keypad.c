@@ -23,11 +23,13 @@ void keypad_press_release_barrier()
 
 bool any_key_pressed()
 {
+	
 	for (volatile uint32_t* data = (volatile uint32_t*) keypad_data;data < (volatile uint32_t*) 0x900E0030;data++)
 	{
 		if (*data != 0)
 			return true;
 	}
+	
 	return false;
 }
 

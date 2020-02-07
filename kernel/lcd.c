@@ -229,7 +229,7 @@ void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r
 			xx += 10;
 			continue;
 		}
-		DEBUGPRINTLN_1("cchar: %d",(uint32_t) *cchar)
+		//DEBUGPRINTLN_1("cchar: %d",(uint32_t) *cchar)
 		for (int x = 0;x<10;x++)
 		{
 			for (int y = 0;y<10;y++)
@@ -245,7 +245,25 @@ void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r
 	}
 }
 
-
+void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[128][10][10])
+{
+	char *cchar = string;
+	while (*cchar != '\0')
+	{
+		for (int x = 0;x<10;x++)
+		{
+			for (int y = 0;y<10;y++)
+			{
+				if (c[(uint32_t) *cchar][y][x] == 1)
+				{
+					framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
+				}
+			}
+		}
+		cchar++;
+		xx += 10;
+	}
+}
 
 
 

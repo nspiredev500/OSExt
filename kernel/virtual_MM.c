@@ -10,10 +10,9 @@ static bool kernel_space_initialized = false;
 
 
 
-
 // will be mapped when a user requests a read from a new page, it contains only zeros
 static void* null_page = NULL;
-
+static LinkedList *address_spaces = NULL;
 
 
 void initializeKernelSpace()
@@ -75,7 +74,16 @@ void initializeKernelSpace()
 
 void changeAddressSpace(struct address_space *space)
 {
-	register uint32_t tt asm("r0") = (uint32_t) space->tt;
+	//asm(".long 0xE1212374"); // bkpt
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(kernel_space.tt,space->tt);
+	asm(".long 0xE1212374"); // bkpt
+	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
+	invalidate_TLB();
+}
+
+void intoKernelSpace()
+{
+	register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -84,25 +92,62 @@ struct address_space* createAddressSpace()
 {
 	struct address_space *space = requestAddressSpace();
 	space->tt = requestTranslationTable();
+	DEBUGPRINTLN_1("new space: 0x%x",space)
+	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
+	DEBUGPRINTLN_1("new space tt physical address: 0x%x",getPhysicalAddress(kernel_space.tt,space->tt))
 	space->cptds = NULL;
 	space->cpts = NULL;
 	
+	// somehow space->tt gets overwritten here
+	uint32_t *tt = space->tt;
+	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
+	
+	/*
+	for (uint32_t i = 1;i<1024*4;i++)
+	{
+		space->tt[i] = 0;
+	}
+	*/
+	k_memset(space->tt,0,1024*16);
+	// so we have to replace it
+	space->tt = tt;
+	
+	
+	//k_memset(space->tt,0,SMALL_PAGE_SIZE*4);
+	//DEBUGPRINTLN_1("new space: 0x%x",*space)
+	
+	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
 	// map the kernel pages and the first page, because the interrupt vectors are there
 	space->tt[0] = kernel_space.tt[0];
+	
+	
+	
+	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
 	
 	uint32_t i = 0;
 	LinkedList *cptd = NULL;
 	while ((cptd = getLinkedListEntry(&kernel_space.cptds,i)) != NULL)
 	{
-		space->tt[((uint32_t) (cptd->data))>>20] = kernel_space.tt[((uint32_t) (cptd->data))>>20];
+		DEBUGPRINTLN_1("mapping kernel section 0x%x to new address space",cptd->data)
+		(space->tt[((uint32_t) (cptd->data))>>20]) = kernel_space.tt[((uint32_t) (cptd->data))>>20];
 		i++;
 	}
 	
+	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
+	LinkedList *l = requestLinkedListEntry();
+	l->data = space;
+	addLinkedListEntry(&address_spaces,l);
 	return space;
 }
 // you should switch out of the address space before destroying it
 void destroyAddressSpace(struct address_space *space)
 {
+	uint32_t index = 0;
+	LinkedList *entry = searchLinkedListEntry(&address_spaces,space,&index);
+	if (entry != NULL)
+	{
+		removeLinkedListEntry(&address_spaces,entry);
+	}
 	uint32_t i = 0;
 	LinkedList *cpt = NULL;
 	while ((cpt = getLinkedListEntry(&space->cptds,i)) != NULL)
@@ -116,6 +161,8 @@ void destroyAddressSpace(struct address_space *space)
 	destroyLinkedList(&space->cptds);
 	freeTranslationTable(space->tt);
 }
+
+
 
 
 
@@ -165,8 +212,8 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
-	DEBUGPRINTF_3("mapping 0x%x to 0x%x",page,virtual_address)
-	uint32_t section = ((uint32_t) page) & (~ 0xfffff);
+	DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
+	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);
 	uint32_t index = 0;
 	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
 	if (sec == NULL)
@@ -193,8 +240,15 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
 		
 		
+		// adding the page table to all address spaces
+		LinkedList *next = address_spaces;
+		while (next != NULL)
+		{
+			struct address_space *space = (struct address_space*) next->data;
+			space->tt[section >> 20] = kernel_space.tt[section >> 20];
+			next = next->next;
+		}
 		
-		// TODO if adding a new coarse page table descriptor, add it to all virtual address spaces
 		
 		
 	}
@@ -215,6 +269,57 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 }
 
 
+void addVirtualPage(struct address_space *space,void* page, void* virtual_address)
+{
+	DEBUGPRINTF_3("mapping 0x%x to 0x%x in userspace\n",page,virtual_address)
+	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);
+	uint32_t index = 0;
+	LinkedList *sec = searchLinkedListEntry(&space->cptds,(void*) section,&index);
+	if (sec == NULL)
+	{
+		DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
+		
+		ensureCPTCapacity();
+		ensureLinkedListCapacity();
+		
+		
+		LinkedList *cptd = requestLinkedListEntry();
+		DEBUGPRINTF_3("linkedlist: 0x%x\n",cptd)
+		cptd->data = (void*) section;
+		addLinkedListEntry(&space->cptds,cptd);
+		LinkedList *cpt = requestLinkedListEntry();
+		cpt->data = requestCPT();
+		k_memset(cpt->data,0,1024);
+		addLinkedListEntry(&space->cpts,cpt);
+		
+		space->tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
+		
+		
+		uint32_t table_index = (uint32_t) (virtual_address-section);
+		table_index = table_index / SMALL_PAGE_SIZE;
+		uint32_t *table = cpt->data;
+		table[table_index] = newSPD(1,1,0b11111111,(uint32_t) page);
+		
+		
+		
+	}
+	else
+	{
+		LinkedList *cpt = getLinkedListEntry(&space->cpts,index);
+		if (cpt == NULL)
+		{
+			panic("no corresponding coarse page table for descriptor!\n");
+		}
+		uint32_t *table = cpt->data;
+		uint32_t table_index = ((uint32_t) (virtual_address-section));
+		table_index = table_index / SMALL_PAGE_SIZE;
+		table[table_index] = newSPD(1,1,0b11111111,(uint32_t) page);
+	}
+	clear_caches();
+	invalidate_TLB();
+}
+
+
 
 uint32_t* getKernel_TT_Base()
 {
@@ -223,6 +328,7 @@ uint32_t* getKernel_TT_Base()
 
 void* getPhysicalAddress(uint32_t* space,void* address)
 {
+	DEBUGPRINTF_3("resolving: 0x%x\n",address)
 	uint32_t adr = (uint32_t) address;
 	uint32_t descriptor = space[adr >> 20];
 	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
@@ -232,6 +338,7 @@ void* getPhysicalAddress(uint32_t* space,void* address)
 	}
 	if ((descriptor  & 0b11) == 0b10)
 	{
+		DEBUGPRINTF_3("section descriptor: 0x%x\n",descriptor)
 		uint32_t section_base =  ((descriptor >> 20) << 20);
 		DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
 		return (void*) (section_base + ((adr << 12) >> 12));
@@ -245,13 +352,24 @@ void* getPhysicalAddress(uint32_t* space,void* address)
 		uint32_t index = ((adr & 0b11111111000000000000) >> 10)/4;
 		DEBUGPRINTF_3("coarse page table index: 0x%x\n",index)
 		uint32_t page_descriptor = cpt_base[index];
-		
-		DEBUGPRINTF_3("small page descriptor: 0x%x\n",page_descriptor)
-		uint32_t page_offset = adr & 0b111111111111;
-		uint32_t phys = (page_descriptor & (~ 0b111111111111)) + page_offset;
-		DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
-		return (void*) phys;// for small pages
-		// TODO for large pages
+		if ((page_descriptor & 0b11) == 0b1)
+		{
+			DEBUGPRINTF_3("large page descriptor\n")
+			uint32_t page_offset = adr & 0b1111111111111111;
+			uint32_t phys = (page_descriptor & (~ 0b1111111111111111)) + page_offset;
+			DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
+			return (void*) phys;
+			return NULL;
+		}
+		if ((page_descriptor & 0b11) == 0b10)
+		{
+			DEBUGPRINTF_3("small page descriptor: 0x%x\n",page_descriptor)
+			uint32_t page_offset = adr & 0b111111111111;
+			uint32_t phys = (page_descriptor & (~ 0b111111111111)) + page_offset;
+			DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
+			return (void*) phys;// for small pages
+		}
+		return NULL;
 	}
 	if ((descriptor  & 0b11) == 0b11) // fine page table
 	{
@@ -283,6 +401,48 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 		setPageUsedBit(page,false);
 	}
 }
+
+
+
+
+bool virtual_mm_self_test()
+{
+	// TODO tests for new(descriptor)
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	if (getPhysicalAddress(tt,(void*) 0x0) != (void*) 0xa4000000)
+	{
+		DEBUGPRINTLN_1("getPhysicalAddress not working!")
+		return false;
+	}
+	if (getPhysicalAddress(tt,(void*) 0x12400000) != (void*) 0x12400000)
+	{
+		DEBUGPRINTLN_1("getPhysicalAddress not working!")
+		return false;
+	}
+	// currently not working for lage pages
+	/*
+	if (getPhysicalAddress(tt,(void*) 0x13e09000) != (void*) 0x13e00000)
+	{
+		DEBUGPRINTLN_1("getPhysicalAddress not working!")
+		return false;
+	}
+	*/
+	// TODO test for getPhysicalAddress with small pages
+	
+	
+	
+	
+	
+	
+	return true;
+}
+
+
+
 
 uint32_t newCPTD(unsigned char domain,uint32_t base_address)
 {
@@ -347,35 +507,6 @@ void clear_caches()
 	"mcr p15, 0, r0, c7, c7, 0\n" // invalidate cache
 	:::"r0");
 }
-
-
-
-
-bool virtual_mm_self_test()
-{
-	
-	
-	
-	
-	
-	
-	
-	return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

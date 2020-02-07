@@ -17,13 +17,13 @@ void initializeKernelSpace();
 void addVirtualKernelPage(void* page, void* virtual_address);
 void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 
-
+void addVirtualPage(struct address_space *space,void* page, void* virtual_address);
 
 struct address_space* createAddressSpace();
 // you should switch out of the address space before destroying it
 void destroyAddressSpace(struct address_space *space);
 void changeAddressSpace(struct address_space *space);
-
+void intoKernelSpace();
 
 void freePagesFromCoarsePageTable(uint32_t *cpt);
 
@@ -31,7 +31,6 @@ uint32_t newCPTD(unsigned char domain,uint32_t base_address);
 uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
 uint32_t newSPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
 uint32_t newSD(unsigned char c,unsigned char b,unsigned char domain,unsigned char ap,uint32_t base_address);
-
 
 
 

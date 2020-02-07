@@ -72,6 +72,8 @@ int main(int argsn,char **argc)
 
 
 
+
+
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
@@ -80,21 +82,14 @@ void initialize()
 	
 	debug_shell_println("finished relocating");
 	debug_shell_println("initializing");
-	//TODO initialize physical and virtual memory manager properly, put large page descriptors for kernel space in dma memory
 	
 	
-	/*
-	for (uint32_t i = 0;i<50;i++)
-	{
-		debug_shell_println("i: %d",i);
-	}
-	*/
 	
-	debug_shell_println("performing physical memory manager self test");
+	debug_shell_println("performing physical memory manager self-test");
 	bool b = physical_mm_self_test();
 	if (! b)
 	{
-		debug_shell_println("error in physical memory manager self test         aborting");
+		debug_shell_println_rgb("error in physical memory manager self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
 		return;
@@ -114,11 +109,20 @@ void initialize()
 	DEBUGPRINTF_3("domains: 0x%x\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
 	*/
 	
-	debug_shell_println("performing virtual memory manager self test");
+	debug_shell_println("performing virtual memory manager self-test");
 	b = virtual_mm_self_test();
 	if (! b)
 	{
-		debug_shell_println("error in virtual memory manager self test         aborting");
+		debug_shell_println_rgb("error in virtual memory manager self-test         aborting",255,0,0);
+		keypad_press_release_barrier();
+		free_init_pds();
+		return;
+	}
+	debug_shell_println("performing slab allocator self-test");
+	b = slab_allocator_self_test();
+	if (! b)
+	{
+		debug_shell_println_rgb("error in slab allocator memory manager self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
 		return;
@@ -133,11 +137,15 @@ void initialize()
 	
 	
 	
-	debug_shell_println("running general self test");
+	debug_shell_println("running general self-test");
+	
+	//TODO try to call it with the new stack, the old one gets cut away in the context switch
+	
+	//call_with_stack(run_self_test);
 	b = run_self_test();
 	if (! b)
 	{
-		debug_shell_println("error in general self test         aborting");
+		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		return;
 	}
@@ -150,8 +158,8 @@ void initialize()
 	
 	
 	
-	debug_shell_println("osext installed");
-	debug_shell_println("press any key to exit");
+	debug_shell_println_rgb("osext installed",0,255,0);
+	debug_shell_println_rgb("press any key to exit",0,255,0);
 	// to be able to read the messages
 	keypad_press_release_barrier();
 }
