@@ -115,6 +115,18 @@ bool copy_folder(char *source,char *dest)
 		
 		if (! copy_folder(source_path,dest_path))
 		{
+			{ 
+				// chop off the .tns for the files
+				char *c = dest_path+strlen(dest_path);
+				while (*c != '.' && c > dest_path)
+				{
+					c--;
+				}
+				if (c > dest_path)
+				{
+					*c = '\0';
+				}
+			}
 			printf("copying: %s \n",file->d_name);
 			FILE *f = fopen(source_path,"rb");
 			if (f == NULL)
