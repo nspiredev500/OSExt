@@ -4,8 +4,19 @@
 // slab allocator for the kernel
 
 
-void* const kernel_heap_start = (void* const) 0xe8000000;
-void* kernel_heap_next_page = (void*) (0xe8000000);
+void* const kernel_heap_start = (void* const) 0xe4000000;
+static void* kernel_heap_next_page = (void*) (0xe4000000);
+
+
+
+void* getKernelHeapNextPage()
+{
+	return kernel_heap_next_page;
+}
+void setKernelHeapNextPage(void* next)
+{
+	kernel_heap_next_page = next;
+}
 
 
 typedef struct cache_entry cache_entry;
@@ -20,6 +31,7 @@ static void addCacheEntry(cache_entry **list, cache_entry *e)
 {
 	if (*list == NULL)
 	{
+		e->next = NULL;
 		*list = e;
 		return;
 	}
@@ -138,7 +150,7 @@ static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t s
 		refillUnusedCacheEntries();
 		//panic("not enough empty cache entries left!\n");
 	}
-	for (uint32_t i = 0;i<SMALL_PAGE_SIZE-(SMALL_PAGE_SIZE % size);i+=size) // - SMALL_PAGE_SIZE % size to make it fit into the page and not accidentally overflow
+	for (uint32_t i = 0;i+size<SMALL_PAGE_SIZE;i+=size) // - SMALL_PAGE_SIZE % size to make it fit into the page and not accidentally overflow
 	{
 		cache_entry *e = unused_entries;
 		if (e == NULL)
@@ -200,6 +212,15 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 			panic("not enough consecutive pages for cache entry found!\n");
 		}
 		
+		
+		
+		cache_entry *e = unused_entries;
+		removeCacheEntry(&unused_entries,e);
+		unused_entries_count--;
+		
+		e->data = kernel_heap_next_page;
+		
+		
 		// map the pages to the heap
 		void* pagecounter = data;
 		void* heap_pagecounter = kernel_heap_next_page;
@@ -215,13 +236,6 @@ static void refillCacheEntries(cache_entry **cache,uint32_t size)
 		}
 		DEBUGPRINTF_1("finished remapping pages\n")
 		
-		
-		
-		cache_entry *e = unused_entries;
-		removeCacheEntry(&unused_entries,e);
-		unused_entries_count--;
-		
-		e->data = kernel_heap_next_page -= size;
 		
 		
 		addCacheEntry(cache,e);
@@ -241,7 +255,7 @@ static void refillUnusedCacheEntriesWithPage(void *page)
 {
 	DEBUGPRINTF_3("page used for refilling: 0x%x\n",page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
-	for (uint32_t i = 0;i<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
+	for (uint32_t i = 0;i+sizeof(cache_entry)<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
 	{
 		cache_entry *e = (page+i);
 		e->data = NULL;
@@ -345,7 +359,7 @@ void initSlabAllocator()
 	
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
-	
+	//debug_shell_println_rgb("kernel heap next1: 0x%x",255,0,0,kernel_heap_next_page);
 	
 	
 	ti_free(tmp_pds_unaligned);

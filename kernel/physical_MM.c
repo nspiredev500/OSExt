@@ -75,6 +75,7 @@ static void removePageblock(struct pageblock block)
 
 
 
+
 // allocate new pages for use in the kernel
 // use ti_malloc, so the ti-os doesn't use those pages
 bool allocPageblock(uint32_t size)
@@ -157,6 +158,17 @@ static void freePageblock(struct pageblock block)
 	ti_free(block.unaligned);
 }
 
+
+
+void freeAllPageblocks()
+{
+	while (blockindex != 0)
+	{
+		freePageblock(pages[0]);
+	}
+	
+	
+}
 
 static void setBit128(uint64_t *a,uint64_t *b,uint32_t i,bool value)
 {

@@ -7,6 +7,8 @@ void* makeLargePageAligned(void *ptr);
 void* makeSmallPageAligned(void *ptr);
 
 
+void freeAllPageblocks();
+
 bool allocPageblock(uint32_t size);
 void* usePage();
 bool isPageUsed(void *page);

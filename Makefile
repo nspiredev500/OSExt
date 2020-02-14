@@ -6,7 +6,7 @@ all: installer kernel
 	cp kernel/osext.tns installer/installer/boot/osext.tns
 	
 
-.PHONY: installer kernel
+.PHONY: installer kernel remake
 	
 
 installer:
@@ -24,4 +24,6 @@ clean:
 	rm installer/installer/boot/osext.tns
 
 
-
+remake:
+	$(MAKE) clean && \
+	$(MAKE) all

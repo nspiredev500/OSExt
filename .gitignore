@@ -37,10 +37,8 @@
 *.x86_64
 *.hex
 */*.tns
-*/*/*.tns
-*/*/*/*.tns
-*/*/*/*/*.tns
-installer/installer/boot/osext.tns
+*/*/*.tsn
+**/.tns
 
 # Debug files
 *.dSYM/

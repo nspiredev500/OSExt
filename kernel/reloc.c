@@ -49,7 +49,6 @@ void relocate_self(void)
 	DEBUGPRINTF_1("kernel size: 0x%x\n",kernel_size,&_EXEC_SIZE-&_EXEC_START)
 	
 	
-	
 	DEBUGPRINTF_2("text: 0x%x, data: 0x%x, bss: 0x%x\n",&_TEXT_SIZE-&_EXEC_START,&_DATA_SIZE-&_EXEC_START,&_BSS_SIZE-&_EXEC_START)
 	//DEBUGPRINTF_1("main: 0x%x, exec_start: 0x%x\n",main,&_EXEC_START)
 	

@@ -1,8 +1,10 @@
 #ifndef SLAB_H
 #define SLAB_H
 
+void* const kernel_heap_start;
 
-
+void* getKernelHeapNextPage();
+void setKernelHeapNextPage(void* next);
 
 void initSlabAllocator();
 

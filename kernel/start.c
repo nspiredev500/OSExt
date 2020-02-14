@@ -72,8 +72,6 @@ int main(int argsn,char **argc)
 
 
 
-
-
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
@@ -83,6 +81,8 @@ void initialize()
 	debug_shell_println("finished relocating");
 	debug_shell_println("initializing");
 	
+	debug_shell_println("kernel_start: 0x%x",&_EXEC_START);
+	init_call_with_stack(&_EXEC_START);
 	
 	
 	debug_shell_println("performing physical memory manager self-test");
@@ -134,6 +134,11 @@ void initialize()
 	debug_shell_println("done");
 	//asm(".long 0xE1212374"); // bkpt
 	
+	void* framebuffer_start = (void*) ((uint32_t)framebuffer & 0xfff);
+	for (int i = 0;i<37;i++)
+	{
+		addVirtualKernelPage(framebuffer_start+SMALL_PAGE_SIZE*i,framebuffer_start+SMALL_PAGE_SIZE*i);
+	}
 	
 	
 	
@@ -141,14 +146,30 @@ void initialize()
 	
 	//TODO try to call it with the new stack, the old one gets cut away in the context switch
 	
-	//call_with_stack(run_self_test);
-	b = run_self_test();
+	
+	void* page = usePage();
+	if (page == NULL)
+	{
+		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
+		keypad_press_release_barrier();
+		return;
+	}
+	addVirtualKernelPage(page,(void*) 0xe8000000);
+	
+	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
+	
+	setPageUsedBit(page,false);
+	
+	
+	//b = true;
 	if (! b)
 	{
 		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		return;
 	}
+	
+	
 	
 	
 	

@@ -7,6 +7,7 @@ void addLinkedListEntry(LinkedList **list, LinkedList *e)
 {
 	if (*list == NULL)
 	{
+		e->next = NULL;
 		*list = e;
 		return;
 	}

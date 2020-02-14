@@ -35,7 +35,7 @@ void initializeKernelSpace()
 	kernel_space.cptds = NULL;
 	
 	initSlabAllocator();
-	
+	//debug_shell_println_rgb("kernel heap next2: 0x%x",255,0,0,getKernelHeapNextPage());
 	
 	
 	// map the first sections where the interrupt vectors are as user mode no access
@@ -67,6 +67,19 @@ void initializeKernelSpace()
 	}
 	
 	
+	// map the translation table in the kernel heap, so ti can be accessed while out of kernel space
+	void* physical_tt = tt;
+	//debug_shell_println_rgb("kernel heap next3: 0x%x",255,0,0,getKernelHeapNextPage());
+	void* tt_page = getKernelHeapNextPage();
+	setKernelHeapNextPage(getKernelHeapNextPage() + SMALL_PAGE_SIZE*4);
+	addVirtualKernelPage(physical_tt,tt_page);
+	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE,tt_page+SMALL_PAGE_SIZE);
+	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*2,tt_page+SMALL_PAGE_SIZE*2);
+	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*3,tt_page+SMALL_PAGE_SIZE*3);
+	
+	//asm(".long 0xE1212374"); // bkpt
+	kernel_space.tt = tt_page;
+	
 	
 	kernel_space_initialized = true;
 }
@@ -83,7 +96,8 @@ void changeAddressSpace(struct address_space *space)
 
 void intoKernelSpace()
 {
-	register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
+	//register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(kernel_space.tt,kernel_space.tt);
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -109,6 +123,8 @@ struct address_space* createAddressSpace()
 	}
 	*/
 	k_memset(space->tt,0,1024*16);
+	
+	asm(".long 0xE1212374"); // bkpt
 	// so we have to replace it
 	space->tt = tt;
 	
@@ -184,8 +200,6 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	LinkedList *cptd = requestLinkedListEntry();
 	DEBUGPRINTLN_3("writing section to linkedlist entry")
 	cptd->data = (void*) section;
-	DEBUGPRINTLN_3("adding linkedlist entry to kernel cptds")
-	addLinkedListEntry(&kernel_space.cptds,cptd);
 	
 	DEBUGPRINTLN_3("requesting linkedlist entry")
 	LinkedList *cpt = requestLinkedListEntry();
@@ -196,6 +210,8 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	k_memset(cpt->data,0,1024);
 	DEBUGPRINTLN_3("adding linkedlist entry to kernel cpts")
 	addLinkedListEntry(&kernel_space.cpts,cpt);
+	DEBUGPRINTLN_3("adding linkedlist entry to kernel cptds")
+	addLinkedListEntry(&kernel_space.cptds,cptd);
 	DEBUGPRINTLN_3("copying small page descriptors")
 	k_memcpy(cpt->data,migrate_cpt,pages*sizeof(uint32_t));
 	
@@ -225,12 +241,13 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		
 		LinkedList *cptd = requestLinkedListEntry();
 		cptd->data = (void*) section;
-		addLinkedListEntry(&kernel_space.cptds,cptd);
 		
 		LinkedList *cpt = requestLinkedListEntry();
 		cpt->data = requestCPT();
 		k_memset(cpt->data,0,1024);
 		addLinkedListEntry(&kernel_space.cpts,cpt);
+		addLinkedListEntry(&kernel_space.cptds,cptd);
+		
 		
 		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
 		
@@ -257,6 +274,7 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		LinkedList *cpt = getLinkedListEntry(&kernel_space.cpts,index);
 		if (cpt == NULL)
 		{
+			DEBUGPRINTF_3("index: %d\n",index)
 			panic("no corresponding coarse page table for descriptor!\n");
 		}
 		uint32_t *table = cpt->data;
