@@ -36,9 +36,8 @@
 *.i*86
 *.x86_64
 *.hex
-*/*.tns
-*/*/*.tsn
-**/.tns
+*.tns
+!ndless.cfg.tns
 
 # Debug files
 *.dSYM/
