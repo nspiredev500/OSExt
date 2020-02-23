@@ -40,7 +40,7 @@
 #include "self_test.h"
 #include "keypad.h"
 #include "debug_shell.h"
-#include "processor_mode_switches.h"
+#include "modes.h"
 
 
 
