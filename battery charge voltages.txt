@@ -1,0 +1,7 @@
+
+		in emulator		100%	75%		50%		25%		10%
+VBATT	6.0V			0.0V			0.0V			
+VSYS	6.0V			4.0V			3.0V	3.0V		
+B12		3.0V			0.0V			0.0V			
+
+
