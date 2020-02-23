@@ -8,6 +8,31 @@ void* const kernel_heap_start = (void* const) 0xe4000000;
 static void* kernel_heap_next_page = (void*) (0xe4000000);
 
 
+struct cache_t;
+struct slab_desc_t;
+struct slab_desc_t {
+	uint32_t size; // number of pages
+	void *start; // start of the slab in memory
+	struct slab_desc_t *next;
+	uint8_t *used; // pointer to the array where the used bit for each object is stored
+	// on-slab if NULL
+}; // sizeof(struct slab) = 16
+
+struct cache_t {
+	struct slab_desc_t *full;
+	struct slab_desc_t *partial;
+	struct slab_desc_t *free;
+	uint32_t obj_size;
+	uint32_t flags; // bit 0 = essential (has to have one free slab at all time)
+	char *name;
+	struct cache_t *next;
+}; // sizeof(struct cache) = 28
+
+
+struct cache* caches = NULL;
+
+
+
 
 void* getKernelHeapNextPage()
 {
@@ -18,272 +43,157 @@ void setKernelHeapNextPage(void* next)
 	kernel_heap_next_page = next;
 }
 
-
-typedef struct cache_entry cache_entry;
-typedef struct cache_entry {
-	cache_entry *next;
-	void *data;
-} cache_entry;
-
-
-
-static void addCacheEntry(cache_entry **list, cache_entry *e)
+void growCache(struct cache_t* cache)
 {
-	if (*list == NULL)
+	if (cache->obj_size > SMALL_PAGE_SIZE)
 	{
-		e->next = NULL;
-		*list = e;
-		return;
-	}
-	//asm(".long 0xE1212374"); // bkpt
-	e->next = *list;
-	
-	*list = e;
-}
-
-
-// return true if the cache entry was found (and removed)
-static bool removeCacheEntry(cache_entry **list, cache_entry *e)
-{
-	if (*list == NULL)
-	{
-		return false;
-	}
-	if (*list == e)
-	{
-		*list = (*list)->next;
-		return true;
-	}
-	cache_entry *next = *list;
-	while (next != NULL)
-	{
-		if (next->next == e)
+		void* page = usePage();
+		if (page == NULL)
 		{
-			if (next->next == NULL)
-			{
-				next->next = NULL;
-				return true;
-			}
-			next->next = (next->next)->next; // override the next value so it points after the removed entry
-			return true;
+			panic("no page for a growing cache found!");
 		}
-		next = next->next;
+		// TODO addVirtualKernelPage uses the slab allocator and if the cpt or linkedlist caches need to grow,
+		// it would result in an endless loop
+		addVirtualKernelPage();
 	}
-	return false;
+	else
+	{
+		
+	}
 }
 
-static cache_entry* removeCacheEntryByData(cache_entry **list, void *data)
+void* alloc_object_from_cache(struct cache_t* cache)
 {
-	if (*list == NULL)
+	if (cache->partial == NULL)
+	{
+		if (cache->free == NULL)
+		{
+			growCache(cache);
+			return alloc_object_from_cache(cache);
+		}
+		else
+		{
+			// remove the slab from the freelist
+			struct slab_desc_t *freeslab = cache->free;
+			cache->free = freeslab->next;
+			// add it to the partial list
+			struct slab_desc_t *partialslab = cache->partial;
+			freeslab->next = cache->partial;
+			cache->partial = freeslab;
+			return alloc_object_from_slab(freeslab,cache->obj_size);
+		}
+	}
+	else
+	{
+		struct slab_desc_t *cslab = cache->partial;
+		while (cslab != NULL)
+		{
+			void *object = alloc_object_from_slab(cslab,cache->obj_size);
+			if (object != NULL)
+			{
+				return object;
+			}
+			// TODO add the slab to the full list, because there was no object returned
+			cslab = cslab->next;
+		}
+		growCache(cache);
+		return alloc_object_from_cache(cache);
+	}
+}
+
+
+void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
+{
+	if (obj_size < 128)
+	{
+		// slab descriptor on-slab
+		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		// don't subtract slab descriptor size to account for more objects if calculations are wrong
+		
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
+		void *objects_start = slab->start + sizeof(slab_desc_t) + (objs_raw / obj_size)/8+1;
+		// offset = sizeof(slab descriptor) + length of used array
+		uint8_t *used = slab->start+sizeof(slab_desc_t);
+		uint32_t i = 0;
+		for (uint32_t i = 0;i<objs;i++)
+		{
+			uint8_t bit = i%8;
+			if (((used[i/8] >> bit ) & 0b1) == 0b0)
+			{
+				used[i/8] = used[i/8] | (0b1 << bit);
+				return objects_start+i*obj_size;
+			}
+		}
+		return NULL;
+	}
+	else
+	{
+		// slab descriptor off-slab
+		uint8_t *used = slab->used;
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		for (uint32_t i = 0;i<objs;i++)
+		{
+			uint8_t bit = i%8;
+			if (((used[i/8] >> bit ) & 0b1) == 0b0)
+			{
+				used[i/8] = used[i/8] | (0b1 << bit);
+				return slab->start+i*obj_size;
+			}
+		}
+		return NULL;
+	}
+}
+
+// allocates an object from a cache, using a larger one if no perfectly fitting one is found and returning NULL if
+// no cache with enough object size was found 
+void* kmalloc(uint32_t size)
+{
+	struct cache_t *best_fit_cache = NULL;
+	struct cache_t *ccache = caches;
+	while (ccache != NULL)
+	{
+		if (ccache->obj_size == size)
+		{
+			best_fit_cache = ccache;
+			break;
+		}
+		if (ccache->obj_size > size)
+		{
+			best_fit_cache = ccache;
+		}
+		ccache = ccache->next;
+	}
+	if (ccache == NULL)
 	{
 		return NULL;
 	}
-	cache_entry *next = *list;
-	while (next != NULL)
+	else
 	{
-		if (next->data == data)
-		{
-			if (next->next == NULL)
-			{
-				next->next = NULL;
-				return next;
-			}
-			next->next = (next->next)->next; // override the next value so it points after the removed entry
-			return next;
-		}
-		next = next->next;
-	}
-	return NULL;
-}
-
-
-// we need a cache for the cache entries, too
-static cache_entry *unused_entries = NULL;
-static uint32_t unused_entries_count = 0;
-
-// coarse page table cache
-static cache_entry *cpt_cache = NULL;
-static cache_entry *cpt_cache_unused = NULL;
-
-
-// address space struct cache
-static cache_entry *address_space_cache = NULL;
-static cache_entry *address_space_cache_unused = NULL;
-
-// virtual address space cache
-static cache_entry *translation_table_cache = NULL;
-static cache_entry *translation_table_cache_unused = NULL;
-
-
-static cache_entry *lcd_framebuffer_cache = NULL;
-static cache_entry *lcd_framebuffer_cache_unused = NULL;
-
-
-static cache_entry *process_cache = NULL;
-static cache_entry *process_cache_unused = NULL;
-
-
-static cache_entry *thread_cache = NULL;
-static cache_entry *thread_cache_unused = NULL;
-
-static cache_entry *linkedlist_cache = NULL;
-static cache_entry *linkedlist_cache_unused = NULL;
-
-static cache_entry *uint32_cache = NULL;
-static cache_entry *uint32_cache_unused = NULL;
-
-
-
-
-static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size);
-static void refillCacheEntries(cache_entry **cache,uint32_t size);
-static void refillUnusedCacheEntriesWithPage(void *page);
-static void refillUnusedCacheEntries();
-
-
-// only supports small structures that fir into one page
-static void refillCacheEntriesWithPage(void *page,cache_entry **cache,uint32_t size)
-{
-	DEBUGPRINTF_3("page used for refilling: 0x%x\n",page);
-	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
-	{
-		refillUnusedCacheEntries();
-		//panic("not enough empty cache entries left!\n");
-	}
-	for (uint32_t i = 0;i+size<SMALL_PAGE_SIZE;i+=size) // - SMALL_PAGE_SIZE % size to make it fit into the page and not accidentally overflow
-	{
-		cache_entry *e = unused_entries;
-		if (e == NULL)
-		{
-			refillUnusedCacheEntries();
-			i -= size;
-			continue;
-			//panic("no empty cache entries left!\n");
-		}
-		removeCacheEntry(&unused_entries,e);
-		unused_entries_count--;
-		e->data = page+i;
-		addCacheEntry(cache,e);
-	}
-}
-void ensureCPTCapacity()
-{
-	refillCacheEntries(&cpt_cache_unused,1024);
-}
-
-void ensureLinkedListCapacity()
-{
-	refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
-}
-
-static void refillCacheEntries(cache_entry **cache,uint32_t size)
-{
-	if (unused_entries_count <= SMALL_PAGE_SIZE / size)
-	{
-		if (cache == &cpt_cache_unused)
-		{
-			panic("not enough unused cache entries and trying to refill cpt entries!");
-		}
-		refillUnusedCacheEntries();
-	}
-	// filter out all the things that need more than one page
-	if (size > SMALL_PAGE_SIZE)
-	{
-		uint32_t alignment = 0;
-		if (cache == &translation_table_cache_unused)
-		{
-			alignment = 1024*16;
-		}
-		refillUnusedCacheEntries();
-		refillUnusedCacheEntries();
-		refillCacheEntries(&cpt_cache_unused,1024);
-		refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
-		refillUnusedCacheEntries();
-		refillUnusedCacheEntries();
-		refillCacheEntries(&cpt_cache_unused,1024);
-		refillCacheEntries(&linkedlist_cache_unused,sizeof(LinkedList));
-		// caches can't be refilled while remapping the block
-		
-		void *data = useConsecutivePages(size/SMALL_PAGE_SIZE,alignment);
-		DEBUGPRINTF_3("page base for entry: 0x%x\n",data);
-		DEBUGPRINTF_1("cache entry size: 0x%x\n",size)
-		if (data == NULL)
-		{
-			panic("not enough consecutive pages for cache entry found!\n");
-		}
-		
-		
-		
-		cache_entry *e = unused_entries;
-		removeCacheEntry(&unused_entries,e);
-		unused_entries_count--;
-		
-		e->data = kernel_heap_next_page;
-		
-		
-		// map the pages to the heap
-		void* pagecounter = data;
-		void* heap_pagecounter = kernel_heap_next_page;
-		
-		kernel_heap_next_page += size;
-		
-		DEBUGPRINTF_1("remapping pages for cache entry\n")
-		for (uint32_t i = 0;i<size/SMALL_PAGE_SIZE;i++)
-		{
-			addVirtualKernelPage(pagecounter,heap_pagecounter);
-			heap_pagecounter += SMALL_PAGE_SIZE;
-			pagecounter += SMALL_PAGE_SIZE;
-		}
-		DEBUGPRINTF_1("finished remapping pages\n")
-		
-		
-		
-		addCacheEntry(cache,e);
-		return;
-	}
-	void *page = usePage();
-	if (page == NULL)
-	{
-		panic("no free page for cache entries!\n");
-	}
-	addVirtualKernelPage(page,kernel_heap_next_page);
-	kernel_heap_next_page += SMALL_PAGE_SIZE;
-	refillCacheEntriesWithPage(kernel_heap_next_page-SMALL_PAGE_SIZE,cache,size);
-}
-
-static void refillUnusedCacheEntriesWithPage(void *page)
-{
-	DEBUGPRINTF_3("page used for refilling: 0x%x\n",page);
-	k_memset(page,0,SMALL_PAGE_SIZE);
-	for (uint32_t i = 0;i+sizeof(cache_entry)<SMALL_PAGE_SIZE;i+=sizeof(cache_entry))
-	{
-		cache_entry *e = (page+i);
-		e->data = NULL;
-		e->next = NULL;
-		addCacheEntry(&unused_entries,e);
-		unused_entries_count++;
+		return alloc_object_from_cache(best_fit_cache);
 	}
 }
 
-static void refillUnusedCacheEntries()
+void createCache(uint32_t obj_size,uint32_t flags, char* name)
 {
-	void *page = usePage();
-	if (page == NULL)
-	{
-		panic("no free page for cache entries!\n");
-	}
-	addVirtualKernelPage(page,kernel_heap_next_page);
-	kernel_heap_next_page += SMALL_PAGE_SIZE;
-	refillUnusedCacheEntriesWithPage(kernel_heap_next_page-SMALL_PAGE_SIZE);
+	
+	
+	
+	
 }
 
 void initSlabAllocator()
 {
-	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	void* page = usePage();
+	if (page == NULL)
+	{
+		DEBUGPRINTF_1("no page available for the slab allocator!\n");
+		return;
+	}
 	
 	
 	uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
 	uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
+	k_memset(tmp_pds,0,1024);
 	
 	register uint32_t tt_base asm("r0");
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
@@ -291,147 +201,223 @@ void initSlabAllocator()
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uint32_t *tt = (uint32_t*) tt_base;
 	
+	tt[kernel_heap_start >> 20] = newCPTD(0,(uint32_t) tmp_pds);
 	
-	k_memset(tmp_pds_unaligned,0,256*4+1024*2);
+	tmp_pds[0] = newSPD(1,1,0b01010101,(uint32_t) page);
 	
 	
-	
-	tt[(uint32_t) kernel_heap_start >> 20] = newCPTD(0,(uint32_t) tmp_pds);
-	
-	void* page = usePage();
-	
+	page = usePage();
 	if (page == NULL)
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	tmp_pds[0] = newSPD(1,1,0b01010101,(uint32_t) page);
+	tmp_pds[1] = newSPD(1,1,0b01010101,(uint32_t) page);
 	
 	
-	
-	void* page2 = usePage();
-	
-	if (page2 == NULL)
+	page = usePage();
+	if (page == NULL)
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	tmp_pds[1] = newSPD(1,1,0b01010101,(uint32_t) page2);
+	tmp_pds[2] = newSPD(1,1,0b01010101,(uint32_t) page);
 	
-	
-	
-	void* page3 = usePage();
-	
-	if (page3 == NULL)
+	page = usePage();
+	if (page == NULL)
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	tmp_pds[2] = newSPD(1,1,0b01010101,(uint32_t) page3);
+	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page);
+	invalidateTLB();
 	
-	void* page4 = usePage();
 	
-	if (page4 == NULL)
+	
+	struct slab_desc_t *cache_slab = kernel_heap_start;
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	
+	cache_slab->size = 1;
+	cache_slab->start = cache_slab;
+	cache_slab->next = NULL;
+	cache_slab->used = NULL;
+	
+	
+	struct cache_t *cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	if (cache_cache == NULL)
 	{
-		DEBUGPRINTF_1("no page available for the slab allocator!\n");
+		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page4);
+	
+	cache_cache->full = NULL;
+	cache_cache->partial = NULL;
+	cache_cache->free = cache_slab;
+	cache_cache->obj_size = sizeof(struct cache_t);
+	cache_cache->flags = 0;
+	cache_cache->name = "cache_cache";
+	cache_cache->next = NULL;
 	
 	
-	clear_caches();
+	struct slab_desc_t *slab_slab = kernel_heap_next_page;
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
 	
-	invalidate_TLB();
+	slab_slab->size = 1;
+	slab_slab->start = slab_slab;
+	slab_slab->next = NULL;
+	slab_slab->used = NULL;
 	
-	DEBUGPRINTF_1("first 4 pages allocated!\n");
-	//asm(".long 0xE1212374"); // bkpt
+	struct cache_t *slab_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	if (slab_cache == NULL)
+	{
+		DEBUGPRINTF_1("no free entry in created cache!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
 	
-	refillUnusedCacheEntriesWithPage(kernel_heap_start);
-	refillCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE,&cpt_cache_unused,1024);
-	refillUnusedCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE*2);
-	refillCacheEntriesWithPage(kernel_heap_start+SMALL_PAGE_SIZE*3,&linkedlist_cache_unused,sizeof(LinkedList));
-	kernel_heap_next_page += SMALL_PAGE_SIZE*4;
+	slab_cache->full = NULL;
+	slab_cache->partial NULL;
+	slab_cache->free = slab_slab;
+	slab_cache->obj_size = sizeof(struct slab_desc_t);
+	slab_cache->flags = 0;
+	slab_cache->name = "slab_cache";
+	slab_cache->next = NULL;
 	
 	
+	struct slab_desc_t *linkedlist_slab = kernel_heap_next_page;
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	
+	linkedlist_slab->size = 1;
+	linkedlist_slab->start = linkedlist_slab;
+	linkedlist_slab->next = NULL;
+	linkedlist_slab->used = NULL;
+	
+	struct cache_t *linkedlist_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	if (linkedlist_cache == NULL)
+	{
+		DEBUGPRINTF_1("no free entry in created cache!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
+	
+	linkedlist_cache->full = NULL;
+	linkedlist_cache->partial NULL;
+	linkedlist_cache->free = linkedlist_slab;
+	linkedlist_cache->obj_size = sizeof(LinkedList);
+	linkedlist_cache->flags = 0;
+	linkedlist_cache->name = "linkedlist_cache";
+	linkedlist_cache->next = NULL;
+	
+	
+	
+	struct slab_desc_t *cpt_slab = alloc_object_from_slab(slab_slab,sizeof(struct slab_desc_t));
+	if (cpt_slab == NULL)
+	{
+		DEBUGPRINTF_1("no free entry in created cache!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
+	
+	cpt_slab->size = 1;
+	cpt_slab->start = kernel_heap_next_page;
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
+	cpt_slab->next = NULL;
+	
+	// SMALL_PAGE_SIZE/1024 = 4, so only one byte needed, but the size caches aren't created jet,
+	// so just use the linkedlist cache, as it is the smallest (8 bytes)
+	cpt_slab->used = alloc_object_from_slab(linkedlist_slab,sizeof(LinkedList));
+	if (cpt_slab->used == NULL)
+	{
+		DEBUGPRINTF_1("no free entry in created cache!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
+	
+	
+	
+	struct cache_t *cpt_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	if (cpt_cache == NULL)
+	{
+		DEBUGPRINTF_1("no free entry in created cache!\n");
+		ti_free(tmp_pds_unaligned);
+		return;
+	}
+	
+	cpt_cache->full = NULL;
+	cpt_cache->partial NULL;
+	cpt_cache->free = cpt_slab;
+	cpt_cache->obj_size = 1024;
+	cpt_cache->flags = 0;
+	cpt_cache->name = "cpt_cache";
+	cpt_cache->next = NULL;
+	
+	// initialize the cache linkedlist
+	caches = cache_cache;
+	cache_cache->next = slab_cache;
+	slab_cache->next = linkedlist_cache;
+	linkedlist_cache->next = cpt_cache;
+	cpt_cache->next = NULL;
+	
+	
+	
+	// migrate the mapping to the virtual memory manager, so the following code can usePage
+	// addVirtualKernelPage, as it is used in the cache creation
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
-	//debug_shell_println_rgb("kernel heap next1: 0x%x",255,0,0,kernel_heap_next_page);
 	
 	
-	ti_free(tmp_pds_unaligned);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	asm(".long 0xE1212374"); // bkpt
 }
-
-
-
-static void* requestCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,uint32_t size)
-{
-	if (*cache_unused == NULL)
-	{
-		refillCacheEntries(cache_unused,size);
-	}
-	// refill the cpt cache even before it is empty, because you need cpts to refill the unused entries and could get into a loop
-	if (cache_unused == &cpt_cache_unused && (cpt_cache_unused->next == NULL || cpt_cache_unused->next->next == NULL))
-	{
-		refillCacheEntries(cache_unused,size);
-	}
-	cache_entry *c = *cache_unused;
-	removeCacheEntry(cache_unused,c);
-	addCacheEntry(cache_used,c);
-	return c->data;
-}
-
-static void freeCacheEntry(cache_entry **cache_used,cache_entry **cache_unused,void *dat)
-{
-	cache_entry *e = removeCacheEntryByData(cache_unused,dat);
-	if (e == NULL)
-	{
-		return;
-	}
-	addCacheEntry(cache_used,e);
-}
-
-
-
-
 
 
 
 bool slab_allocator_self_test()
 {
 	
-	
-	
-	
-	
-	
-	return true;
 }
 
 
 
 
+void slab_maintenance(uint32_t milis) // maybe specify a point in the future instead, so it can exit when that specific point is reached
+{
+	/* TODO
+		- check if partial slabs are empty and put them in the freelist
+		- make LinkedList of precached objects for faster allocation
+		- free some free slabs in a cache of there are many
+		- while doing that, check the timer and put the slab allocator in a usable state and exit if the time has been reached
+	*/
+	
+	
+	// disable fiq and irq (irq should always be disabled in the kernel, because it relays to the os, which isn't always mapped) while cleaning
+	// to keep the allocator in a usable state
+	// maybe the interrupt handlers need objects
+	
+	
+	
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void ensureCPTCapacity()
+{
+	
+}
+void ensureLinkedListCapacity()
+{
+	
+}
 
 
 
@@ -440,90 +426,146 @@ bool slab_allocator_self_test()
 
 LinkedList* requestLinkedListEntry()
 {
-	return (LinkedList*) requestCacheEntry(&linkedlist_cache,&linkedlist_cache_unused,sizeof(LinkedList));
+	
 }
-
 void freeLinkedListEntry(void* list)
 {
-	freeCacheEntry(&linkedlist_cache,&linkedlist_cache_unused,list);
+	
 }
-
 
 uint32_t* requestCPT()
 {
-	return (uint32_t*) requestCacheEntry(&cpt_cache,&cpt_cache_unused,1024);
+	
 }
-
 void freeCPT(void* cpt)
 {
-	freeCacheEntry(&cpt_cache,&cpt_cache_unused,cpt);
+	
 }
 
 
 struct address_space* requestAddressSpace()
 {
-	return (struct address_space*) requestCacheEntry(&address_space_cache,&address_space_cache_unused,sizeof(struct address_space));
+	
 }
-
 void freeAddressSpace(void *space)
 {
-	freeCacheEntry(&address_space_cache,&address_space_cache_unused,space);
+	
 }
 
 
 uint32_t* requestTranslationTable()
 {
-	return (uint32_t*) requestCacheEntry(&translation_table_cache,&translation_table_cache_unused,1024*16);
+	
 }
-
 void freeTranslationTable(uint32_t *tt)
 {
-	return freeCacheEntry(&translation_table_cache,&translation_table_cache_unused,tt);
+	
 }
 
 
 void* requestLCDFramebuffer()
 {
-	return requestCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,SMALL_PAGE_SIZE*37); // 320*240*2
+	
 }
-
 void freeLCDFramebuffer(void* buff)
 {
-	freeCacheEntry(&lcd_framebuffer_cache,&lcd_framebuffer_cache_unused,buff);
+	
 }
 
 
 struct Process* requestProcess()
 {
-	return (struct Process*) requestCacheEntry(&process_cache,&process_cache_unused,sizeof(struct Process));
+	
 }
-
 void freeProcess(void* proc)
 {
-	freeCacheEntry(&process_cache,&process_cache_unused,proc);
+	
 }
 
 
 struct Thread* requestThread()
 {
-	return (struct Thread*) requestCacheEntry(&thread_cache,&thread_cache_unused,sizeof(struct Thread));
+	
 }
-
 void freeThread(void* thread)
 {
-	freeCacheEntry(&thread_cache,&thread_cache_unused,thread);
+	
 }
 
 
 uint32_t* request4Bytes()
 {
-	return (uint32_t*) requestCacheEntry(&uint32_cache,&uint32_cache_unused,sizeof(uint32_t));
+	
 }
-
 void free4Bytes(uint32_t* b)
 {
-	freeCacheEntry(&uint32_cache,&uint32_cache_unused,b);
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
