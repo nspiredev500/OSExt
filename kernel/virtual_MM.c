@@ -229,6 +229,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
 	DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
+	
 	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);
 	uint32_t index = 0;
 	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);

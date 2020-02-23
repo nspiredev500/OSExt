@@ -23,7 +23,8 @@ struct cache_t {
 	struct slab_desc_t *partial;
 	struct slab_desc_t *free;
 	uint32_t obj_size;
-	uint32_t flags; // bit 0 = essential (has to have one free slab at all time)
+	uint16_t alignment; // alignment for the pages
+	uint16_t flags; // bit 0 = essential (has to have one free slab at all time)
 	char *name;
 	struct cache_t *next;
 }; // sizeof(struct cache) = 28
@@ -32,7 +33,41 @@ struct cache_t {
 struct cache* caches = NULL;
 
 
-
+// adds a SPD for the page in the CPT, that is not tracked by the virtual memory manager
+// allocates a CPT temporarily if no one is there
+static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** cpt)
+{
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	if (tt[virtual_address>>20] && 0b11 == 0)
+	{
+		uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
+		if (tmp_pds_unaligned == NULL)
+		{
+			panic("no memory for tmp_pds!\n")
+		}
+		uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
+		k_memset(tmp_pds,0,1024);
+		*cpt = tmp_pds_unaligned;
+		uint32_t index = ((((uint32_t) virtual_address) & 0b11111111000000000000) >> 10)/4;
+		uint32_t* cpt_real = tmp_pds;
+		cpt_real[index] = newSPD(1,1,0b01010101,(uint32_t) page);;
+	}
+	else
+	{
+		uint32_t descriptor = tt[virtual_address>>20];
+		if ((descriptor  & 0b11) != 0b01)
+		{
+			panic("addUnlistedKernelPage: not a coarse page table descriptor!\n");
+		}
+		uint32_t *cpt_base = (uint32_t*) (descriptor & (~ 0b1111111111));
+		uint32_t index = ((((uint32_t) virtual_address) & 0b11111111000000000000) >> 10)/4;
+		cpt_base[index] = newSPD(1,1,0b01010101,(uint32_t) page);
+	}
+}
 
 void* getKernelHeapNextPage()
 {
@@ -54,11 +89,100 @@ void growCache(struct cache_t* cache)
 		}
 		// TODO addVirtualKernelPage uses the slab allocator and if the cpt or linkedlist caches need to grow,
 		// it would result in an endless loop
-		addVirtualKernelPage();
+		//addVirtualKernelPage();
+		uint32_t* cpt = NULL;
+		addUnlistedKernelPage(page,kernel_heap_next_page,&cpt);
+		void *virtpage = kernel_heap_next_page;
+		kernel_heap_next_page += SMALL_PAGE_SIZE;
+		
+		struct slab_desc_t *slab = virtpage;
+		slab->size = 1;
+		slab->start = virtpage;
+		slab->next = NULL;
+		slab->used = NULL;
+		
+		// add it to the cache
+		slab->next = cache->free;
+		cache->free = slab;
+		
+		
+		// page is added to the slab allocator, now add it to the virtual memory manager
+		if (cpt != NULL)
+		{
+			migrateKernelCPT(cpt,256);
+			ti_free(cpt);
+		}
+		else
+		{
+			addVirtualKernelPage(page,virtpage);
+		}
 	}
 	else
 	{
+		uint32_t size = cache->obj_size / SMALL_PAGE_SIZE;
+		if (cache->obj_size % SMALL_PAGE_SIZE != 0)
+		{
+			size++;
+		}
+		void *page = useConsecutivePages(size,cache->alignment);
+		if (page == NULL)
+		{
+			panic("not enough consecutive pages for cache growth!\n");
+		}
+		void* virtpage = kernel_heap_next_page;
+		kernel_heap_next_page += SMALL_PAGE_SIZE*size;
 		
+		// no object should be bigger than 100 pages
+		void* cpts[100];
+		if (size >= 100)
+		{
+			panic("cache growth: object bigger than 100 pages!\n");
+		}
+		
+		for (uint32_t i = 0;i<100;i++)
+		{
+			cpts[i] = NULL;
+		}
+		
+		for (uint32_t i = 0;i<size;i++)
+		{
+			addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]));
+		}
+		
+		
+		struct slab_desc_t *slab = kmalloc(sizeof(struct slab_desc_t));
+		if (slab == NULL)
+		{
+			panic("cache growth: could not kmalloc a slab descriptor!\n");
+		}
+		slab->size = size;
+		slab->start = virtpage;
+		slab->next = NULL;
+		slab->used = kmalloc(size/8+1);
+		if (slab->used == NULL)
+		{
+			panic("cache growth: could not kmalloc the used array for the slab!\n");
+		}
+		
+		// add it to the cache
+		slab->next = cache->free;
+		cache->free = slab;
+		
+		
+		
+		// now migrate all the pages to the virtual memory manager
+		for (uint32_t i = 0;i<100;i++)
+		{
+			if (cpts[i] != NULL)
+			{
+				migrateKernelCPT(cpt,256);
+				ti_free(cpt);
+			}
+			else
+			{
+				addVirtualKernelPage(page,virtpage);
+			}
+		}
 	}
 }
 
@@ -192,6 +316,11 @@ void initSlabAllocator()
 	
 	
 	uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
+	if (tmp_pds_unaligned == NULL)
+	{
+		DEBUGPRINTF_1("no memory for tmp_pds!\n");
+		return;
+	}
 	uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
 	k_memset(tmp_pds,0,1024);
 	
@@ -258,6 +387,7 @@ void initSlabAllocator()
 	cache_cache->partial = NULL;
 	cache_cache->free = cache_slab;
 	cache_cache->obj_size = sizeof(struct cache_t);
+	cache_cache->alignment = 0;
 	cache_cache->flags = 0;
 	cache_cache->name = "cache_cache";
 	cache_cache->next = NULL;
@@ -283,6 +413,7 @@ void initSlabAllocator()
 	slab_cache->partial NULL;
 	slab_cache->free = slab_slab;
 	slab_cache->obj_size = sizeof(struct slab_desc_t);
+	slab_cache->alignment = 0;
 	slab_cache->flags = 0;
 	slab_cache->name = "slab_cache";
 	slab_cache->next = NULL;
@@ -308,6 +439,7 @@ void initSlabAllocator()
 	linkedlist_cache->partial NULL;
 	linkedlist_cache->free = linkedlist_slab;
 	linkedlist_cache->obj_size = sizeof(LinkedList);
+	linkedlist_cache->alignment = 0;
 	linkedlist_cache->flags = 0;
 	linkedlist_cache->name = "linkedlist_cache";
 	linkedlist_cache->next = NULL;
@@ -351,6 +483,7 @@ void initSlabAllocator()
 	cpt_cache->partial NULL;
 	cpt_cache->free = cpt_slab;
 	cpt_cache->obj_size = 1024;
+	cpt_cache->alignment = 0;
 	cpt_cache->flags = 0;
 	cpt_cache->name = "cpt_cache";
 	cpt_cache->next = NULL;
