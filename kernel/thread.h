@@ -8,7 +8,7 @@ struct Thread;
 struct Thread {
 	uint32_t regs[17];
 	uint16_t tid;
-	uint8_t status;
+	uint16_t status;
 };
 
 

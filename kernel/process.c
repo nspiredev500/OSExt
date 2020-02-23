@@ -3,13 +3,15 @@
 
 
 
-struct Process* createProcess(uint16_t pid)
+struct Process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
 {
 	struct Process *p = requestProcess();
 	p->space = createAddressSpace();
 	p->status = 0;
 	p->priviledges = 0;
 	p->pid = pid;
+	p->uid = uid;
+	p->gid = gid;
 	p->threads = NULL;
 	return p;
 }

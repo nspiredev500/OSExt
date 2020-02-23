@@ -297,12 +297,25 @@ void* kmalloc(uint32_t size)
 	}
 }
 
-void createCache(uint32_t obj_size,uint32_t flags, char* name)
+void createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name)
 {
+	struct cache_t *cache = kmalloc(sizeof(struct cache_t));
+	if (cache == NULL)
+	{
+		panic("could not kmalloc a new cache descriptor!\n");
+	}
+	cache->full = NULL;
+	cache->partial = NULL;
+	cache->free = NULL;
+	cache->obj_size = obj_size;
+	cache->alignment = alignment;
+	cache->flags = flags;
+	cache->name = name;
 	
 	
-	
-	
+	// add it to the list
+	cache->next = caches->next;
+	caches = cache;
 }
 
 void initSlabAllocator()
@@ -502,13 +515,25 @@ void initSlabAllocator()
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
 	
+	createCache(1024*16,1024*16,0,"translation_table_cache");
+	createCache(sizeof(struct address_space),0,0,"address_space_cache");
+	createCache(sizeof(struct Process),0,0,"process_cache");
+	createCache(sizeof(struct Thread),0,0,"thread_cache");
+	createCache(SMALL_PAGE_SIZE*37,0,0,"framebuffer_cache");
 	
 	
-	
-	
-	
-	
-	
+	createCache(1,0,0,"1_byte_cache");
+	createCache(2,0,0,"2_byte_cache");
+	createCache(4,0,0,"4_byte_cache");
+	createCache(8,0,0,"8_byte_cache");
+	createCache(16,0,0,"16_byte_cache");
+	createCache(32,0,0,"32_byte_cache");
+	createCache(64,0,0,"64_byte_cache");
+	createCache(128,0,0,"128_byte_cache");
+	createCache(256,0,0,"256_byte_cache");
+	createCache(512,0,0,"512_byte_cache");
+	// 1024 is already made for cpts
+	// anything bigger should just allocate pages directly
 	
 	
 	
@@ -519,6 +544,10 @@ void initSlabAllocator()
 
 bool slab_allocator_self_test()
 {
+	// TODO write the self test
+	
+	
+	
 	
 }
 
