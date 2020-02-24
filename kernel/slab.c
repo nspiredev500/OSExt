@@ -7,15 +7,16 @@
 void* const kernel_heap_start = (void* const) 0xe4000000;
 static void* kernel_heap_next_page = (void*) (0xe4000000);
 
-
+/*
 struct cache_t;
 struct slab_desc_t;
 struct slab_desc_t {
 	uint32_t size; // number of pages
 	void *start; // start of the slab in memory
 	struct slab_desc_t *next;
-	uint8_t *used; // pointer to the array where the used bit for each object is stored
+	// pointer to the array where the used bit for each object is stored
 	// on-slab if NULL
+	uint8_t *used;
 }; // sizeof(struct slab) = 16
 
 struct cache_t {
@@ -24,13 +25,27 @@ struct cache_t {
 	struct slab_desc_t *free;
 	uint32_t obj_size;
 	uint16_t alignment; // alignment for the pages
-	uint16_t flags; // bit 0 = essential (has to have one free slab at all time)
+	uint16_t flags;
 	char *name;
 	struct cache_t *next;
 }; // sizeof(struct cache) = 28
+*/
+
+struct cache_t *caches = NULL;
 
 
-struct cache* caches = NULL;
+// keep a pointer to each essential cache for faster access
+struct cache_t *slab_cache = NULL;
+struct cache_t *cache_cache = NULL;
+struct cache_t *linkedlist_cache = NULL;
+struct cache_t *cpt_cache = NULL;
+struct cache_t *tt_cache = NULL;
+struct cache_t *address_space_cache = NULL;
+struct cache_t *process_cache = NULL;
+struct cache_t *thread_cache = NULL;
+struct cache_t *framebuffer_cache = NULL;
+
+
 
 
 // adds a SPD for the page in the CPT, that is not tracked by the virtual memory manager
@@ -42,12 +57,12 @@ static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** c
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uint32_t *tt = (uint32_t*) tt_base;
-	if (tt[virtual_address>>20] && 0b11 == 0)
+	if (tt[(uint32_t)virtual_address>>20] && 0b11 == 0)
 	{
 		uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
 		if (tmp_pds_unaligned == NULL)
 		{
-			panic("no memory for tmp_pds!\n")
+			panic("no memory for tmp_pds!\n");
 		}
 		uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
 		k_memset(tmp_pds,0,1024);
@@ -58,7 +73,7 @@ static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** c
 	}
 	else
 	{
-		uint32_t descriptor = tt[virtual_address>>20];
+		uint32_t descriptor = tt[(uint32_t)virtual_address>>20];
 		if ((descriptor  & 0b11) != 0b01)
 		{
 			panic("addUnlistedKernelPage: not a coarse page table descriptor!\n");
@@ -80,7 +95,7 @@ void setKernelHeapNextPage(void* next)
 
 void growCache(struct cache_t* cache)
 {
-	if (cache->obj_size > SMALL_PAGE_SIZE)
+	if (cache->obj_size < SMALL_PAGE_SIZE)
 	{
 		void* page = usePage();
 		if (page == NULL)
@@ -109,7 +124,7 @@ void growCache(struct cache_t* cache)
 		// page is added to the slab allocator, now add it to the virtual memory manager
 		if (cpt != NULL)
 		{
-			migrateKernelCPT(cpt,256);
+			migrateKernelCPT((uint32_t) page,cpt,256);
 			ti_free(cpt);
 		}
 		else
@@ -133,7 +148,7 @@ void growCache(struct cache_t* cache)
 		kernel_heap_next_page += SMALL_PAGE_SIZE*size;
 		
 		// no object should be bigger than 100 pages
-		void* cpts[100];
+		uint32_t* cpts[100];
 		if (size >= 100)
 		{
 			panic("cache growth: object bigger than 100 pages!\n");
@@ -155,10 +170,11 @@ void growCache(struct cache_t* cache)
 		{
 			panic("cache growth: could not kmalloc a slab descriptor!\n");
 		}
+		uint32_t objs = (SMALL_PAGE_SIZE*size) / cache->obj_size;
 		slab->size = size;
 		slab->start = virtpage;
 		slab->next = NULL;
-		slab->used = kmalloc(size/8+1);
+		slab->used = kmalloc((objs/8)+1);
 		if (slab->used == NULL)
 		{
 			panic("cache growth: could not kmalloc the used array for the slab!\n");
@@ -175,8 +191,8 @@ void growCache(struct cache_t* cache)
 		{
 			if (cpts[i] != NULL)
 			{
-				migrateKernelCPT(cpt,256);
-				ti_free(cpt);
+				migrateKernelCPT(((uint32_t) page)+i*SMALL_PAGE_SIZE,cpts[i],256);
+				ti_free(cpts[i]);
 			}
 			else
 			{
@@ -186,7 +202,89 @@ void growCache(struct cache_t* cache)
 	}
 }
 
-void* alloc_object_from_cache(struct cache_t* cache)
+bool free_object_from_cache(struct cache_t *cache,void* obj)
+{
+	if (cache->partial == NULL)
+	{
+		if (cache->full == NULL)
+		{
+			return false;
+		}
+		else
+		{
+			struct slab_desc_t *cslab = cache->full;
+			struct slab_desc_t *prevslab = NULL;
+			while (cslab != NULL)
+			{
+				if (free_object_from_slab(cslab,cache->obj_size,obj))
+				{
+					if (prevslab == NULL)
+					{
+						cache->full = cslab->next;
+					}
+					else
+					{
+						prevslab->next = cslab->next;
+					}
+					cslab->next = cache->partial;
+					cache->partial = cslab;
+					return true;
+				}
+				cslab = cslab->next;
+			}
+		}
+	}
+	else
+	{
+		struct slab_desc_t *cslab = cache->full;
+		struct slab_desc_t *prevslab = NULL;
+		while (cslab != NULL)
+		{
+			if (free_object_from_slab(cslab,cache->obj_size,obj))
+			{
+				if (prevslab == NULL)
+				{
+					cache->full = cslab->next;
+				}
+				else
+				{
+					prevslab->next = cslab->next;
+				}
+				cslab->next = cache->partial;
+				cache->partial = cslab;
+				return true;
+			}
+			cslab = cslab->next;
+		}
+		cslab = cache->partial;
+		prevslab = NULL;
+		while (cslab != NULL)
+		{
+			if (free_object_from_slab(cslab,cache->obj_size,obj))
+			{
+				if (isSlabFree(cslab,cache->obj_size))
+				{
+					if (prevslab == NULL)
+					{
+						cache->partial = cslab->next;
+					}
+					else
+					{
+						prevslab->next = cslab->next;
+					}
+					cslab->next = cache->free;
+					cache->free = cslab;
+				}
+				return true;
+			}
+		}
+		cslab = cslab->next;
+	}
+	return false;
+}
+
+
+void* alloc_object_from_cache(struct cache_t *cache)
 {
 	if (cache->partial == NULL)
 	{
@@ -204,12 +302,18 @@ void* alloc_object_from_cache(struct cache_t* cache)
 			struct slab_desc_t *partialslab = cache->partial;
 			freeslab->next = cache->partial;
 			cache->partial = freeslab;
-			return alloc_object_from_slab(freeslab,cache->obj_size);
+			void *obj = alloc_object_from_slab(freeslab,cache->obj_size);
+			if (obj == NULL)
+			{
+				panic("could not get object from empty slab!\n");
+			}
+			return obj;
 		}
 	}
 	else
 	{
 		struct slab_desc_t *cslab = cache->partial;
+		struct slab_desc_t *prevslab = NULL;
 		while (cslab != NULL)
 		{
 			void *object = alloc_object_from_slab(cslab,cache->obj_size);
@@ -217,14 +321,77 @@ void* alloc_object_from_cache(struct cache_t* cache)
 			{
 				return object;
 			}
-			// TODO add the slab to the full list, because there was no object returned
+			// add it to the full list
+			if (prevslab == NULL)
+			{
+				cache->partial = cslab->next;
+			}
+			else
+			{
+				prevslab->next = cslab->next;
+			}
+			cslab->next = cache->full;
+			cache->full = cslab;
+			
+			
+			prevslab = cslab;
 			cslab = cslab->next;
 		}
-		growCache(cache);
-		return alloc_object_from_cache(cache);
+		cslab = cache->free;
+		if (cslab == NULL)
+		{
+			growCache(cache);
+			return alloc_object_from_cache(cache);
+		}
+		cache->free = cslab->next;
+		cslab->next = cache->partial;
+		cache->partial = cslab;
+		void *obj = alloc_object_from_slab(cslab,cache->obj_size);
+		if (obj == NULL)
+		{
+			panic("could not get object from empty slab!\n");
+		}
+		return obj;
 	}
 }
-
+// returns true if the object was on this slab and freed
+bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj)
+{
+	if (obj_size < 128)
+	{
+		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
+		int64_t offset = ((int32_t)obj)-((int32_t)objects_start);
+		if (offset < 0 || offset/obj_size > objs)
+		{
+			return false;
+		}
+		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
+		uint32_t index = offset/obj_size;
+		uint32_t bit = index % 8;
+		used[index/8] = used[offset/obj_size] & (~ (0b1 << bit));
+		return true;
+	}
+	else
+	{
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		int64_t offset = ((int32_t)slab->start)-((int32_t)slab->start);
+		uint8_t *used = slab->used;
+		if (used == NULL)
+		{
+			panic("slab allocator: used array in slab = NULL!\n");
+		}
+		if (offset < 0 || offset/obj_size > objs)
+		{
+			return false;
+		}
+		uint32_t index = offset/obj_size;
+		uint32_t bit = index % 8;
+		used[index/8] = used[offset/obj_size] & (~ (0b1 << bit));
+		return true;
+	}
+}
 
 void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 {
@@ -235,9 +402,9 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 		// don't subtract slab descriptor size to account for more objects if calculations are wrong
 		
 		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
-		void *objects_start = slab->start + sizeof(slab_desc_t) + (objs_raw / obj_size)/8+1;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
 		// offset = sizeof(slab descriptor) + length of used array
-		uint8_t *used = slab->start+sizeof(slab_desc_t);
+		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
 		uint32_t i = 0;
 		for (uint32_t i = 0;i<objs;i++)
 		{
@@ -254,6 +421,10 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 	{
 		// slab descriptor off-slab
 		uint8_t *used = slab->used;
+		if (used == NULL)
+		{
+			panic("slab allocator: used array in slab = NULL!\n");
+		}
 		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
 		for (uint32_t i = 0;i<objs;i++)
 		{
@@ -267,11 +438,53 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 		return NULL;
 	}
 }
+bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size)
+{
+	if (obj_size < 128)
+	{
+		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
+		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
+		
+		for (uint32_t i = 0;i<(objs/obj_size)+1;i++)
+		{
+			if (used[i] != 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	else
+	{
+		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
+		uint8_t *used = slab->used;
+		if (used == NULL)
+		{
+			panic("slab allocator: used array in slab = NULL!\n");
+		}
+		
+		for (uint32_t i = 0;i<(objs/obj_size)+1;i++)
+		{
+			if (used[i] != 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+}
 
 // allocates an object from a cache, using a larger one if no perfectly fitting one is found and returning NULL if
 // no cache with enough object size was found 
 void* kmalloc(uint32_t size)
 {
+	if (size > 1024)
+	{
+		// TODO relay to physical memory allocator
+		return NULL;
+	}
 	struct cache_t *best_fit_cache = NULL;
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
@@ -297,7 +510,38 @@ void* kmalloc(uint32_t size)
 	}
 }
 
-void createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name)
+void kfree(void* obj)
+{
+	struct cache_t *ccache = caches;
+	while (ccache != NULL)
+	{
+		if (free_object_from_cache(ccache,obj))
+		{
+			return;
+		}
+		ccache = ccache->next;
+	}
+}
+
+
+void kfree_hint(void* obj,uint32_t size)
+{
+	struct cache_t *ccache = caches;
+	while (ccache != NULL)
+	{
+		if (ccache->obj_size >= size)
+		{
+			if (free_object_from_cache(ccache,obj))
+			{
+				return;
+			}
+		}
+		ccache = ccache->next;
+	}
+}
+
+
+struct cache_t* createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name)
 {
 	struct cache_t *cache = kmalloc(sizeof(struct cache_t));
 	if (cache == NULL)
@@ -316,6 +560,7 @@ void createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name
 	// add it to the list
 	cache->next = caches->next;
 	caches = cache;
+	return cache;
 }
 
 void initSlabAllocator()
@@ -343,7 +588,7 @@ void initSlabAllocator()
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
 	uint32_t *tt = (uint32_t*) tt_base;
 	
-	tt[kernel_heap_start >> 20] = newCPTD(0,(uint32_t) tmp_pds);
+	tt[(uint32_t)kernel_heap_start >> 20] = newCPTD(0,(uint32_t) tmp_pds);
 	
 	tmp_pds[0] = newSPD(1,1,0b01010101,(uint32_t) page);
 	
@@ -375,7 +620,7 @@ void initSlabAllocator()
 		return;
 	}
 	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page);
-	invalidateTLB();
+	invalidate_TLB();
 	
 	
 	
@@ -388,7 +633,7 @@ void initSlabAllocator()
 	cache_slab->used = NULL;
 	
 	
-	struct cache_t *cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (cache_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -414,7 +659,7 @@ void initSlabAllocator()
 	slab_slab->next = NULL;
 	slab_slab->used = NULL;
 	
-	struct cache_t *slab_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	slab_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (slab_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -423,7 +668,7 @@ void initSlabAllocator()
 	}
 	
 	slab_cache->full = NULL;
-	slab_cache->partial NULL;
+	slab_cache->partial = NULL;
 	slab_cache->free = slab_slab;
 	slab_cache->obj_size = sizeof(struct slab_desc_t);
 	slab_cache->alignment = 0;
@@ -440,7 +685,7 @@ void initSlabAllocator()
 	linkedlist_slab->next = NULL;
 	linkedlist_slab->used = NULL;
 	
-	struct cache_t *linkedlist_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	linkedlist_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (linkedlist_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -449,7 +694,7 @@ void initSlabAllocator()
 	}
 	
 	linkedlist_cache->full = NULL;
-	linkedlist_cache->partial NULL;
+	linkedlist_cache->partial = NULL;
 	linkedlist_cache->free = linkedlist_slab;
 	linkedlist_cache->obj_size = sizeof(LinkedList);
 	linkedlist_cache->alignment = 0;
@@ -484,7 +729,7 @@ void initSlabAllocator()
 	
 	
 	
-	struct cache_t *cpt_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	cpt_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (cpt_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -493,7 +738,7 @@ void initSlabAllocator()
 	}
 	
 	cpt_cache->full = NULL;
-	cpt_cache->partial NULL;
+	cpt_cache->partial = NULL;
 	cpt_cache->free = cpt_slab;
 	cpt_cache->obj_size = 1024;
 	cpt_cache->alignment = 0;
@@ -515,11 +760,11 @@ void initSlabAllocator()
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
 	
-	createCache(1024*16,1024*16,0,"translation_table_cache");
-	createCache(sizeof(struct address_space),0,0,"address_space_cache");
-	createCache(sizeof(struct Process),0,0,"process_cache");
-	createCache(sizeof(struct Thread),0,0,"thread_cache");
-	createCache(SMALL_PAGE_SIZE*37,0,0,"framebuffer_cache");
+	tt_cache = createCache(1024*16,1024*16,0,"translation_table_cache");
+	address_space_cache = createCache(sizeof(struct address_space),0,0,"address_space_cache");
+	process_cache = createCache(sizeof(struct Process),0,0,"process_cache");
+	thread_cache = createCache(sizeof(struct Thread),0,0,"thread_cache");
+	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0,"framebuffer_cache"); // 150 KiB
 	
 	
 	createCache(1,0,0,"1_byte_cache");
@@ -548,7 +793,7 @@ bool slab_allocator_self_test()
 	
 	
 	
-	
+	return false;
 }
 
 
@@ -570,6 +815,8 @@ void slab_maintenance(uint32_t milis) // maybe specify a point in the future ins
 	
 	
 	
+	
+	
 }
 
 void ensureCPTCapacity()
@@ -588,80 +835,80 @@ void ensureLinkedListCapacity()
 
 LinkedList* requestLinkedListEntry()
 {
-	
+	return alloc_object_from_cache(linkedlist_cache);
 }
 void freeLinkedListEntry(void* list)
 {
-	
+	free_object_from_cache(linkedlist_cache,list);
 }
 
 uint32_t* requestCPT()
 {
-	
+	return alloc_object_from_cache(cpt_cache);
 }
 void freeCPT(void* cpt)
 {
-	
+	free_object_from_cache(cpt_cache,cpt);
 }
 
 
 struct address_space* requestAddressSpace()
 {
-	
+	return alloc_object_from_cache(address_space_cache);
 }
 void freeAddressSpace(void *space)
 {
-	
+	free_object_from_cache(address_space_cache,space);
 }
 
 
 uint32_t* requestTranslationTable()
 {
-	
+	return alloc_object_from_cache(tt_cache);
 }
 void freeTranslationTable(uint32_t *tt)
 {
-	
+	free_object_from_cache(tt_cache,tt);
 }
 
 
 void* requestLCDFramebuffer()
 {
-	
+	return alloc_object_from_cache(framebuffer_cache);
 }
 void freeLCDFramebuffer(void* buff)
 {
-	
+	free_object_from_cache(framebuffer_cache,buff);
 }
 
 
 struct Process* requestProcess()
 {
-	
+	return alloc_object_from_cache(process_cache);
 }
 void freeProcess(void* proc)
 {
-	
+	free_object_from_cache(process_cache,proc);
 }
 
 
 struct Thread* requestThread()
 {
-	
+	return alloc_object_from_cache(thread_cache);
 }
 void freeThread(void* thread)
 {
-	
+	free_object_from_cache(thread_cache,thread);
 }
 
 
 uint32_t* request4Bytes()
 {
-	
+	return kmalloc(4);
 }
 void free4Bytes(uint32_t* b)
 {
-	
+	kfree_hint(b,4);
 }
 
 

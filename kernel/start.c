@@ -122,7 +122,7 @@ void initialize()
 	b = slab_allocator_self_test();
 	if (! b)
 	{
-		debug_shell_println_rgb("error in slab allocator memory manager self-test         aborting",255,0,0);
+		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
 		return;

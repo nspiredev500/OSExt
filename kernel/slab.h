@@ -1,7 +1,27 @@
 #ifndef SLAB_H
 #define SLAB_H
 
+struct cache_t;
+struct slab_desc_t;
+struct slab_desc_t {
+	uint32_t size; // number of pages
+	void *start; // start of the slab in memory
+	struct slab_desc_t *next;
+	// pointer to the array where the used bit for each object is stored
+	// on-slab if NULL
+	uint8_t *used;
+}; // sizeof(struct slab) = 16
 
+struct cache_t {
+	struct slab_desc_t *full;
+	struct slab_desc_t *partial;
+	struct slab_desc_t *free;
+	uint32_t obj_size;
+	uint16_t alignment; // alignment for the pages
+	uint16_t flags;
+	char *name;
+	struct cache_t *next;
+}; // sizeof(struct cache) = 28
 
 void* const kernel_heap_start;
 
@@ -11,10 +31,18 @@ void setKernelHeapNextPage(void* next);
 void initSlabAllocator();
 
 void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size);
-void* alloc_object_from_cache(struct cache_t* cache);
+bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj);
+bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size);
+
+void* alloc_object_from_cache(struct cache_t *cache);
+bool free_object_from_cache(struct cache_t *cache,void* obj);
+
+
+
+
 void growCache(struct cache_t* cache);
 
-void createCache(uint32_t obj_size,uint32_t flags, char* name);
+struct cache_t* createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name);
 
 
 void* kmalloc(uint32_t size);
@@ -22,7 +50,7 @@ void kfree(void* obj);
 
 
 // this one performs better, because it only searches the caches that are equal or bigger than the object size
-void kfree(void* obj,uint32_t size);
+void kfree_hint(void* obj,uint32_t size);
 
 
 
