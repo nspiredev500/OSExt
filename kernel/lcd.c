@@ -254,6 +254,7 @@ void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint
 		{
 			for (int y = 0;y<10;y++)
 			{
+				
 				if (c[(uint32_t) *cchar][y][x] == 1)
 				{
 					framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);

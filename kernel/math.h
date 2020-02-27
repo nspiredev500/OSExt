@@ -2,7 +2,7 @@
 #define MATH_H
 
 
-
+uint32_t ceil_uint32(double d);
 uint32_t k_pow(uint32_t a,uint32_t b);
 uint32_t set_bits32(uint32_t b);
 uint64_t set_bits64(uint32_t b);

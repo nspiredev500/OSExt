@@ -3,6 +3,14 @@
 
 
 
+uint32_t ceil_uint32(double d)
+{
+	if (d == (uint32_t) d)
+	{
+		return (uint32_t) d;
+	}
+	return ((uint32_t) d)+1;
+}
 
 
 uint32_t k_pow(uint32_t a,uint32_t b)
@@ -57,9 +65,10 @@ uint64_t set_bits64(uint32_t b)
 
 void* make4ByteAligned(void* p)
 {
-	uint32_t tmp = ((uint32_t) p) & (~ 0b11);
-	if ((((uint32_t) p) & 0b11) != 0)
+	uint32_t tmp = (uint32_t) p;
+	if ((tmp & 0b11) != 0)
 	{
+		tmp = tmp & (~ 0b11);
 		tmp += 0b100;
 	}
 	return (void*) tmp;

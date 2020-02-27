@@ -35,6 +35,21 @@ void initializeKernelSpace()
 	kernel_space.cptds = NULL;
 	
 	initSlabAllocator();
+	
+	bool b = slab_allocator_self_test_post_initialization();
+	if (! b)
+	{
+		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
+		keypad_press_release_barrier();
+		free_init_pds();
+		return;
+	}
+	
+	
+	
+	
+	
+	
 	//debug_shell_println_rgb("kernel heap next2: 0x%x",255,0,0,getKernelHeapNextPage());
 	
 	
@@ -71,7 +86,7 @@ void initializeKernelSpace()
 	void* physical_tt = tt;
 	//debug_shell_println_rgb("kernel heap next3: 0x%x",255,0,0,getKernelHeapNextPage());
 	void* tt_page = getKernelHeapNextPage();
-	setKernelHeapNextPage(getKernelHeapNextPage() + SMALL_PAGE_SIZE*4);
+	setKernelHeapNextPage(getKernelHeapNextPage() + SMALL_PAGE_SIZE*5);
 	addVirtualKernelPage(physical_tt,tt_page);
 	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE,tt_page+SMALL_PAGE_SIZE);
 	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*2,tt_page+SMALL_PAGE_SIZE*2);
@@ -79,6 +94,10 @@ void initializeKernelSpace()
 	
 	//asm(".long 0xE1212374"); // bkpt
 	kernel_space.tt = tt_page;
+	
+	
+	addVirtualKernelPage((void*) 0x90020000,tt_page+SMALL_PAGE_SIZE*4);
+	remappUART(tt_page+SMALL_PAGE_SIZE*4);
 	
 	
 	kernel_space_initialized = true;
@@ -89,7 +108,7 @@ void changeAddressSpace(struct address_space *space)
 {
 	//asm(".long 0xE1212374"); // bkpt
 	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(kernel_space.tt,space->tt);
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -124,7 +143,7 @@ struct address_space* createAddressSpace()
 	*/
 	k_memset(space->tt,0,1024*16);
 	
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	// so we have to replace it
 	space->tt = tt;
 	

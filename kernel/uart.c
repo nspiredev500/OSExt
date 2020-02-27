@@ -6,6 +6,12 @@
 static volatile uint32_t *data = (volatile uint32_t*) 0x90020000;
 
 
+void remappUART(void *new_mapping)
+{
+	data = (volatile void*) new_mapping;
+}
+
+
 //TODO check for full FIFO buffer
 
 

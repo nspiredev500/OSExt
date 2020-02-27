@@ -14,6 +14,8 @@
 #include "zehn_loader.h"
 
 
+#include "loader.h"
+
 // Lighter alternative to std::vector (DON'T ASSIGN)
 template <typename T> class Storage
 {
@@ -115,10 +117,31 @@ extern "C" int zehn_load(NUC_FILE *file, void **mem_ptr, int (**entry)(int,char*
 	}
 	
 	size_t remaining_mem = header.alloc_size - nuc_ftell(file) + file_start, remaining_file = header.file_size - nuc_ftell(file) + file_start;
-
+	
+	
+	/*
+	
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	
+	
+	void *unreloc_base = calloc(remaining_mem/SMALL_PAGE_SIZE+6*SMALL_PAGE_SIZE); // extra for alignment
+	*/
+	
+	
+	
+	
+	
+	
+	
 	
 	*mem_ptr = malloc(remaining_mem);
-
+	
+	printf("base: 0x%x\n",*mem_ptr);
+	
 	uint8_t *base = reinterpret_cast<uint8_t*>(*mem_ptr);
 	if(!base)
 	{
@@ -281,21 +304,25 @@ extern "C" int zehn_load(NUC_FILE *file, void **mem_ptr, int (**entry)(int,char*
                             printf("[Zehn] Unexpected UNALIGNED_RELOC value %lu!\n", r.offset);
                             return 1;
                         }
-
+						puts("unaligned reloc\n");
 			break;
 		case Zehn_reloc_type::ADD_BASE:
 			wu32(place, ru32(place) + reinterpret_cast<uint32_t>(base));
+			puts("reloc add abse\n");
 			break;
 		case Zehn_reloc_type::ADD_BASE_GOT:
 		{
 			uint32_t u32;
+			puts("reloc add base GOT: ");
+			printf("place: 0x%x\n",place);
 			while((u32 = ru32(place)) != 0xFFFFFFFF)
 				wu32(place++, u32 + reinterpret_cast<uint32_t>(base));
-
+			
 			break;
 		}
 		case Zehn_reloc_type::SET_ZERO:
 			wu32(place, 0);
+			puts("reloc set zero\n");
 			break;
 		default:
 			printf("[Zehn] Unsupported reloc %d!\n", static_cast<int>(r.type));

@@ -77,7 +77,7 @@ void initialize()
 {
 	void* framebuffer = (void*) *LCD_UPBASE;
 	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
-	
+	setShellFramebuffer(framebuffer);
 	debug_shell_println("finished relocating");
 	debug_shell_println("initializing");
 	
@@ -119,7 +119,7 @@ void initialize()
 		return;
 	}
 	debug_shell_println("performing slab allocator self-test");
-	b = slab_allocator_self_test();
+	b = slab_allocator_self_test_pre_initialization();
 	if (! b)
 	{
 		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
@@ -134,13 +134,11 @@ void initialize()
 	debug_shell_println("done");
 	//asm(".long 0xE1212374"); // bkpt
 	
-	void* framebuffer_start = (void*) ((uint32_t)framebuffer & 0xfff);
-	for (int i = 0;i<37;i++)
-	{
-		addVirtualKernelPage(framebuffer_start+SMALL_PAGE_SIZE*i,framebuffer_start+SMALL_PAGE_SIZE*i);
-	}
-	
-	
+	framebuffer = requestLCDFramebuffer();
+	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
+	debug_shell_reset();
+	setShellFramebuffer(framebuffer);
+	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
 	
 	debug_shell_println("running general self-test");
 	
@@ -164,7 +162,7 @@ void initialize()
 	//b = true;
 	if (! b)
 	{
-		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
+		debug_shell_println_rgb("error in general self-test 2         aborting",255,0,0);
 		keypad_press_release_barrier();
 		return;
 	}

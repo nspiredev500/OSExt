@@ -108,6 +108,7 @@ void growCache(struct cache_t* cache)
 		uint32_t* cpt = NULL;
 		addUnlistedKernelPage(page,kernel_heap_next_page,&cpt);
 		void *virtpage = kernel_heap_next_page;
+		k_memset(virtpage,0,SMALL_PAGE_SIZE);
 		kernel_heap_next_page += SMALL_PAGE_SIZE;
 		
 		struct slab_desc_t *slab = virtpage;
@@ -115,7 +116,14 @@ void growCache(struct cache_t* cache)
 		slab->start = virtpage;
 		slab->next = NULL;
 		slab->used = NULL;
-		
+		if (cache->obj_size >= 128)
+		{
+			slab->used = kmalloc(((SMALL_PAGE_SIZE/cache->obj_size)/8)+1);
+			if (slab->used == NULL)
+			{
+				panic("cache growth: could not kmalloc the used array for the slab!\n");
+			}
+		}
 		// add it to the cache
 		slab->next = cache->free;
 		cache->free = slab;
@@ -144,6 +152,7 @@ void growCache(struct cache_t* cache)
 		{
 			panic("not enough consecutive pages for cache growth!\n");
 		}
+		
 		void* virtpage = kernel_heap_next_page;
 		kernel_heap_next_page += SMALL_PAGE_SIZE*size;
 		
@@ -163,7 +172,7 @@ void growCache(struct cache_t* cache)
 		{
 			addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]));
 		}
-		
+		k_memset(virtpage,0,SMALL_PAGE_SIZE*size);
 		
 		struct slab_desc_t *slab = kmalloc(sizeof(struct slab_desc_t));
 		if (slab == NULL)
@@ -360,8 +369,11 @@ bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj)
 	if (obj_size < 128)
 	{
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
-		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
-		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + objs_raw/8+1;
+		uint32_t unalignment = (uint32_t) objects_start & 0b11;
+		objects_start = align4Bytes(objects_start);
+		uint32_t objs = (uint32_t) (slab->start+slab->size*SMALL_PAGE_SIZE-objects_start)/obj_size;
+		
 		int64_t offset = ((int32_t)obj)-((int32_t)objects_start);
 		if (offset < 0 || offset/obj_size > objs)
 		{
@@ -401,8 +413,18 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
 		// don't subtract slab descriptor size to account for more objects if calculations are wrong
 		
-		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
-		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
+		//uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + objs_raw/8+1;
+		//DEBUGPRINTLN_1("objects_start: 0x%x",objects_start)
+		objects_start = align4Bytes(objects_start);
+		//DEBUGPRINTLN_1("objects_start: 0x%x",objects_start)
+		uint32_t objs = (uint32_t) (slab->start+slab->size*SMALL_PAGE_SIZE-objects_start)/obj_size;
+		
+		
+		
+		
+		
+		
 		// offset = sizeof(slab descriptor) + length of used array
 		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
 		uint32_t i = 0;
@@ -443,8 +465,10 @@ bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size)
 	if (obj_size < 128)
 	{
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
-		uint32_t objs = (slab->size*SMALL_PAGE_SIZE-(objs_raw/8+1))/obj_size;
-		void *objects_start = slab->start + sizeof(struct slab_desc_t) + (objs_raw / obj_size)/8+1;
+		void *objects_start = slab->start + sizeof(struct slab_desc_t) + objs_raw/8+1;
+		objects_start = align4Bytes(objects_start);
+		uint32_t objs = (uint32_t) (slab->start+slab->size*SMALL_PAGE_SIZE-objects_start)/obj_size;
+		
 		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
 		
 		for (uint32_t i = 0;i<(objs/obj_size)+1;i++)
@@ -482,6 +506,7 @@ void* kmalloc(uint32_t size)
 {
 	if (size > 1024)
 	{
+		DEBUGPRINTLN_1("kmalloc: size too big for size cache!")
 		// TODO relay to physical memory allocator
 		return NULL;
 	}
@@ -489,14 +514,17 @@ void* kmalloc(uint32_t size)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
-		if (ccache->obj_size == size)
+		if ((ccache->flags & 0b1) != 0b1) // no_kmalloc flag not set
 		{
-			best_fit_cache = ccache;
-			break;
-		}
-		if (ccache->obj_size > size)
-		{
-			best_fit_cache = ccache;
+			if (ccache->obj_size == size)
+			{
+				best_fit_cache = ccache;
+				break;
+			}
+			if (ccache->obj_size > size)
+			{
+				best_fit_cache = ccache;
+			}
 		}
 		ccache = ccache->next;
 	}
@@ -515,9 +543,13 @@ void kfree(void* obj)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
-		if (free_object_from_cache(ccache,obj))
+		 // no_kmalloc flag not set, because objects from that can't be allocated anyways
+		if ((ccache->flags & 0b1) != 0b1)
 		{
-			return;
+			if (free_object_from_cache(ccache,obj))
+			{
+				return;
+			}
 		}
 		ccache = ccache->next;
 	}
@@ -543,11 +575,7 @@ void kfree_hint(void* obj,uint32_t size)
 
 struct cache_t* createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags, char* name)
 {
-	struct cache_t *cache = kmalloc(sizeof(struct cache_t));
-	if (cache == NULL)
-	{
-		panic("could not kmalloc a new cache descriptor!\n");
-	}
+	struct cache_t *cache = alloc_object_from_cache(cache_cache);
 	cache->full = NULL;
 	cache->partial = NULL;
 	cache->free = NULL;
@@ -558,7 +586,7 @@ struct cache_t* createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags,
 	
 	
 	// add it to the list
-	cache->next = caches->next;
+	cache->next = caches;
 	caches = cache;
 	return cache;
 }
@@ -571,7 +599,7 @@ void initSlabAllocator()
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		return;
 	}
-	
+	k_memset(page,0,SMALL_PAGE_SIZE);
 	
 	uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
 	if (tmp_pds_unaligned == NULL)
@@ -601,7 +629,7 @@ void initSlabAllocator()
 		return;
 	}
 	tmp_pds[1] = newSPD(1,1,0b01010101,(uint32_t) page);
-	
+	k_memset(page,0,SMALL_PAGE_SIZE);
 	
 	page = usePage();
 	if (page == NULL)
@@ -611,7 +639,7 @@ void initSlabAllocator()
 		return;
 	}
 	tmp_pds[2] = newSPD(1,1,0b01010101,(uint32_t) page);
-	
+	k_memset(page,0,SMALL_PAGE_SIZE);
 	page = usePage();
 	if (page == NULL)
 	{
@@ -620,8 +648,10 @@ void initSlabAllocator()
 		return;
 	}
 	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page);
+	k_memset(page,0,SMALL_PAGE_SIZE);
+	//asm(".long 0xE1212374"); // bkpt
 	invalidate_TLB();
-	
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	struct slab_desc_t *cache_slab = kernel_heap_start;
@@ -631,7 +661,7 @@ void initSlabAllocator()
 	cache_slab->start = cache_slab;
 	cache_slab->next = NULL;
 	cache_slab->used = NULL;
-	
+	//asm(".long 0xE1212374"); // bkpt
 	
 	cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (cache_cache == NULL)
@@ -640,8 +670,9 @@ void initSlabAllocator()
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	
+	//asm(".long 0xE1212374"); // bkpt
 	cache_cache->full = NULL;
+	//asm(".long 0xE1212374"); // bkpt
 	cache_cache->partial = NULL;
 	cache_cache->free = cache_slab;
 	cache_cache->obj_size = sizeof(struct cache_t);
@@ -764,13 +795,14 @@ void initSlabAllocator()
 	address_space_cache = createCache(sizeof(struct address_space),0,0,"address_space_cache");
 	process_cache = createCache(sizeof(struct Process),0,0,"process_cache");
 	thread_cache = createCache(sizeof(struct Thread),0,0,"thread_cache");
-	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0,"framebuffer_cache"); // 150 KiB
+	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0b1,"framebuffer_cache"); // 150 KiB
 	
 	
 	createCache(1,0,0,"1_byte_cache");
 	createCache(2,0,0,"2_byte_cache");
 	createCache(4,0,0,"4_byte_cache");
-	createCache(8,0,0,"8_byte_cache");
+	// linkedlist_cache is already 8 bytes
+	//createCache(8,0,0,"8_byte_cache");
 	createCache(16,0,0,"16_byte_cache");
 	createCache(32,0,0,"32_byte_cache");
 	createCache(64,0,0,"64_byte_cache");
@@ -782,21 +814,90 @@ void initSlabAllocator()
 	
 	
 	
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 }
 
 
 
-bool slab_allocator_self_test()
+bool slab_allocator_self_test_pre_initialization()
+{
+	void *page = usePage();
+	if (page == NULL)
+	{
+		DEBUGPRINTLN_1("no page for self-test available!")
+		return false;
+	}
+	k_memset(page,0,SMALL_PAGE_SIZE);
+	
+	struct slab_desc_t *slab = page;
+	slab->size = 1;
+	slab->start = page;
+	slab->next = NULL;
+	slab->used = NULL;
+	
+	
+	
+	void *obj = alloc_object_from_slab(slab,8);
+	void *objs_start = make4ByteAligned((page+sizeof(struct slab_desc_t)+(SMALL_PAGE_SIZE/8)/8)+1);
+	if (obj != objs_start)
+	{
+		DEBUGPRINTLN_1("object not allocated where it should be! page: 0x%x  obj: 0x%x  expected: 0x%x\n",page,obj,objs_start)
+		return false;
+	}
+	uint32_t objs = (uint32_t) (page+SMALL_PAGE_SIZE-objs_start)/8-1; // -1 for the object we already allocated
+	void *obj_orig = obj;
+	
+	for (uint32_t i = 0;i<objs;i++)
+	{
+		void *obj = alloc_object_from_slab(slab,8);
+		if (obj == NULL)
+		{
+			DEBUGPRINTLN_1("could not allocate enough objects from slab!\n")
+			return false;
+		}
+	}
+	
+	obj = alloc_object_from_slab(slab,8);
+	if (obj != NULL)
+	{
+		DEBUGPRINTLN_1("can allocate too many objects from slab!\n")
+		return false;
+	}
+	
+	free_object_from_slab(slab,8,obj_orig);
+	if (alloc_object_from_slab(slab,8) != obj_orig)
+	{
+		DEBUGPRINTLN_1("deallocating and reallocating an object doesn't result in the same address!\n")
+		return false;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	return true;
+}
+
+bool slab_allocator_self_test_post_initialization()
 {
 	// TODO write the self test
 	
 	
 	
-	return false;
+	
+	
+	
+	
+	
+	
+	return true;
 }
-
-
 
 
 void slab_maintenance(uint32_t milis) // maybe specify a point in the future instead, so it can exit when that specific point is reached
@@ -812,6 +913,8 @@ void slab_maintenance(uint32_t milis) // maybe specify a point in the future ins
 	// disable fiq and irq (irq should always be disabled in the kernel, because it relays to the os, which isn't always mapped) while cleaning
 	// to keep the allocator in a usable state
 	// maybe the interrupt handlers need objects
+	
+	uint32_t text = milis;
 	
 	
 	

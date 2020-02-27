@@ -16,9 +16,21 @@ struct cache_t {
 	struct slab_desc_t *full;
 	struct slab_desc_t *partial;
 	struct slab_desc_t *free;
-	uint32_t obj_size;
+	uint32_t obj_size; // objects that use (u)int32 or (u)int16 have to be 2/4 byte aligned
 	uint16_t alignment; // alignment for the pages
 	uint16_t flags;
+	/*	Flags:
+		bit 0: no_kmalloc
+		bit 1: no_shrink
+		bit 2: no_autogrow
+		
+		
+		
+		bit 14: poison: initialize objects with a pattern and check it before allocation
+				and restore it after free
+		bit 15: red zone: padd objects before and after with a pattern and 
+				check it every now and then to see a buffer overflow
+	*/
 	char *name;
 	struct cache_t *next;
 }; // sizeof(struct cache) = 28
@@ -58,8 +70,8 @@ void kfree_hint(void* obj,uint32_t size);
 void slab_maintenance(uint32_t milis);
 
 
-bool slab_allocator_self_test();
-
+bool slab_allocator_self_test_pre_initialization();
+bool slab_allocator_self_test_post_initialization();
 
 void ensureCPTCapacity();
 void ensureLinkedListCapacity();

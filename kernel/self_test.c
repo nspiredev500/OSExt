@@ -13,7 +13,7 @@ asm(
 bool run_self_test()
 {
 	//return true;
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	struct address_space *space = createAddressSpace();
 	DEBUGPRINTLN_1("userspace tt: 0x%x",space->tt)
 	void *page = usePage();
@@ -26,7 +26,7 @@ bool run_self_test()
 	
 	DEBUGPRINTLN_1("mapping the page in the usermode translation table")
 	addVirtualPage(space,page,(void*) (SECTION_SIZE*5));
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	// copy the usermode test into userspace
@@ -37,10 +37,12 @@ bool run_self_test()
 	
 	struct Thread *t = createThread(0,SECTION_SIZE*5);
 	
-	
+	asm(".long 0xE1212374"); // bkpt
 	DEBUGPRINTLN_1("changing into user space")
 	changeAddressSpace(space);
+	asm(".long 0xE1212374"); // bkpt
 	debug_shell_println("running userspace test");
+	asm(".long 0xE1212374"); // bkpt
 	runThread(t);
 	
 	

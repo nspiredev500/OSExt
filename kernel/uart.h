@@ -2,7 +2,7 @@
 #define UART_H
 
 
-
+void remappUART(void *new_mapping);
 
 void uart_printf(char *str,...);
 void uart_send_uint32(uint32_t a);

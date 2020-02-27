@@ -54,8 +54,10 @@ void relocate_self(void)
 	
 	DEBUGPRINTF_2("got: 0x%x, gotsize: 0x%x\n",&_GOT_START-&_EXEC_START,&_GOT_SIZE)
 	
+	DEBUGPRINTF_2("_START: 0x%x\n",&_EXEC_START)
 	
 	
+	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
 	
 	
 	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+SMALL_PAGE_SIZE*6); // extra size to align the kernel on a (large) page boundrary
@@ -130,6 +132,17 @@ void relocate_self(void)
 	
 	
 	
+	// try to change the GOT-entries like the zehn loader does
+	uint32_t *got_entry = (uint32_t*) ((uint32_t)virtual_base_address+(uint32_t)got_offset);
+	
+	while (*got_entry != 0xFFFFFFFF)
+	{
+		*got_entry = *got_entry + (uint32_t) (-(uint32_t)(&_EXEC_START)+(uint32_t)virtual_base_address);
+		got_entry++;
+	}
+	
+	
+	
 	int (*new_entry)(int, char**) = (int (*)(int, char**)) (((uint32_t) virtual_base_address)+offset);
 	
 	DEBUGPRINTF_1("relocated to 0x%x\n",aligned);
@@ -140,7 +153,7 @@ void relocate_self(void)
 	DEBUGPRINTF_1("entering relocated kernel\n");
 	
 	clear_caches();
-	
+	asm(".long 0xE1212374"); // bkpt
 	new_entry(1,(char**)0x53544c41);
 	DEBUGPRINTF_1("return from relocated kernel\n");
 	

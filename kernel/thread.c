@@ -10,7 +10,7 @@ struct Thread* createThread(uint16_t tid,uint32_t pc)
 		t->regs[i] = 0;
 	}
 	t->regs[15] = pc;
-	t->regs[16] = 0b00000000000000000000000010000000; // set the cpsr to irq disabled
+	t->regs[16] = 0b00000000000000000000000010010000; // set the cpsr to irq disabled, and set mode to user mode
 	t->tid = tid;
 	t->status = 0;
 	return t;
@@ -29,6 +29,7 @@ void runThread(struct Thread *t)
 {
 	// assumes the context switch (virtual address space) is already done
 	register uint32_t *regs asm("r0") = t->regs;
+	asm(".long 0xE1212374"); // bkpt
 	asm volatile(
 	" ldr r1, [r0, #64]\n" // load the cpsr
 	" msr spsr, r1\n" // put it into the spsr
