@@ -6,7 +6,7 @@ void* const virtual_base_address = (void* const) 0xe0000000;
 
 static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
-
+static void* physical_kernel_tt = NULL;
 
 
 
@@ -29,7 +29,7 @@ void initializeKernelSpace()
 	uint32_t *tt = (uint32_t*) tt_base;
 	
 	kernel_space.tt = tt;
-	
+	physical_kernel_tt = tt;
 	
 	kernel_space.cpts = NULL;
 	kernel_space.cptds = NULL;
@@ -82,7 +82,7 @@ void initializeKernelSpace()
 	}
 	
 	
-	// map the translation table in the kernel heap, so ti can be accessed while out of kernel space
+	// map the translation table in the kernel heap, so it can be accessed while out of kernel space
 	void* physical_tt = tt;
 	//debug_shell_println_rgb("kernel heap next3: 0x%x",255,0,0,getKernelHeapNextPage());
 	void* tt_page = getKernelHeapNextPage();
@@ -107,7 +107,7 @@ void initializeKernelSpace()
 void changeAddressSpace(struct address_space *space)
 {
 	//asm(".long 0xE1212374"); // bkpt
-	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(kernel_space.tt,space->tt);
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,space->tt);
 	//asm(".long 0xE1212374"); // bkpt
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
@@ -116,7 +116,7 @@ void changeAddressSpace(struct address_space *space)
 void intoKernelSpace()
 {
 	//register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
-	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(kernel_space.tt,kernel_space.tt);
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,kernel_space.tt);
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -127,7 +127,7 @@ struct address_space* createAddressSpace()
 	space->tt = requestTranslationTable();
 	DEBUGPRINTLN_1("new space: 0x%x",space)
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
-	DEBUGPRINTLN_1("new space tt physical address: 0x%x",getPhysicalAddress(kernel_space.tt,space->tt))
+	DEBUGPRINTLN_1("new space tt physical address: 0x%x",getPhysicalAddress(&kernel_space,space->tt))
 	space->cptds = NULL;
 	space->cpts = NULL;
 	
@@ -182,6 +182,7 @@ void destroyAddressSpace(struct address_space *space)
 	if (entry != NULL)
 	{
 		removeLinkedListEntry(&address_spaces,entry);
+		freeLinkedListEntry(entry);
 	}
 	uint32_t i = 0;
 	LinkedList *cpt = NULL;
@@ -224,7 +225,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	LinkedList *cpt = requestLinkedListEntry();
 	DEBUGPRINTLN_3("requesting cptd for entry")
 	cpt->data = requestCPT();
-	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(kernel_space.tt,cpt->data))
+	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(&kernel_space,cpt->data))
 	DEBUGPRINTLN_3("memsetting page table")
 	k_memset(cpt->data,0,1024);
 	DEBUGPRINTLN_3("adding linkedlist entry to kernel cpts")
@@ -235,7 +236,7 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	k_memcpy(cpt->data,migrate_cpt,pages*sizeof(uint32_t));
 	
 	DEBUGPRINTLN_3("setting the coarse page table descriptor")
-	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
+	kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));
 	DEBUGPRINTLN_3("clearing the caches")
 	clear_caches();
 	DEBUGPRINTLN_3("invalidating tlb")
@@ -269,7 +270,7 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		addLinkedListEntry(&kernel_space.cptds,cptd);
 		
 		
-		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
+		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
@@ -330,7 +331,7 @@ void addVirtualPage(struct address_space *space,void* page, void* virtual_addres
 		k_memset(cpt->data,0,1024);
 		addLinkedListEntry(&space->cpts,cpt);
 		
-		space->tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(kernel_space.tt,cpt->data));
+		space->tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));
 		
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
@@ -364,11 +365,99 @@ uint32_t* getKernel_TT_Base()
 	return kernel_space.tt;
 }
 
-void* getPhysicalAddress(uint32_t* space,void* address)
+void* getPhysicalAddress(struct address_space *space,void* address)
 {
-	DEBUGPRINTF_3("resolving: 0x%x\n",address)
+	/*
 	uint32_t adr = (uint32_t) address;
-	uint32_t descriptor = space[adr >> 20];
+	uint32_t index = -1;
+	LinkedList *cptds_entry = searchLinkedListEntry(&space->cptds,address,&index);
+	if (cptds_entry != NULL)
+	{
+		LinkedList *cpt_linkedlist = getLinkedListEntry(&space->cpts,index);
+		if (cpt_linkedlist != NULL)
+		{
+			uint32_t cpt_index = ((adr & 0b11111111000000000000) >> 10)/4;
+			uint32_t *cpt = cpt_linkedlist->data;
+			uint32_t desc = cpt[cpt_index];
+			if ((desc & 0b11) == 0b10)
+			{
+				uint32_t page_offset = adr & 0b111111111111;
+				uint32_t phys = (desc & (~ 0b111111111111)) + page_offset;
+				return (void*) phys;
+			}
+			else
+			{
+				DEBUGPRINTF_3("not a small page descriptor!\n",address)
+				asm(".long 0xE1212374"); // bkpt
+			}
+		}
+		else
+		{
+			DEBUGPRINTF_3("no corresponding cpt entry found!\n",address)
+			asm(".long 0xE1212374"); // bkpt
+		}
+	}
+	else
+	{
+		DEBUGPRINTF_3("no coarse page table for address found!\n",address)
+		//asm(".long 0xE1212374"); // bkpt
+	}
+	
+	// TODO search for section entriy in the translation table
+	
+	uint32_t descriptor = space->tt[adr >> 20];
+	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
+	{
+		DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
+		return NULL;
+	}
+	if ((descriptor  & 0b11) == 0b10)
+	{
+		DEBUGPRINTF_3("section descriptor: 0x%x\n",descriptor)
+		uint32_t section_base =  ((descriptor >> 20) << 20);
+		DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
+		return (void*) (section_base + ((adr << 12) >> 12));
+	}
+	*/
+	uint32_t adr = (uint32_t) address;
+	
+	// first search in the address space struct, then in the translation table itself
+	uint32_t index = -1;
+	LinkedList *cptds_entry = searchLinkedListEntry(&space->cptds, (void*) ((adr >> 20) << 20),&index);
+	if (cptds_entry != NULL)
+	{
+		LinkedList *cpt_linkedlist = getLinkedListEntry(&space->cpts,index);
+		if (cpt_linkedlist != NULL)
+		{
+			uint32_t cpt_index = ((adr & 0b11111111000000000000) >> 10)/4;
+			uint32_t *cpt = cpt_linkedlist->data;
+			uint32_t desc = cpt[cpt_index];
+			if ((desc & 0b11) == 0b10)
+			{
+				uint32_t page_offset = adr & 0b111111111111;
+				uint32_t phys = (desc & (~ 0b111111111111)) + page_offset;
+				return (void*) phys;
+			}
+			else
+			{
+				DEBUGPRINTF_3("not a small page descriptor!\n",address)
+				//asm(".long 0xE1212374"); // bkpt
+			}
+		}
+		else
+		{
+			DEBUGPRINTF_3("no corresponding cpt entry found!\n",address)
+			//asm(".long 0xE1212374"); // bkpt
+		}
+	}
+	else
+	{
+		DEBUGPRINTF_3("no coarse page table for address found!\n",address)
+		//asm(".long 0xE1212374"); // bkpt
+	}
+	
+	DEBUGPRINTF_3("resolving: 0x%x\n",address)
+	uint32_t descriptor = space->tt[adr >> 20];
 	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
 	{
 		DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
@@ -428,6 +517,8 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 		uint32_t type = cpt[i] & 0b11;
 		if (type == 0b1 || type == 0b11)
 		{
+			DEBUGPRINTF_3("address: 0x%x\n",cpt+i)
+			asm(".long 0xE1212374"); // bkpt
 			panic("tiny or large page found in coarse page table while freeing coarse page table!\n");
 		}
 		if (type == 0b0)
@@ -446,6 +537,7 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 bool virtual_mm_self_test()
 {
 	// TODO tests for new(descriptor)
+	/*
 	register uint32_t tt_base asm("r0");
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	
@@ -461,6 +553,7 @@ bool virtual_mm_self_test()
 		DEBUGPRINTLN_1("getPhysicalAddress not working!")
 		return false;
 	}
+	*/
 	// currently not working for lage pages
 	/*
 	if (getPhysicalAddress(tt,(void*) 0x13e09000) != (void*) 0x13e00000)
@@ -540,8 +633,8 @@ void invalidate_TLB()
 void clear_caches()
 {
 	asm volatile(
-	"loop: mrc p15, 0, r15, c7, c10, 3 \n" // test and clean d-cache
-	"bne loop \n"
+	"clear_cache_loop%=: mrc p15, 0, r15, c7, c10, 3 \n" // test and clean d-cache
+	"bne clear_cache_loop%= \n"
 	"mcr p15, 0, r0, c7, c7, 0\n" // invalidate cache
 	:::"r0");
 }

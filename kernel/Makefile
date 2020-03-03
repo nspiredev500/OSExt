@@ -18,6 +18,11 @@ GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLE
 # -march=armv5tej-s
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+
+ifeq (DEBUG, TRUE)
+	GCCFLAGS += -O0
+endif
+
 LDFLAGS = -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
 

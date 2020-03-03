@@ -11,11 +11,17 @@ struct Thread {
 	uint16_t status;
 };
 
+struct Thread *running_thread;
 
 struct Thread* createThread(uint16_t tid, uint32_t pc);
 void destroyThread(struct Thread *t);
 
-void runThread(struct Thread *t);
+
+
+
+// 0 means successfully run until the timeslice completed
+// 
+uint32_t runThread(struct Thread *t);
 
 
 

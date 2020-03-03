@@ -81,6 +81,10 @@ void initialize()
 	debug_shell_println("finished relocating");
 	debug_shell_println("initializing");
 	
+	
+	
+	
+	
 	debug_shell_println("kernel_start: 0x%x",&_EXEC_START);
 	init_call_with_stack(&_EXEC_START);
 	
@@ -132,6 +136,11 @@ void initialize()
 	initializeKernelSpace();
 	free_init_pds();
 	debug_shell_println("done");
+	
+	
+	install_exception_handlers();
+	
+	
 	//asm(".long 0xE1212374"); // bkpt
 	
 	framebuffer = requestLCDFramebuffer();

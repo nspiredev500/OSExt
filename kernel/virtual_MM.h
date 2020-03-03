@@ -38,7 +38,7 @@ void invalidate_TLB();
 void clear_caches();
 
 uint32_t* getKernel_TT_Base();
-void* getPhysicalAddress(uint32_t* space,void* address);
+void* getPhysicalAddress(struct address_space *space,void* address);
 
 
 bool virtual_mm_self_test();

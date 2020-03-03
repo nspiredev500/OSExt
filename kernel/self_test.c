@@ -37,21 +37,22 @@ bool run_self_test()
 	
 	struct Thread *t = createThread(0,SECTION_SIZE*5);
 	
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	DEBUGPRINTLN_1("changing into user space")
 	changeAddressSpace(space);
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	debug_shell_println("running userspace test");
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	runThread(t);
 	
 	
 	debug_shell_println("finished userspace test");
 	
+	intoKernelSpace();
 	
 	destroyThread(t);
 	
-	intoKernelSpace();
+	
 	destroyAddressSpace(space);
 	DEBUGPRINTLN_1("finished")
 	asm(".long 0xE1212374"); // bkpt
