@@ -30,7 +30,7 @@ uint32_t runThread(struct Thread *t)
 	// assumes the context switch (virtual address space) is already done
 	running_thread = t;
 	register uint32_t *regs asm("r0") = t->regs;
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	/*

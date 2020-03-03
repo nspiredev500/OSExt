@@ -55,7 +55,7 @@ bool run_self_test()
 	
 	destroyAddressSpace(space);
 	DEBUGPRINTLN_1("finished")
-	asm(".long 0xE1212374"); // bkpt
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	return true;

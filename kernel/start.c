@@ -138,7 +138,12 @@ void initialize()
 	debug_shell_println("done");
 	
 	
-	install_exception_handlers();
+	if (! install_exception_handlers())
+	{
+		debug_shell_println_rgb("no page for exception vectors         aborting",255,0,0);
+		keypad_press_release_barrier();
+		return;
+	}
 	
 	
 	//asm(".long 0xE1212374"); // bkpt
@@ -171,7 +176,7 @@ void initialize()
 	//b = true;
 	if (! b)
 	{
-		debug_shell_println_rgb("error in general self-test 2         aborting",255,0,0);
+		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		return;
 	}
@@ -190,6 +195,7 @@ void initialize()
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	// to be able to read the messages
 	keypad_press_release_barrier();
+	//asm(".long 0xE1212374"); // bkpt
 }
 
 

@@ -9,6 +9,8 @@ static volatile void **prefetch_addrs = (volatile void**) 0x2c; // and bkpt
 static volatile void **data_addrs = (volatile void**) 0x30;
 
 
+
+
 bool probe_address = false;
 
 uint32_t undef_stack[256];
@@ -18,21 +20,39 @@ uint32_t abort_stack[256];
 static void *orig_abort_stack = NULL;
 static void *orig_undef_stack = NULL;
 
-static void *orig_undef = NULL;
-static void *orig_prefetch = NULL;
-static void *orig_data = NULL;
+static const uint8_t undef_offset = 0x4;
+static const uint8_t swi_offset = 0x8;
+static const uint8_t prefetch_offset = 0xc;
+static const uint8_t data_offset = 0x10;
+static const uint8_t irq_offset = 0x18;
+static const uint8_t fiq_offset = 0x1c;
+
+
+static const uint8_t undef_adr_offset = 0x24+8; // +8, because pc in pc-relative access is 2 instructions after
+static const uint8_t swi_adr_offset = 0x28+8;
+static const uint8_t prefetch_adr_offset = 0x2c+8;
+static const uint8_t data_adr_offset = 0x30+8;
+static const uint8_t irq_adr_offset = 0x38+8;
+static const uint8_t fiq_adr_offset = 0x3c+8;
+
+
+volatile void *remapped_exception_vectors = (void*) 0xffff0000;
+
+
+asm(
+"undef_jump: ldr pc, [pc, #0x20] \n"
+"swi_jump: ldr pc, [pc, #0x20] \n"
+"prefetch_jump: ldr pc, [pc, #0x20] \n"
+"data_jump: ldr pc, [pc, #0x20] \n"
+"irq_jump: ldr pc, [pc, #0x20] \n"
+"fiq_jump: ldr pc, [pc, #0x20] \n");
 
 
 
 
-
-
-
-void install_exception_handlers()
+bool install_exception_handlers()
 {
-	orig_undef = (void*) *undef_addrs;
-	orig_prefetch = (void*) *prefetch_addrs;
-	orig_data = (void*) *data_addrs;
+	
 	//asm(".long 0xE1212374"); // bkpt
 	register void* orig_stack asm("r0") = NULL;
 	register void* new_stack asm("r3") = abort_stack+sizeof(abort_stack)/4-4;
@@ -60,22 +80,85 @@ void install_exception_handlers()
 	orig_undef_stack = orig_stack;
 	extern void prefetch_wrapper();
 	extern void undef_wrapper();
+	extern void swi_wrapper();
 	extern void data_wrapper();
-	
-	
-	/*
-	
-	*undef_addrs = undef_wrapper;
-	*data_addrs = data_wrapper;
-	*prefetch_addrs = prefetch_wrapper;
-	*/
-	
-	
+	extern void irq_wrapper();
+	extern void fiq_wrapper();
 	
 	
 	set_exception_vectors(true);
 	
+	void undef_jump();
+	void swi_jump();
+	void prefetch_jump();
+	void data_jump();
+	void irq_jump();
+	void fiq_jump();
 	
+	void *page = usePage();
+	if (page == NULL)
+	{
+		return false;
+	}
+	addVirtualKernelPage(page,(void*) remapped_exception_vectors);
+	
+	
+	
+	volatile uint32_t *vector = (remapped_exception_vectors+undef_offset);
+	*vector = *(uint32_t*) undef_jump;
+	
+	
+	vector = (remapped_exception_vectors+swi_offset);
+	*vector = *(uint32_t*) swi_jump;
+	
+	vector = (remapped_exception_vectors+prefetch_offset);
+	*vector = *(uint32_t*) prefetch_jump;
+	
+	
+	vector = (remapped_exception_vectors+data_offset);
+	*vector = *(uint32_t*) data_jump;
+	
+	
+	vector = (remapped_exception_vectors+irq_offset);
+	*vector = *(uint32_t*) irq_jump;
+	
+	vector = (remapped_exception_vectors+fiq_offset);
+	*vector = *(uint32_t*) fiq_jump;
+	
+	
+	
+	vector = (remapped_exception_vectors+undef_adr_offset);
+	*vector = (uint32_t) undef_wrapper;
+	
+	
+	vector = (remapped_exception_vectors+swi_adr_offset);
+	*vector = (uint32_t) swi_wrapper;
+	
+	
+	vector = (remapped_exception_vectors+prefetch_adr_offset);
+	*vector = (uint32_t) prefetch_wrapper;
+	
+	
+	vector = (remapped_exception_vectors+data_adr_offset);
+	*vector = (uint32_t) data_wrapper;
+	
+	
+	vector = (remapped_exception_vectors+irq_adr_offset);
+	*vector = (uint32_t) irq_wrapper;
+	
+	
+	vector = (remapped_exception_vectors+fiq_adr_offset);
+	*vector = (uint32_t) fiq_wrapper;
+	
+	
+	
+	
+	
+	// TODO but the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
+	
+	
+	
+	return true;
 }
 
 

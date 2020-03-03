@@ -367,58 +367,9 @@ uint32_t* getKernel_TT_Base()
 
 void* getPhysicalAddress(struct address_space *space,void* address)
 {
-	/*
-	uint32_t adr = (uint32_t) address;
-	uint32_t index = -1;
-	LinkedList *cptds_entry = searchLinkedListEntry(&space->cptds,address,&index);
-	if (cptds_entry != NULL)
-	{
-		LinkedList *cpt_linkedlist = getLinkedListEntry(&space->cpts,index);
-		if (cpt_linkedlist != NULL)
-		{
-			uint32_t cpt_index = ((adr & 0b11111111000000000000) >> 10)/4;
-			uint32_t *cpt = cpt_linkedlist->data;
-			uint32_t desc = cpt[cpt_index];
-			if ((desc & 0b11) == 0b10)
-			{
-				uint32_t page_offset = adr & 0b111111111111;
-				uint32_t phys = (desc & (~ 0b111111111111)) + page_offset;
-				return (void*) phys;
-			}
-			else
-			{
-				DEBUGPRINTF_3("not a small page descriptor!\n",address)
-				asm(".long 0xE1212374"); // bkpt
-			}
-		}
-		else
-		{
-			DEBUGPRINTF_3("no corresponding cpt entry found!\n",address)
-			asm(".long 0xE1212374"); // bkpt
-		}
-	}
-	else
-	{
-		DEBUGPRINTF_3("no coarse page table for address found!\n",address)
-		//asm(".long 0xE1212374"); // bkpt
-	}
 	
-	// TODO search for section entriy in the translation table
 	
-	uint32_t descriptor = space->tt[adr >> 20];
-	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
-	{
-		DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
-		return NULL;
-	}
-	if ((descriptor  & 0b11) == 0b10)
-	{
-		DEBUGPRINTF_3("section descriptor: 0x%x\n",descriptor)
-		uint32_t section_base =  ((descriptor >> 20) << 20);
-		DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
-		return (void*) (section_base + ((adr << 12) >> 12));
-	}
-	*/
+	
 	uint32_t adr = (uint32_t) address;
 	
 	// first search in the address space struct, then in the translation table itself

@@ -1,10 +1,30 @@
 #include "kernel.h"
 
+
+
 static volatile uint32_t *fiq_address = (volatile uint32_t*) 0x30;
 //static const int MAXFIQ = 30;
 #define MAXFIQ 30
 static int fiqindex = 0;
 void (*fiqtable[MAXFIQ])(void);
+
+
+
+
+asm(
+".global fiq_wrapper \n"
+"fiq_wrapper: \n"
+".long 0xE1212374 \n" // breakpoint
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+"subs pc, lr, #4 \n");
+
+
+
+
 
 int addFIQFunction(void (*function)())
 {
@@ -24,11 +44,7 @@ int addFIQFunction(void (*function)())
 }
 
 // TODO but the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
-void installFIQHandler()
-{
-	// TODO make the fiq handler
-	//*fiq_address = fiqhandler;
-}
+
 
 
 

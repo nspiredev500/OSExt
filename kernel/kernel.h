@@ -29,6 +29,7 @@
 #include "data_abort.h"
 #include "prefetch_abort.h"
 #include "undefined_instruction.h"
+#include "irq.h"
 #include "lcd.h"
 #include "rtc.h"
 #include "aborts.h"

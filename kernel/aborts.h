@@ -8,7 +8,7 @@ extern uint32_t abort_stack[256];
 
 
 
-void install_exception_handlers();
+bool install_exception_handlers();
 
 
 
