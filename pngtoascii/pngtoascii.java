@@ -6,14 +6,25 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
-public class Main
+public class pngtoascii
 {
 	public static void main(String[] args) throws IOException
 	{
-		System.out.println("enter image path: ");
-		Scanner s = new Scanner(System.in);
-		BufferedImage img = ImageIO.read(new File(s.nextLine()));
-		s.close();
+		
+		BufferedImage img = null;
+		if (args.length == 0)
+		{
+			System.out.println("usage: pngtoascii [fillename]");
+			System.exit(0);
+		}
+		else
+		{
+			img = ImageIO.read(new File(args[0]));
+		}
+		if (img == null)
+		{
+			System.exit(0);
+		}
 		Raster pixels = img.getData();
 		BufferedWriter w = new BufferedWriter(new FileWriter("ascii.c"));
 		w.write("char ascii10p[128][10][10] = {");

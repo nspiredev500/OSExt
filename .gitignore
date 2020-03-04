@@ -38,6 +38,7 @@
 *.hex
 *.tns
 !ndless.cfg.tns
+*.class
 
 # Debug files
 *.dSYM/
