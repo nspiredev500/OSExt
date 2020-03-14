@@ -24,7 +24,7 @@ ifeq (DEBUG, TRUE)
 endif
 
 LDFLAGS = -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
-ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "20" --240x320-support true --uses-lcd-blit false
+ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "30" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))
 OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp))
