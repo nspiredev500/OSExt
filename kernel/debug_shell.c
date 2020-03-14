@@ -43,6 +43,7 @@ void debug_shell_println_rgb(char* string,uint32_t r, uint32_t g,uint32_t b,...)
 		strpart += add;
 	}
 	// also print via uart when debug enabled
+	clear_caches();
 	DEBUGPRINTLN_1(str)
 }
 void debug_shell_reset()
@@ -81,6 +82,7 @@ void debug_shell_println(char* string,...)
 			add = 31;
 		strpart += add;
 	}
+	clear_caches();
 	// also print via uart when debug enabled
 	DEBUGPRINTLN_1(str)
 }

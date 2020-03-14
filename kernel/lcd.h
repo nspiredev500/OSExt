@@ -3,6 +3,9 @@
 
 
 
+void* get_back_framebuffer_address();
+void* get_front_framebuffer_address();
+
 void initLCDDriver();
 
 void claimLCD();

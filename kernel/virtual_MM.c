@@ -2,19 +2,24 @@
 
 
 void* const virtual_base_address = (void* const) 0xe0000000;
-
+const void* remapped_RAM = (const void*) 0xec000000;
+const void* old_RAM = (const void*) 0x10000000;
 
 static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
 static void* physical_kernel_tt = NULL;
 
-
+uint32_t saved_tt = 0;
 
 // will be mapped when a user requests a read from a new page, it contains only zeros
 static void* null_page = NULL;
 static LinkedList *address_spaces = NULL;
 
 
+struct address_space* getKernelSpacePointer()
+{
+	return &kernel_space;
+}
 void initializeKernelSpace()
 {
 	if (kernel_space_initialized)
@@ -33,6 +38,15 @@ void initializeKernelSpace()
 	
 	kernel_space.cpts = NULL;
 	kernel_space.cptds = NULL;
+	
+	
+	for (int i = 0;i<64;i++)
+	{
+		tt[(((uint32_t) remapped_RAM)+i*SECTION_SIZE)>>20] = newSD(1,1,0,0b01,0x10000000+i*SECTION_SIZE);
+	}
+	clear_caches();
+	invalidate_TLB();
+	
 	
 	initSlabAllocator();
 	
@@ -53,8 +67,7 @@ void initializeKernelSpace()
 	//debug_shell_println_rgb("kernel heap next2: 0x%x",255,0,0,getKernelHeapNextPage());
 	
 	
-	// map the first sections where the interrupt vectors are as user mode no access
-	tt[0] = newSD(0,0,0,0b01,0xa4000000);
+	
 	
 	
 	
@@ -100,6 +113,10 @@ void initializeKernelSpace()
 	remappUART(tt_page+SMALL_PAGE_SIZE*4);
 	
 	
+	
+	
+	
+	
 	kernel_space_initialized = true;
 }
 
@@ -121,6 +138,49 @@ void intoKernelSpace()
 	invalidate_TLB();
 }
 
+void intoKernelSpaceSaveAddressSpace()
+{
+	//register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
+	
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	
+	if (tt_base == (uint32_t) kernel_space.tt)
+	{
+		return;
+	}
+	if (saved_tt != 0)
+	{
+		panic("saved_tt already used!");
+	}
+	saved_tt = tt_base;
+	
+	
+	
+	
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,kernel_space.tt);
+	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
+	invalidate_TLB();
+}
+
+
+void restoreAddressSpace()
+{
+	register uint32_t tt asm("r0");
+	
+	if (saved_tt == 0)
+	{
+		return;
+	}
+	
+	tt = saved_tt;
+	saved_tt = 0;
+	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
+	invalidate_TLB();
+}
+
 struct address_space* createAddressSpace()
 {
 	struct address_space *space = requestAddressSpace();
@@ -131,29 +191,26 @@ struct address_space* createAddressSpace()
 	space->cptds = NULL;
 	space->cpts = NULL;
 	
-	// somehow space->tt gets overwritten here
+	
 	uint32_t *tt = space->tt;
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
 	
-	/*
-	for (uint32_t i = 1;i<1024*4;i++)
-	{
-		space->tt[i] = 0;
-	}
-	*/
+	
 	k_memset(space->tt,0,1024*16);
 	
-	//asm(".long 0xE1212374"); // bkpt
-	// so we have to replace it
-	space->tt = tt;
 	
 	
-	//k_memset(space->tt,0,SMALL_PAGE_SIZE*4);
-	//DEBUGPRINTLN_1("new space: 0x%x",*space)
+	
+	
 	
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
-	// map the kernel pages and the first page, because the interrupt vectors are there
-	space->tt[0] = kernel_space.tt[0];
+	
+	// map the RAM into the address space for the kernel to use
+	for (int i = 0;i<64;i++)
+	{
+		tt[(((uint32_t) remapped_RAM)+i*SECTION_SIZE)>>20] = newSD(1,1,0,0b01,0x10000000+i*SECTION_SIZE);
+	}
+	
 	
 	
 	
@@ -212,6 +269,18 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	}
 	section = section & (~ 0xfffff);
 	
+	uint32_t index = 0;
+	LinkedList* already_cptd = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
+	if (already_cptd != NULL)
+	{
+		removeLinkedListEntry(&kernel_space.cptds,already_cptd);
+		LinkedList* already_cpt = getLinkedListEntry(&kernel_space.cpts,index);
+		removeLinkedListEntry(&kernel_space.cpts,already_cpt);
+		freeCPT(already_cpt->data);
+		freeLinkedListEntry(already_cpt);
+		freeLinkedListEntry(already_cptd);
+	}
+	
 	
 	DEBUGPRINTF_3("migrating %d pages from section 0x%x from page table 0x%x",pages,section,migrate_cpt)
 	
@@ -244,7 +313,18 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 }
 
 
-
+uint32_t* getKernelCPT(void* address)
+{
+	uint32_t section = (uint32_t) address & (~ 0xfffff);
+	uint32_t index = 0;
+	LinkedList* cptd = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
+	if (cptd == NULL)
+	{
+		return NULL;
+	}
+	LinkedList* cpt = getLinkedListEntry(&kernel_space.cpts,index);
+	return cpt->data;
+}
 
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
@@ -277,7 +357,6 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 		uint32_t *table = cpt->data;
 		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
 		
-		
 		// adding the page table to all address spaces
 		LinkedList *next = address_spaces;
 		while (next != NULL)
@@ -306,6 +385,9 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 	clear_caches();
 	invalidate_TLB();
 }
+
+
+
 
 
 void addVirtualPage(struct address_space *space,void* page, void* virtual_address)
@@ -365,13 +447,18 @@ uint32_t* getKernel_TT_Base()
 	return kernel_space.tt;
 }
 
+
+void* getKernelPhysicalAddress(void* address)
+{
+	return getPhysicalAddress(&kernel_space,address);
+}
+
 void* getPhysicalAddress(struct address_space *space,void* address)
 {
-	
-	
-	
 	uint32_t adr = (uint32_t) address;
 	
+	
+	/*
 	// first search in the address space struct, then in the translation table itself
 	uint32_t index = -1;
 	LinkedList *cptds_entry = searchLinkedListEntry(&space->cptds, (void*) ((adr >> 20) << 20),&index);
@@ -406,6 +493,9 @@ void* getPhysicalAddress(struct address_space *space,void* address)
 		DEBUGPRINTF_3("no coarse page table for address found!\n",address)
 		//asm(".long 0xE1212374"); // bkpt
 	}
+	*/
+	
+	
 	
 	DEBUGPRINTF_3("resolving: 0x%x\n",address)
 	uint32_t descriptor = space->tt[adr >> 20];
@@ -429,7 +519,7 @@ void* getPhysicalAddress(struct address_space *space,void* address)
 		DEBUGPRINTF_3("coarse page table base: 0x%x\n",cpt_base)
 		uint32_t index = ((adr & 0b11111111000000000000) >> 10)/4;
 		DEBUGPRINTF_3("coarse page table index: 0x%x\n",index)
-		uint32_t page_descriptor = cpt_base[index];
+		uint32_t page_descriptor =  ((uint32_t*) (((void*) cpt_base) - old_RAM + remapped_RAM))[index];
 		if ((page_descriptor & 0b11) == 0b1)
 		{
 			DEBUGPRINTF_3("large page descriptor\n")
@@ -586,7 +676,9 @@ void clear_caches()
 	asm volatile(
 	"clear_cache_loop%=: mrc p15, 0, r15, c7, c10, 3 \n" // test and clean d-cache
 	"bne clear_cache_loop%= \n"
-	"mcr p15, 0, r0, c7, c7, 0\n" // invalidate cache
+	"mcr p15, 0, r0, c7, c7, 0 \n" // invalidate cache
+	"mov r0, #0 \n"
+	"mcr p15, 0, r0, c7, c10, 4 \n" // drain write buffer
 	:::"r0");
 }
 

@@ -13,6 +13,9 @@ struct address_space {
 
 void initializeKernelSpace();
 
+struct address_space* getKernelSpacePointer();
+
+
 
 void addVirtualKernelPage(void* page, void* virtual_address);
 void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
@@ -32,6 +35,13 @@ uint32_t newLPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_a
 uint32_t newSPD(unsigned char c,unsigned char b,unsigned char ap,uint32_t base_address);
 uint32_t newSD(unsigned char c,unsigned char b,unsigned char domain,unsigned char ap,uint32_t base_address);
 
+extern const void* remapped_RAM;
+extern const void* old_RAM;
+
+void intoKernelSpaceSaveAddressSpace();
+void restoreAddressSpace();
+
+uint32_t* getKernelCPT(void* address);
 
 
 void invalidate_TLB();
@@ -39,7 +49,7 @@ void clear_caches();
 
 uint32_t* getKernel_TT_Base();
 void* getPhysicalAddress(struct address_space *space,void* address);
-
+void* getKernelPhysicalAddress(void* address);
 
 bool virtual_mm_self_test();
 

@@ -1,7 +1,7 @@
 #include "kernel.h"
 
 
-volatile void** LCD_UPBASE = (volatile void**) 0xC0000014;
+volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;
 
 // gets locked if the kernel transfers control over the lcd framebuffer to itself
 static uint32_t *kernel_lcd_mutex = NULL;
@@ -9,6 +9,11 @@ static void *framebuffer1 = NULL;
 static void *framebuffer2 = NULL;
 
 static void *old_framebuffer = NULL;
+
+
+
+
+static uint16_t rgbto565(uint32_t r,uint32_t g,uint32_t b);
 
 
 // false if lcd framebuffer is pointing to the ti framebuffer
@@ -19,11 +24,21 @@ void initLCDDriver()
 	kernel_lcd_mutex = request4Bytes();
 	unlockMutex(kernel_lcd_mutex);
 	
-	
+	framebuffer1 = requestLCDFramebuffer();
+	framebuffer2 = requestLCDFramebuffer();
 	
 	
 }
 
+void* get_back_framebuffer_address()
+{
+	return framebuffer2;
+}
+
+void* get_front_framebuffer_address()
+{
+	return framebuffer1;
+}
 
 void claimLCD()
 {
@@ -31,16 +46,21 @@ void claimLCD()
 	{
 		return;
 	}
+	//asm(".long 0xE1212374"); // bkpt
 	own_framebuffer = true;
 	old_framebuffer = (void*) *LCD_UPBASE;
-	framebuffer1 = requestLCDFramebuffer();
-	framebuffer2 = requestLCDFramebuffer();
 	k_memset(framebuffer1,0,320*240*2);
 	k_memset(framebuffer2,0,320*240*2);
 	
-	*LCD_UPBASE = framebuffer1;
+	
+	//framebuffer_fillrect(framebuffer1,0,0,320,240,0,0,255);
+	
+	*LCD_UPBASE = (volatile void*) getKernelPhysicalAddress(framebuffer1);
 	
 	
+	
+	clear_caches();
+	//asm(".long 0xE1212374"); // bkpt
 }
 
 
@@ -51,8 +71,6 @@ void freeLCD()
 		return;
 	}
 	*LCD_UPBASE = old_framebuffer;
-	freeLCDFramebuffer(framebuffer1);
-	freeLCDFramebuffer(framebuffer2);
 	
 	
 	own_framebuffer = false;

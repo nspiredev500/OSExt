@@ -148,16 +148,31 @@ void initialize()
 	
 	//asm(".long 0xE1212374"); // bkpt
 	
-	framebuffer = requestLCDFramebuffer();
-	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
+	debug_shell_println("switching framebuffer, press any key");
+	keypad_press_release_barrier();
+	
+	
+	
+	
+	//keypad_press_release_barrier();
+	
+	
+	
+	
+	initLCDDriver();
+	claimLCD();
+	
+	//keypad_press_release_barrier();
+	
 	debug_shell_reset();
-	setShellFramebuffer(framebuffer);
+	setShellFramebuffer(get_front_framebuffer_address());
 	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
+	
 	
 	debug_shell_println("running general self-test");
 	
-	//TODO try to call it with the new stack, the old one gets cut away in the context switch
 	
+	//keypad_press_release_barrier();
 	
 	void* page = usePage();
 	if (page == NULL)
@@ -195,6 +210,9 @@ void initialize()
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	// to be able to read the messages
 	keypad_press_release_barrier();
+	
+	freeLCD();
+	
 	//asm(".long 0xE1212374"); // bkpt
 }
 

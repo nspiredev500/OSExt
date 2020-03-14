@@ -18,8 +18,12 @@ static uint32_t *init_pds = NULL;
 
 
 
+static void* malloced_kernel_chunk = NULL;
 
-
+void* getKernelMallocedPointer()
+{
+	return malloced_kernel_chunk;
+}
 
 void free_init_pds()
 {
@@ -61,6 +65,9 @@ void relocate_self(void)
 	
 	
 	uint32_t malloced_chunk = (uint32_t) ti_malloc(kernel_size+SMALL_PAGE_SIZE*6); // extra size to align the kernel on a (large) page boundrary
+	
+	malloced_kernel_chunk = (void*) malloced_chunk;
+	
 	void *aligned = (void*) makeSmallPageAligned((void*) malloced_chunk);
 	
 	if (((void*) malloced_chunk) == NULL)

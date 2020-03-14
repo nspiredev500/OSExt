@@ -50,6 +50,72 @@ struct cache_t *framebuffer_cache = NULL;
 
 // adds a SPD for the page in the CPT, that is not tracked by the virtual memory manager
 // allocates a CPT temporarily if no one is there
+
+static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** cpt,uint32_t** cpt_unaligned)
+{
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	
+	
+	
+	
+	
+	uint32_t* kernel_cpt = getKernelCPT(virtual_address);
+	
+	uint32_t section = (uint32_t) virtual_address & (~ 0xfffff);
+	if (kernel_cpt != NULL)
+	{
+		kernel_cpt[((uint32_t) virtual_address - section)/SMALL_PAGE_SIZE] = newSPD(1,1,0b01010101,(uint32_t) page);
+	}
+	else
+	{
+		
+		
+		register uint32_t tt_base asm("r0");
+		asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+		
+		tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+		uint32_t *tt = (uint32_t*) (tt_base+ (uint32_t) remapped_RAM);
+		
+		if ((tt[section] & 0b11) == 0b01) // already an coarse page table
+		{
+			uint32_t *cpt_base = (uint32_t*) ((tt[section] & (~ 0b1111111111)) + remapped_RAM);
+			
+			cpt_base[(uint32_t) ((uint32_t) virtual_address-section)/SMALL_PAGE_SIZE] = newSPD(1,1,0b01010101,(uint32_t) page);
+			
+			return;
+		}
+		intoKernelSpaceSaveAddressSpace();
+		uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
+		if (tmp_pds_unaligned == NULL)
+		{
+			panic("no memory for tmp_pds!\n");
+		}
+		uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
+		k_memset(tmp_pds,0,1024);
+		*cpt = tmp_pds;
+		*cpt_unaligned = tmp_pds_unaligned;
+		tt[section] = newCPTD(0,(uint32_t) tmp_pds);
+		
+		tmp_pds[(uint32_t) ((uint32_t) virtual_address-section)/SMALL_PAGE_SIZE] = newSPD(1,1,0b01010101,(uint32_t) page);
+		
+		
+		restoreAddressSpace();
+	}
+	
+	
+	
+	
+}
+
+
+
+
+
+/*
 static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** cpt)
 {
 	register uint32_t tt_base asm("r0");
@@ -83,6 +149,8 @@ static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** c
 		cpt_base[index] = newSPD(1,1,0b01010101,(uint32_t) page);
 	}
 }
+*/
+
 
 void* getKernelHeapNextPage()
 {
@@ -95,6 +163,7 @@ void setKernelHeapNextPage(void* next)
 
 void growCache(struct cache_t* cache)
 {
+	// TODO disable fiqs while handling the unlisted kernel pages, so that if a new address space gets created, they will be also copied into that
 	if (cache->obj_size < SMALL_PAGE_SIZE)
 	{
 		void* page = usePage();
@@ -106,7 +175,8 @@ void growCache(struct cache_t* cache)
 		// it would result in an endless loop
 		//addVirtualKernelPage();
 		uint32_t* cpt = NULL;
-		addUnlistedKernelPage(page,kernel_heap_next_page,&cpt);
+		uint32_t* cpt_unaligned = NULL;
+		addUnlistedKernelPage(page,kernel_heap_next_page,&cpt,&cpt_unaligned);
 		void *virtpage = kernel_heap_next_page;
 		k_memset(virtpage,0,SMALL_PAGE_SIZE);
 		kernel_heap_next_page += SMALL_PAGE_SIZE;
@@ -133,7 +203,9 @@ void growCache(struct cache_t* cache)
 		if (cpt != NULL)
 		{
 			migrateKernelCPT((uint32_t) page,cpt,256);
-			ti_free(cpt);
+			intoKernelSpaceSaveAddressSpace();
+			ti_free(cpt_unaligned);
+			restoreAddressSpace();
 		}
 		else
 		{
@@ -158,6 +230,7 @@ void growCache(struct cache_t* cache)
 		
 		// no object should be bigger than 100 pages
 		uint32_t* cpts[100];
+		uint32_t* cpts_unaligned[100];
 		if (size >= 100)
 		{
 			panic("cache growth: object bigger than 100 pages!\n");
@@ -170,7 +243,7 @@ void growCache(struct cache_t* cache)
 		
 		for (uint32_t i = 0;i<size;i++)
 		{
-			addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]));
+			addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]),&(cpts_unaligned[i]));
 		}
 		k_memset(virtpage,0,SMALL_PAGE_SIZE*size);
 		
@@ -201,7 +274,9 @@ void growCache(struct cache_t* cache)
 			if (cpts[i] != NULL)
 			{
 				migrateKernelCPT(((uint32_t) page)+i*SMALL_PAGE_SIZE,cpts[i],256);
-				ti_free(cpts[i]);
+				intoKernelSpaceSaveAddressSpace();
+				ti_free(cpts_unaligned[i]);
+				restoreAddressSpace();
 			}
 			else
 			{
