@@ -76,12 +76,9 @@ int main(int argsn,char **argc)
 			{
 				// kernel base address already used and interrupt vector high probably means osext is already installed
 				// so uninstall it
-				
-				//asm(".long 0xE1212374"); // bkpt
-				asm volatile("swi 0xf80000":"=r" (control_reg)::); // use the ininstall syscall
+				asm volatile("swi 0xf80000":"=r" (control_reg)::); // use the uninstall syscall
 				if (control_reg != 0)
 				{
-					//asm(".long 0xE1212374"); // bkpt
 					// clean the virtual address space
 					for (uint32_t i = (uint32_t) virtual_base_address;i<0xfff00000;i+=SECTION_SIZE)
 					{
