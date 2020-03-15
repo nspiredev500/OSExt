@@ -2,7 +2,7 @@
 
 
 
-all: installer kernel 
+all: installer kernel uninstaller
 	cp kernel/osext.tns installer/installer/boot/osext.tns
 	
 
@@ -13,6 +13,8 @@ installer:
 	$(MAKE) -C installer
 
 
+uninstaller:
+	$(MAKE) -C uninstaller
 
 
 charset:
@@ -29,6 +31,7 @@ clean:
 	$(MAKE) -C installer clean && \
 	$(MAKE) -C kernel clean && \
 	$(MAKE) -C pngtoascii clean && \
+	$(MAKE) -C uninstaller clean && \
 	rm installer/installer/boot/osext.tns
 
 
