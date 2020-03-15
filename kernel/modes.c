@@ -3,10 +3,37 @@
 
 
 
-static void* exec_start = NULL;
+//static void* exec_start = NULL;
 void init_call_with_stack(void* start)
 {
-	exec_start = start;
+	//exec_start = start;
+}
+
+
+void disableIRQ()
+{
+	asm("mrs r0, cpsr \n"
+	"bic r0, r0, #0x80 \n"
+	"msr cpsr, r0":::"r0");
+}
+void enableIRQ()
+{
+	asm("mrs r0, cpsr \n"
+	"orr r0, r0, #0x80 \n"
+	"msr cpsr, r0":::"r0");
+}
+
+void disableFIQ()
+{
+	asm("mrs r0, cpsr \n"
+	"bic r0, r0, #0x40 \n"
+	"msr cpsr, r0":::"r0");
+}
+void enableFIQ()
+{
+	asm("mrs r0, cpsr \n"
+	"orr r0, r0, #0x40 \n"
+	"msr cpsr, r0":::"r0");
 }
 
 
@@ -16,12 +43,14 @@ void init_call_with_stack(void* start)
 // function does not support arguments
 uint32_t call_with_stack(void* stack,void* function)
 {
+	/*
 	if (exec_start == NULL)
 	{
 		panic("call_with_stack not initialized!\n");
 	}
+	*/
 	register void* sp_var asm("r0") = stack;
-	register void* func_var asm("r1") = (function-exec_start)+virtual_base_address;
+	register void* func_var asm("r1") = function;
 	//asm(".long 0xE1212374"); // bkpt
 	asm volatile(
 	" b continue \n"
@@ -29,9 +58,13 @@ uint32_t call_with_stack(void* stack,void* function)
 	" continue: str sp, saved_sp \n"
 	" mov sp, r0 \n"
 	" blx r1 \n"
-	" ldr sp, saved_sp":"=r" (sp_var),"=r" (func_var):"r" (sp_var),"r" (func_var):"r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","sp","lr","memory");
+	" ldr sp, saved_sp":"=r" (sp_var),"=r" (func_var):"r" (sp_var),"r" (func_var):"r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","sp","lr","memory");
 	return (uint32_t) sp_var;
 }
+
+
+
+
 
 
 

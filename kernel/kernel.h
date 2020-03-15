@@ -19,7 +19,7 @@
 #include "digits.h"
 #include "ascii.h"
 
-
+#include "uninstall.h"
 #include "scheduler.h"
 #include "watchdog.h"
 #include "fiq.h"
@@ -79,7 +79,7 @@ const uint32_t SECTION_SIZE;
 
 
 
-#define DEBUGLEVEL 3
+#define DEBUGLEVEL 0
 
 
 

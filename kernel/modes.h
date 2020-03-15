@@ -11,7 +11,10 @@ void init_call_with_stack(void* start);
 uint32_t call_with_stack(void* stack,void* function);
 
 
-
+void disableIRQ();
+void enableIRQ();
+void disableFIQ();
+void enableFIQ();	
 
 
 

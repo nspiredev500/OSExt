@@ -104,7 +104,7 @@ bool install_exception_handlers()
 	}
 	addVirtualKernelPage(page,(void*) remapped_exception_vectors);
 	
-	
+	init_syscall_table();
 	
 	volatile uint32_t *vector = (remapped_exception_vectors+undef_offset);
 	*vector = *(uint32_t*) undef_jump;
