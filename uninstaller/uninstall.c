@@ -1,13 +1,13 @@
 
+#include <stdint.h>
+#include <stdlib.h>
 
-
-
-
+const uint32_t SECTION_SIZE = 1024*1024;
+void* const virtual_base_address = (void* const) 0xe0000000;
 
 
 int main(int argsn,char **argc)
 {
-	
 	register uint32_t control_reg asm("r0");
 	asm volatile("mrc p15, 0, r0, c1, c0, 0":"=r" (control_reg)::);
 	if ((control_reg & (1 << 13)) == (1 << 13))
@@ -30,7 +30,7 @@ int main(int argsn,char **argc)
 					tt[i >> 20] = 0;
 				}
 				// free the old kernel
-				ti_free((void*) control_reg);
+				free((void*) control_reg);
 			}
 			else
 			{

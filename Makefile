@@ -6,7 +6,7 @@ all: installer kernel uninstaller
 	cp kernel/osext.tns installer/installer/boot/osext.tns
 	
 
-.PHONY: installer kernel remake charset
+.PHONY: installer kernel remake charset uninstaller
 	
 
 installer:
