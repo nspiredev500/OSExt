@@ -30,12 +30,15 @@
 
 # Executables
 *.exe
+*.elf
 *.out
 *.app
 *.i*86
 *.x86_64
 *.hex
 *.tns
+!ndless.cfg.tns
+*.class
 
 # Debug files
 *.dSYM/

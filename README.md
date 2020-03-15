@@ -1,27 +1,45 @@
 # OSExt
-A small project I started to enhance the functionality of the TI-Nspire os, because it turns out linux doesn't support my new hardware revision.<br>
-(see wiki for updated informations)<br>
-look in config.h to configure the project and run make to compile<br>
-look into the module folders for readmes
+OSExt (temporary name, would like help to name it), aims to be an parallel OS for the TI nspire.<br>
+Right now it can't really do anything, but I'm working on it.<br>
 
-current/planned modules:<br>
-Clock:<br>
-A miniclock in the top left of the screen. I made this because Levak's NClock miniclock doesn't work on newer os versions.
-Currently it's flickering but I'm working on it.
 
-Desktop:<br>
-I plan to make a full, expandable graphical dektop for the nspire, but havn't started to work on it jet.
+Planned for the future (in order of priority):
+short-term:
+- bringing back the miniclock in the top right, without flickering this time
+- starting work on a kernel api for programs to use
+- porting newlib to my kernel, and add my kernel api to it
+- making drivers for the lcd, keypad and touchpad
 
-Shell:<br>
-I also plan to make a full shell for the nspire, to wich programms can send commands wia custom system calls. Also not started jet :)
+mid-term:
+- making a desktop
+- making a proper file brower, the integrated one is too slow
+- making the desktop use the wayland protocol
+- adding a settings program for the settings of OSExt, as it should now have enough settings that it's worth doing that
+- make OSExt replace an existing ndless installation, because it interferes with the lcd compatibility feature of ndless anyways
+- expose the same functions as ndless does, do keep existing programs working
 
-usb:<br>
-My ultimate goal is to make a working usb wifi driver for the nspire, but I didin't find any good documentation on it and can't even get to get my functions called, let alone send the right data back or read the received data.
+long-term:
+- make a usb driver and fat32 driver
+- make a swap partition driver, so memory can be swapped to a usb device,<br>
+so a program is (in theory) only limited to the ~3GB of the address space the kernel doesn't use
+- drivers for usb hubs, mouse and kerboard
+- usb device driver, so the calculators can communicate with each other while programs are running
+- using the device driver, make a distributed computing server, so work can be outsourced to other calculators running OSExt connected by USB
 
-disablenavnet:<br>
-This is mainly planned for the security module. It allows to shut down the os navnet services for receiving files, os updates, send device data, essentially disables the os's ability to communicate with other calculators. The current version oly allows to disable the services, not re-enable them. to do that you would have to reboot.
 
-security:<br>
-This module will be like the login manager on linux. It will ask you for a password whenfirst loaded (for example as a startup programm), after some time of inactivity and before entering press-to-test-mode, because that disables startup programms and would <del>enable you to give your calculator to other people</del> allow anyone to execute code on it (by installing ndless).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
