@@ -169,8 +169,13 @@ void initialize()
 	}
 	
 	debug_shell_println("initializing kernel space");
+	
+	
 	initializeKernelSpace();
+	
 	free_init_pds();
+	
+	
 	debug_shell_println("done");
 	
 	
