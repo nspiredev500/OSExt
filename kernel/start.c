@@ -29,6 +29,7 @@ static uint32_t test = 20;
 static uint32_t *test2 = &test;
 
 static uint32_t *test3 = NULL;
+// little endian!
 // stack grows downwards!
 /*
 void teststack(void* t)
@@ -48,10 +49,6 @@ void teststack(void* t)
 int main(int argsn,char **argc)
 {
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
-	
-	
-	
-	
 	
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
@@ -237,8 +234,8 @@ void initialize()
 	
 	
 	
-	
-	
+	debug_shell_println("installing hooks");
+	install_hooks();
 	
 	
 	

@@ -28,7 +28,8 @@ uint32_t uninstall_osext(uint32_t* regs)
 	set_exception_vectors(false);
 	
 	
-	
+	debug_shell_println("uninstalling hooks");
+	uninstall_hooks();
 	
 	
 	// TODO give processes time to exit
