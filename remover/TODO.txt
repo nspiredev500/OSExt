@@ -1,0 +1,1 @@
+a remover that deletes all posix directories from the root filesystem
