@@ -6,19 +6,22 @@
 asm(
 ".global undef_wrapper \n"
 "undef_wrapper: \n"
-"push {r0-r12} \n"
+"push {r0-r12,r14} \n"
 "	mrs r0, cpsr \n"
-"	push {r0} \n" // save the cpsr
+"	push {r0,r1} \n" // save the cpsr
 "	orr r0, #192 \n"
 "	msr cpsr, r0 \n" // disable fiq and irq
 "	mov r0, lr \n"
 "	mrs r1, spsr \n"
 "	mov r2, sp \n"
 "	bl undefined_instruction_handler \n"
-"	pop {r0} \n"
+"   cmp r0, #1 \n"
+"	pop {r0,r1} \n"
 "	msr cpsr, r0 \n" // restore the cpsr
-"pop {r0-r12} \n"
-"movs pc, lr \n");
+"pop {r0-r12,r14} \n"
+"bne undef_noskip \n"
+"movs pc, lr \n"
+"undef_noskip: subs pc, lr, #4");
 
 
 
@@ -26,11 +29,33 @@ asm(
 
 
 
-void undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, the rest are the registers
+uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, the rest are the registers
 {
 	uint32_t thumb = (spsr >> 5) & 0b1;
 	if ((spsr & 0b11111) == 0b10011 || (spsr & 0b11111) == 0b11111)
 	{
+		/*
+		if (lcd_undef_breakpoint)
+		{
+			
+			lcd_undef_breakpoint = false;
+			
+			*lcd_undef_adr = lcd_undef_inst;
+			
+			register uint32_t tt_base asm("r0");
+			asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+			
+			tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+			uint32_t *tt = (uint32_t*) tt_base;
+			
+			tt[0xC0000000 >> 20] = lcd_undef_section;
+			clear_caches();
+			invalidate_TLB();
+			
+			//asm(".long 0xE1212374"); // bkpt
+			return 0;
+		}
+		*/
 		if (thumb == 1)
 		{
 			panic("undefined instruction in thumb privileged mode!");
@@ -84,7 +109,7 @@ void undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t *reg
 	}
 	
 	
-	
+	return 1;
 }
 
 

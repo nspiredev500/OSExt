@@ -8,7 +8,7 @@ static int32_t ut_os_version_index = -1;
 
 void read_osversion()
 {
-	if (ut_os_version_index != -1)
+	if (ut_os_version_index == -1)
 	{
 		// adapted from ndless/src/resources/utils.c
 		switch (*(unsigned*)(0x10000020)) {
@@ -108,11 +108,13 @@ void read_osversion()
 	}
 }
 
-uint32_t os_value(const uint32_t* values,int32_t size)
+uint32_t os_value(const uint32_t* values,uint32_t size)
 {
-	if (ut_os_version_index >= size)
+	//DEBUGPRINTLN_1("osversion: 0x%x",get_osversion())
+	if (get_osversion() >= size)
 		return 0;
-	return values[ut_os_version_index];
+	//DEBUGPRINTLN_1("value: 0x%x",values[get_osversion()])
+	return values[get_osversion()];
 }
 
 

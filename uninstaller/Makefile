@@ -8,7 +8,7 @@ GENZEHN = genzehn
 
 GCCFLAGS = -Wall -W -marm -Wno-unused-parameter
 LDFLAGS =
-ZEHNFLAGS = --name "uninstall osext"
+ZEHNFLAGS = --name "uninstall osext" --240x320-support true
 
 ifeq ($(DEBUG),FALSE)
 	GCCFLAGS += -Os

@@ -4,10 +4,20 @@ DEBUG = FALSE
 #AS  = nspire-as
 #GXX = nspire-g++
 #LD  = nspire-ld
-GCC = arm-none-eabi-gcc
-AS = arm-none-eabi-as
-GXX = arm-none-eabi-g++
-LD = arm-none-eabi-gcc
+#OBJCOPY = arm-none-eabi-objcopy
+#STRIP = arm-none-eabi-strip
+#GCC = arm-none-eabi-gcc
+#AS = arm-none-eabi-as
+#GXX = arm-none-eabi-g++
+#LD = arm-none-eabi-gcc
+#OBJCOPY = arm-none-eabi-objcopy
+#STRIP = arm-none-eabi-strip
+GCC = arm-osext-gcc
+AS = arm-osext-as
+GXX = arm-osext-g++
+LD = arm-osext-gcc
+OBJCOPY = arm-osext-objcopy
+STRIP = arm-osext-strip
 GENZEHN = genzehn
 
 
@@ -22,8 +32,8 @@ GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variabl
 ifeq (DEBUG, TRUE)
 	GCCFLAGS += -O0
 endif
-
-LDFLAGS = -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
+#-Xlinker -m -Xlinker armelf_osext
+LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "30" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))
@@ -51,7 +61,7 @@ remake: clean
 
 osext.tns: osext.elf
 	cp osext.elf osext-nodebug.elf && \
-	arm-none-eabi-strip --strip-debug osext-nodebug.elf && \
+	$(STRIP) --strip-debug osext-nodebug.elf && \
 	$(GENZEHN) $(ZEHNFLAGS) --input osext-nodebug.elf --output osext.tns && \
 	rm osext-nodebug.elf
 
@@ -68,7 +78,7 @@ cleanbuild:
 
 
 debug.elf: osext.elf
-	arm-none-eabi-objcopy --only-keep-debug osext.elf debug.elf
+	$(OBJCOPY) --only-keep-debug osext.elf debug.elf
 
 
 %.o: %.c $(HEADERS)

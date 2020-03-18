@@ -30,6 +30,11 @@ void initLCDDriver()
 	
 }
 
+void* get_old_framebuffer_address()
+{
+	return old_framebuffer;
+}
+
 void* get_back_framebuffer_address()
 {
 	return framebuffer2;
@@ -204,6 +209,19 @@ void framebuffer_fillrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32
 	}
 }
 
+void framebuffer_drawrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, uint32_t g,uint32_t b)
+{
+	for (uint32_t x = xs;x<xs+w;x++)
+	{
+		framebuffer_setpixel(buff,x,ys,r,g,b);
+		framebuffer_setpixel(buff,x,ys+h,r,g,b);
+	}
+	for (uint32_t y = ys;y<ys+h;y++)
+	{
+		framebuffer_setpixel(buff,xs,y,r,g,b);
+		framebuffer_setpixel(buff,xs+w,y,r,g,b);
+	}
+}
 
 void framebuffer_write10pchar(void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn,char c[][10][10])
 {
