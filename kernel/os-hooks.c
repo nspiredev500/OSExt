@@ -231,12 +231,36 @@ void draw_hookfunc()
 	}
 	void* framebuffer = get_front_framebuffer_address();
 	
+	
+	uint32_t clockx = 180;
+	uint32_t clocky = 1;
 	//framebuffer_fillrect(old_framebuffer,0,0,20,20,0,255,0);
-	framebuffer_fillrect(old_framebuffer,180,1,80,10,0,0,0);
-	framebuffer_drawrect(old_framebuffer,179,0,82,12,255,255,255);
+	framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
+	framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
 	
 	int hr = 0,min = 0,sec = 0;
 	timestamp2time(getRTCValue(),&hr,&min,&sec);
+	
+	
+	framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
+	framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
+	
+	framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
+	framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
+	
+	
+	framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
+	framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
+	
+	
+	framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
+	framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
+	
+	
+	framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
+	framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
+	
+	/*
 	char str[100];
 	k_memset(str,'\0',20);
 	sprintf_safe(str,"%d",5,signedtounsigned32(hr));
@@ -249,7 +273,7 @@ void draw_hookfunc()
 	k_memset(str,'\0',20);
 	sprintf_safe(str,"%d ",5,signedtounsigned32(sec));
 	framebuffer_write10pstring_ascii(str,old_framebuffer,240,1,255,0,0,ascii10p);
-	
+	*/
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);
 	
