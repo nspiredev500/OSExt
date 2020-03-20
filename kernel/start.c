@@ -29,6 +29,7 @@ static uint32_t test = 20;
 static uint32_t *test2 = &test;
 
 static uint32_t *test3 = NULL;
+// little endian!
 // stack grows downwards!
 /*
 void teststack(void* t)
@@ -48,10 +49,6 @@ void teststack(void* t)
 int main(int argsn,char **argc)
 {
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
-	
-	
-	
-	
 	
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
@@ -237,8 +234,8 @@ void initialize()
 	
 	
 	
-	
-	
+	debug_shell_println("installing hooks");
+	install_hooks();
 	
 	
 	
@@ -249,7 +246,35 @@ void initialize()
 	// to be able to read the messages
 	keypad_press_release_barrier();
 	
-	freeLCD();
+	//freeLCD();
+	
+	
+	// unmap the lcd controller to test when the os modifies LCD_UPBASE
+	/*
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	
+	
+	tt[((uint32_t)LCD_UPBASE)>>20] = 0;
+	*/
+	/*
+	uint32_t* os_lcd_writes = (uint32_t*) 0x100237c8;
+	os_lcd_writes[0] = 0xe1a00000; // nop
+	os_lcd_writes[1] = 0xe1a00000; // nop
+	os_lcd_writes[2] = 0xe1a00000; // nop
+	os_lcd_writes[3] = 0xe1a00000; // nop
+	*/
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	//asm(".long 0xE1212374"); // bkpt
 }

@@ -18,6 +18,7 @@
 #include "chars.h"
 #include "digits.h"
 #include "ascii.h"
+#include "osversion.h"
 
 #include "uninstall.h"
 #include "scheduler.h"
@@ -45,7 +46,7 @@
 #include "keypad.h"
 #include "debug_shell.h"
 #include "modes.h"
-
+#include "os-hooks.h"
 
 
 
@@ -79,7 +80,7 @@ const uint32_t SECTION_SIZE;
 
 
 
-#define DEBUGLEVEL 0
+#define DEBUGLEVEL 3
 
 
 

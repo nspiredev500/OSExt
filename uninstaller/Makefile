@@ -6,9 +6,9 @@ GXX = nspire-g++
 LD  = nspire-ld
 GENZEHN = genzehn
 
-GCCFLAGS = -Wall -W -marm
+GCCFLAGS = -Wall -W -marm -Wno-unused-parameter
 LDFLAGS =
-ZEHNFLAGS = --name "uninstall osext"
+ZEHNFLAGS = --name "uninstall osext" --240x320-support true
 
 ifeq ($(DEBUG),FALSE)
 	GCCFLAGS += -Os
@@ -19,7 +19,7 @@ endif
 OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c))
 OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
 OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
-EXE = "uninstall osext"
+EXE = "uninstall_osext"
 DISTDIR = .
 vpath %.tns $(DISTDIR)
 vpath %.elf $(DISTDIR)

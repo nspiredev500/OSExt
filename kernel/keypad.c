@@ -27,7 +27,7 @@ uint8_t keymap_cas[] = {
 48,49,50,51,52,53,54,55,56,57,
 64,65,67,68,69,70,71,72,73,
 81,82,83,84,85,86,87,88,89,90,
-96,98,99,100,101,102,103,103,105,
+96,98,99,100,101,102,103,105,
 120,121,122};
 
 
@@ -53,11 +53,13 @@ char getAlphanumericKeyPressed()
 bool isKeyPressed(enum keycode key)
 {
 	uint32_t bit = keymap_cas[key];
+	//DEBUGPRINTLN_1("keycode: %d\nbit: %d",key,keymap_cas[key]);
 	uint32_t uint32 = bit / 16;
 	bit = bit % 16;
+	//DEBUGPRINTLN_1("uint32: %d",keymap_cas[key] / 16);
 	if (uint32 <= 0x1f)
 	{
-		if ((*(keypad_data+(uint32)) & (0b1 << bit)) == 1)
+		if ((*(keypad_data+(uint32)) & (0b1 << bit)) != 0)
 		{
 			return true;
 		}

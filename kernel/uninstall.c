@@ -28,6 +28,8 @@ uint32_t uninstall_osext(uint32_t* regs)
 	set_exception_vectors(false);
 	
 	
+	debug_shell_println("uninstalling hooks");
+	uninstall_hooks(); // TODO uninstaller only works if hooks are immediately reused by another instance of osext, not if is just uninstalled
 	
 	
 	
@@ -37,7 +39,7 @@ uint32_t uninstall_osext(uint32_t* regs)
 	freeAllPageblocks();
 	
 	
-	
+	debug_shell_println("kernel base pointer: 0x%x",getKernelMallocedPointer());
 	
 	
 	
@@ -46,7 +48,7 @@ uint32_t uninstall_osext(uint32_t* regs)
 	debug_shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
 	
-	*LCD_UPBASE = oldupbase;
+	*LCD_UPBASE = get_old_framebuffer_address();
 	
 	ti_free(fb_unaligned);
 	

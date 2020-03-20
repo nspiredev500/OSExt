@@ -497,55 +497,55 @@ void* getPhysicalAddress(struct address_space *space,void* address)
 	
 	
 	
-	DEBUGPRINTF_3("resolving: 0x%x\n",address)
+	//DEBUGPRINTF_3("resolving: 0x%x\n",address)
 	uint32_t descriptor = space->tt[adr >> 20];
 	if ((descriptor  & 0b11) == 0b0) // invalid descriptor
 	{
-		DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
+		//DEBUGPRINTF_3("invalid descriptor: 0x%x\n",adr >> 20)
 		return NULL;
 	}
 	if ((descriptor  & 0b11) == 0b10)
 	{
-		DEBUGPRINTF_3("section descriptor: 0x%x\n",descriptor)
+		//DEBUGPRINTF_3("section descriptor: 0x%x\n",descriptor)
 		uint32_t section_base =  ((descriptor >> 20) << 20);
-		DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
+		//DEBUGPRINTF_3("phys. address: 0x%x\n",(section_base + ((adr << 12) >> 12)))
 		return (void*) (section_base + ((adr << 12) >> 12));
 	}
 	if ((descriptor  & 0b11) == 0b01) // coarse page table
 	{
-		DEBUGPRINTF_3("coarse page table: 0x%x\n",adr >> 20)
+		//DEBUGPRINTF_3("coarse page table: 0x%x\n",adr >> 20)
 		uint32_t *cpt_base = (uint32_t*) (descriptor & (~ 0b1111111111));
-		DEBUGPRINTF_3("coarse page table: 0x%x\n",descriptor)
-		DEBUGPRINTF_3("coarse page table base: 0x%x\n",cpt_base)
+		//DEBUGPRINTF_3("coarse page table: 0x%x\n",descriptor)
+		//DEBUGPRINTF_3("coarse page table base: 0x%x\n",cpt_base)
 		uint32_t index = ((adr & 0b11111111000000000000) >> 10)/4;
-		DEBUGPRINTF_3("coarse page table index: 0x%x\n",index)
+		//DEBUGPRINTF_3("coarse page table index: 0x%x\n",index)
 		uint32_t page_descriptor =  ((uint32_t*) (((void*) cpt_base) - old_RAM + remapped_RAM))[index];
 		if ((page_descriptor & 0b11) == 0b1)
 		{
-			DEBUGPRINTF_3("large page descriptor\n")
+			//DEBUGPRINTF_3("large page descriptor\n")
 			uint32_t page_offset = adr & 0b1111111111111111;
 			uint32_t phys = (page_descriptor & (~ 0b1111111111111111)) + page_offset;
-			DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
+			//DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
 			return (void*) phys;
 			return NULL;
 		}
 		if ((page_descriptor & 0b11) == 0b10)
 		{
-			DEBUGPRINTF_3("small page descriptor: 0x%x\n",page_descriptor)
+			//DEBUGPRINTF_3("small page descriptor: 0x%x\n",page_descriptor)
 			uint32_t page_offset = adr & 0b111111111111;
 			uint32_t phys = (page_descriptor & (~ 0b111111111111)) + page_offset;
-			DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
+			//DEBUGPRINTF_3("phys. address: 0x%x\n",phys)
 			return (void*) phys;// for small pages
 		}
 		return NULL;
 	}
 	if ((descriptor  & 0b11) == 0b11) // fine page table
 	{
-		DEBUGPRINTF_3("fine page table: 0x%x\n",adr >> 20)
+		//DEBUGPRINTF_3("fine page table: 0x%x\n",adr >> 20)
 		// never used anyways
 		return NULL;
 	}
-	DEBUGPRINTF_3("no known descriptor type: 0x%x, 0x%x\n",adr >> 20, descriptor)
+	//DEBUGPRINTF_3("no known descriptor type: 0x%x, 0x%x\n",adr >> 20, descriptor)
 	return NULL;
 }
 
