@@ -29,15 +29,19 @@
 
 
 
-
+#include "drivers/i2c.h"
+#include "drivers/touchpad.h"
 #include "drivers/uart.h"
 #include "drivers/lcd.h"
 #include "drivers/rtc.h"
 #include "drivers/watchdog.h"
 #include "drivers/keypad.h"
-
-
-
+#include "drivers/power.h"
+#include "drivers/timer.h"
+#include "drivers/usb.h"
+#include "drivers/adc.h"
+#include "drivers/nand.h"
+#include "drivers/irq_controller.h"
 
 
 
