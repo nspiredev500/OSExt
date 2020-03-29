@@ -208,7 +208,7 @@ void initialize()
 	
 	
 	//keypad_press_release_barrier();
-	
+	// construct the pages for the remapped stack
 	void* page = usePage();
 	if (page == NULL)
 	{
@@ -217,10 +217,18 @@ void initialize()
 		return;
 	}
 	addVirtualKernelPage(page,(void*) 0xe8000000);
+	page = usePage();
+	if (page == NULL)
+	{
+		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
+		keypad_press_release_barrier();
+		return;
+	}
+	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
 	
 	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
 	
-	setPageUsedBit(page,false);
+	//setPageUsedBit(page,false);
 	
 	
 	//b = true;

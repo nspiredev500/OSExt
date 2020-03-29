@@ -9,7 +9,26 @@ void init_call_with_stack(void* start)
 	//exec_start = start;
 }
 
-
+bool isIRQ()
+{
+	register uint32_t cpsr asm("r0") = 0;
+	asm("mrs r0, cpsr":"=r" (cpsr)::);
+	if ((cpsr >> 7 & 0b1) == 1)
+	{
+		return true;
+	}
+	return false;
+}
+bool isFIQ()
+{
+	register uint32_t cpsr asm("r0") = 0;
+	asm("mrs r0, cpsr":"=r" (cpsr)::);
+	if ((cpsr >> 6 & 0b1) == 1)
+	{
+		return true;
+	}
+	return false;
+}
 void disableIRQ()
 {
 	asm("mrs r0, cpsr \n"

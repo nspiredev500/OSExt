@@ -1,31 +1,33 @@
+build_dir_raw ?= ../build
+build_dir = $(build_dir_raw)/pngtoascii
 
 
 
 
-
-all: ascii.c
+all: $(CURDIR)/../kernel/ascii.c
 	
 
-ascii.c: pngtoascii.class
-	java pngtoascii kernel_font.png && \
-	cp ascii.c ../kernel/ascii.c
+$(CURDIR)/../kernel/ascii.c: $(build_dir)/pngtoascii.class
+	cp kernel_font.png $(build_dir)/kernel_font.png && \
+	(cd $(build_dir) && java pngtoascii kernel_font.png) && \
+	cp $(build_dir)/ascii.c ../kernel/ascii.c
 
 
-pngtoascii.class:
-	javac pngtoascii.java
+$(build_dir)/pngtoascii.class:
+	javac -d $(build_dir) pngtoascii.java
 
 
 
-.PHONY: clean
+.PHONY: clean cleanbuild
 	
 
 
 clean:
-	rm pngtoascii.class ascii.c
+	-rm $(build_dir)/pngtoascii.class $(build_dir)/ascii.c $(build_dir)/kernel_font.png
 
 
-
-
+cleanbuild: clean
+	
 
 
 

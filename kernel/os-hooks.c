@@ -113,7 +113,7 @@ static const uint32_t os_framebuffer1_addrs[] =
  0x0, 0x0
 };
 static uint32_t os_draw_inst[4];
-
+static bool draw_clock = true;
 
 uint32_t get_os_draw_address()
 {
@@ -133,12 +133,12 @@ HOOK_DEFINE(filehook)
 	disableFIQ();
 	disableIRQ();
 	call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),file_hookfunc);
+	//file_hookfunc();
 	enableFIQ();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(filehook);
 };
-
 
 HOOK_DEFINE(drawhook)
 {
@@ -148,6 +148,7 @@ HOOK_DEFINE(drawhook)
 	disableFIQ();
 	disableIRQ();
 	call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
+	//draw_hookfunc();
 	enableFIQ();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);
@@ -159,20 +160,9 @@ static uint32_t hookcounter = 0;
 static uint32_t lastchanged = 0;
 void file_hookfunc()
 {
-	/*
-	*LCD_UPBASE = get_front_framebuffer_address();
-	//if (hookcounter > 20)
-	//{
-		// TODO copy the old lcd screenbuffer to the new one and write over it
-		void* framebuffer = (void*) *LCD_UPBASE;
-		
-		//framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
-		clear_caches();
-		hookcounter = 0;
-	//}
-	//hookcounter++;
-	*/
 	
+	
+	/*
 	if (isKeyPressed(KEY_SPACE) && isKeyPressed(KEY_SPACE))
 	{
 		DEBUGPRINTLN_1("change drawhook!")
@@ -191,6 +181,45 @@ void file_hookfunc()
 		}
 		
 	}
+	*/
+	
+	
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
+	{
+		/*
+		int32_t value = 0;
+		show_1_numeric_input("Test","subtitle","msg",&value);
+		asm(".long 0xE1212374"); // bkpt
+		*/
+		
+		
+		
+		
+		
+		
+	}
+	
+	
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
+	{
+		
+		if (getRTCValue() != lastchanged)
+		{
+			if (draw_clock)
+			{
+				draw_clock = false;
+			}
+			else
+			{
+				draw_clock = true;
+			}
+			//keypad_press_release_barrier();
+			lastchanged = getRTCValue();
+		}
+		
+	}
+	
+	
 	
 }
 
@@ -234,53 +263,38 @@ void draw_hookfunc()
 	
 	uint32_t clockx = 180;
 	uint32_t clocky = 1;
-	//framebuffer_fillrect(old_framebuffer,0,0,20,20,0,255,0);
-	framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
-	framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
+	if (draw_clock)
+	{
+		framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
+		framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
+		
+		int hr = 0,min = 0,sec = 0;
+		timestamp2time(getRTCValue(),&hr,&min,&sec);
+		
+		
+		framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
+		framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
+		
+		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
+		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
+		
+		
+		framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
+		framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
+		
+		
+		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
+		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
+		
+		
+		framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
+		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
+	}
 	
-	int hr = 0,min = 0,sec = 0;
-	timestamp2time(getRTCValue(),&hr,&min,&sec);
 	
 	
-	framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
-	framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
-	
-	framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
-	framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
-	
-	
-	framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
-	framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
-	
-	
-	framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
-	framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
-	
-	
-	framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
-	framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
-	
-	/*
-	char str[100];
-	k_memset(str,'\0',20);
-	sprintf_safe(str,"%d",5,signedtounsigned32(hr));
-	framebuffer_write10pstring_ascii(str,old_framebuffer,180,1,255,0,0,ascii10p);
-	framebuffer_write10pstring_ascii(":",old_framebuffer,200,1,255,0,0,ascii10p);
-	k_memset(str,'\0',20);
-	sprintf_safe(str,"%d",5,signedtounsigned32(min));
-	framebuffer_write10pstring_ascii(str,old_framebuffer,210,1,255,0,0,ascii10p);
-	framebuffer_write10pstring_ascii(":",old_framebuffer,230,1,255,0,0,ascii10p);
-	k_memset(str,'\0',20);
-	sprintf_safe(str,"%d ",5,signedtounsigned32(sec));
-	framebuffer_write10pstring_ascii(str,old_framebuffer,240,1,255,0,0,ascii10p);
-	*/
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);
-	
-	
-	
-	
-	
 	
 }
 

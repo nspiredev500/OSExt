@@ -10,7 +10,8 @@
 // from the ndless-sdk include directory
 #include <syscall-list.h>
 
-
+#include "memory.h"
+#include "ti-os.h"
 #include "mutex.h"
 #include "process.h"
 #include "thread.h"
@@ -36,7 +37,6 @@
 #include "aborts.h"
 #include "panic.h"
 #include "uart.h"
-#include "memory.h"
 #include "reloc.h"
 #include "start.h"
 #include "string.h"

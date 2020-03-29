@@ -4,28 +4,6 @@ bool syscall_tracker = false;
 extern uint32_t syscall_mask;
 
 
-
-
-static inline int wa_syscall1(int nr, int p1)
-{
-	register int r0 asm("r0") = p1;
-  
-	asm volatile(
-		"swi %[nr]\n"
-		: "=r" (r0)
-		: [nr] "i" (nr), "r" (r0)
-		: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
-  
-	return r0;
-}
-
-
-int TCT_Local_Control_Interrupts(int mask)
-{
-	return wa_syscall1(e_TCT_Local_Control_Interrupts,mask);
-}
-
-
 asm(
 ".global delegate_system_calls \n"
 ".global swi_wrapper \n"

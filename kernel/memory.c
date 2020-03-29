@@ -1,42 +1,6 @@
 #include "kernel.h"
 
 
-static inline int wa_syscall(int nr, uint32_t p1)
-{
-	register int r0 asm("r0") = p1;
-  
-	asm volatile(
-		"swi %[nr]\n"
-		: "=r" (r0)
-		: [nr] "i" (nr), "r" (r0)
-		: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
-  
-	return r0;
-}
-
-void *ti_malloc(uint32_t size) // not 8-byte-aligned !
-{
-	return (void*) wa_syscall(e_malloc,size);
-}
-
-void ti_free(void *ptr)
-{
-	wa_syscall(e_free,(uint32_t) ptr);
-}
-
-void *ti_calloc(uint32_t size) // not 8-byte-aligned !
-{
-	void* p = (void*) wa_syscall(e_malloc,size);
-	if (p == NULL)
-	{
-		return NULL;
-	}
-	k_memset(p,0,(size_t) size);
-	return p;
-}
-
-
-
 void* align4Bytes(void* address)
 {
 	uint32_t adr = (uint32_t) address;
