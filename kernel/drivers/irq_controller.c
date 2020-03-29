@@ -1,6 +1,6 @@
 #include "../kernel.h"
 
-
+static uint32_t *remapped_irq_controller = (uint32_t*) (0xe9000000+3*SECTION_SIZE);
 
 
 

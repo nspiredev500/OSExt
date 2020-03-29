@@ -3,7 +3,7 @@
 
 
 
-
+static uint32_t *remapped_watchdog = (uint32_t*) 0xe9060000;
 
 
 

@@ -109,11 +109,15 @@ void initializeKernelSpace()
 	kernel_space.tt = tt_page;
 	
 	
-	addVirtualKernelPage((void*) 0x90020000,tt_page+SMALL_PAGE_SIZE*4);
-	remappUART(tt_page+SMALL_PAGE_SIZE*4);
 	
+	// remapping io
 	
-	
+	tt[((0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
+	tt[((0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
+	tt[((0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
+	tt[((0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
+	tt[((0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
+	tt[((0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
 	
 	
 	
@@ -211,7 +215,14 @@ struct address_space* createAddressSpace()
 		tt[(((uint32_t) remapped_RAM)+i*SECTION_SIZE)>>20] = newSD(1,1,0,0b01,0x10000000+i*SECTION_SIZE);
 	}
 	
+	// remapping io
 	
+	tt[((0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
+	tt[((0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
+	tt[((0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
+	tt[((0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
+	tt[((0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
+	tt[((0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
 	
 	
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)

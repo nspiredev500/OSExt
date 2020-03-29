@@ -1,4 +1,4 @@
-DEBUG = FALSE
+DEBUG = FLASE
 
 
 build_dir_raw ?= ../build

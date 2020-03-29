@@ -4,7 +4,7 @@
 
 
 
-
+const uint32_t remapped_power = 
 
 
 

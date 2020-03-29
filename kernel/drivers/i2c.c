@@ -1,6 +1,6 @@
 #include "../kernel.h"
 
-
+static uint32_t *remapped_i2c = (uint32_t*) 0xe9050000;
 
 
 

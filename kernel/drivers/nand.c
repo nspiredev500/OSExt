@@ -3,7 +3,7 @@
 
 
 
-
+static uint32_t *remapped_nand = (uint32_t*)  (0x000F1000 + 0xe9000000+5*SECTION_SIZE);
 
 
 

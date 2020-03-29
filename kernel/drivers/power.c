@@ -1,6 +1,6 @@
 #include "../kernel.h"
 
-
+static uint32_t *remapped_power = (uint32_t*) 0xe90b0000;
 
 
 
