@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 static volatile uint32_t *keypad_control = (volatile uint32_t*) 0x900E0000;
 static volatile uint32_t *keypad_status = (volatile uint32_t*) 0x900E0008;

@@ -94,9 +94,20 @@ $(build_dir)/debug.elf: $(build_dir)/osext.elf
 	$(OBJCOPY) --only-keep-debug osext.elf debug.elf
 
 
-$(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
+
+
+$(build_dir)/%.o: $(CURDIR)/libk/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
+
+$(build_dir)/%.o: $(CURDIR)/drivers/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
+
+$(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 $(build_dir)/%.o: $(CURDIR)/%.cpp $(HEADERS)
 	$(GXX) $(GCCFLAGS) -c $< -o $@

@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;

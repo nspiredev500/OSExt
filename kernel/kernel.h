@@ -10,9 +10,13 @@
 // from the ndless-sdk include directory
 #include <syscall-list.h>
 
-#include "memory.h"
+
+#include "libk/memory.h"
+#include "libk/mutex.h"
+#include "libk/modes.h"
+
+
 #include "ti-os.h"
-#include "mutex.h"
 #include "process.h"
 #include "thread.h"
 #include "LinkedList.h"
@@ -20,10 +24,25 @@
 #include "digits.h"
 #include "ascii.h"
 #include "osversion.h"
+#include "libk/math.h"
+#include "libk/string.h"
+
+
+
+
+#include "drivers/uart.h"
+#include "drivers/lcd.h"
+#include "drivers/rtc.h"
+#include "drivers/watchdog.h"
+#include "drivers/keypad.h"
+
+
+
+
+
 
 #include "uninstall.h"
 #include "scheduler.h"
-#include "watchdog.h"
 #include "fiq.h"
 #include "virtual_MM.h"
 #include "physical_MM.h"
@@ -32,20 +51,13 @@
 #include "prefetch_abort.h"
 #include "undefined_instruction.h"
 #include "irq.h"
-#include "lcd.h"
-#include "rtc.h"
 #include "aborts.h"
 #include "panic.h"
-#include "uart.h"
 #include "reloc.h"
 #include "start.h"
-#include "string.h"
-#include "math.h"
 #include "slab.h"
 #include "self_test.h"
-#include "keypad.h"
 #include "debug_shell.h"
-#include "modes.h"
 #include "os-hooks.h"
 
 

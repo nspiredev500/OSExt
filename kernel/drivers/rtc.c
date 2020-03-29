@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 static volatile uint32_t *value = (volatile uint32_t*) 0x90090000;
