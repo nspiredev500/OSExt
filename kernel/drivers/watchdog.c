@@ -22,6 +22,7 @@ static bool watchdog_reset = false;
 
 void watchdog_enable()
 {
+	vic_set_fiq(3);
 	vic_enable(3);
 	remapped_watchdog[300] = 0x1ACCE551;
 	remapped_watchdog[2] = (remapped_watchdog[2] & (~0b11)) | 0b1;
@@ -36,6 +37,7 @@ void watchdog_enable()
 void watchdog_disable()
 {
 	vic_disable(3);
+	vic_set_irq(3);
 	remapped_watchdog[300] = 0x1ACCE551;
 	remapped_watchdog[2] = (remapped_watchdog[2] & (~0b11));
 	remapped_watchdog[300] = 0;

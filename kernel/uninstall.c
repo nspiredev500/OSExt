@@ -8,7 +8,12 @@ uint32_t uninstall_osext(uint32_t* regs)
 	
 	disableFIQ();
 	
+	bool irq = isIRQ();
 	
+	if (irq)
+	{
+		disableIRQ();
+	}
 	void* fb_unaligned = ti_malloc(320*240*2+256);
 	uint16_t *framebuffer = (uint16_t*) (((uint32_t) fb_unaligned & (~ 0b111))+0b1000);
 	
@@ -50,18 +55,23 @@ uint32_t uninstall_osext(uint32_t* regs)
 	
 	*LCD_UPBASE = get_old_framebuffer_address();
 	
+	
+	DEBUGPRINTLN_1("freeing framebuffer")
 	ti_free(fb_unaligned);
 	
 	
 	
+	if (irq)
+	{
+		enableIRQ();
+	}
 	
 	
 	
 	
 	
 	
-	
-	
+	DEBUGPRINTLN_1("returning")
 	
 	return (uint32_t) getKernelMallocedPointer();
 }
