@@ -246,8 +246,19 @@ void initialize()
 	install_hooks();
 	
 	
+	/*
+	debug_shell_println("double: %Lf",12.0);
+	debug_shell_println("vbatt: %Lfv",adc_read_channel(1));
+	debug_shell_println("vsys: %Lfv",adc_read_channel(2));
+	debug_shell_println("b12: %Lfv",adc_read_channel(4));
+	*/
 	
 	
+	/*
+	debug_shell_println("vbatt: %dv",(uint32_t)adc_read_channel(1));
+	debug_shell_println("vsys: %dv",(uint32_t)adc_read_channel(2));
+	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
+	*/
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);

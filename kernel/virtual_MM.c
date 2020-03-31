@@ -112,13 +112,15 @@ void initializeKernelSpace()
 	
 	// remapping io
 	
-	tt[((0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
-	tt[((0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
-	tt[((0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
-	tt[((0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
-	tt[((0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
-	tt[((0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
+	tt[(0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
+	tt[(0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
+	tt[(0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
+	tt[(0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
+	tt[(0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
+	tt[(0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
 	
+	remappLCD((void*) (0xe9000000+2*SECTION_SIZE));
+	remappUART((void*) (0xe9000000+0x00020000));
 	
 	
 	kernel_space_initialized = true;
@@ -217,12 +219,12 @@ struct address_space* createAddressSpace()
 	
 	// remapping io
 	
-	tt[((0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
-	tt[((0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
-	tt[((0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
-	tt[((0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
-	tt[((0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
-	tt[((0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
+	tt[(0xe9000000)>>20] = newSD(0,0,0,0b01,0x90000000);
+	tt[(0xe9000000+SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xb0000000);
+	tt[(0xe9000000+2*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc0000000);
+	tt[(0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
+	tt[(0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
+	tt[(0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
 	
 	
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)

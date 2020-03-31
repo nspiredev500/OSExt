@@ -5,7 +5,7 @@
 
 
 
-
+double adc_read_channel(uint32_t channel);
 
 
 

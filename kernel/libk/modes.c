@@ -15,9 +15,9 @@ bool isIRQ()
 	asm("mrs r0, cpsr":"=r" (cpsr)::);
 	if ((cpsr >> 7 & 0b1) == 1)
 	{
-		return true;
+		return false;
 	}
-	return false;
+	return true;
 }
 bool isFIQ()
 {
@@ -25,30 +25,30 @@ bool isFIQ()
 	asm("mrs r0, cpsr":"=r" (cpsr)::);
 	if ((cpsr >> 6 & 0b1) == 1)
 	{
-		return true;
+		return false;
 	}
-	return false;
+	return true;
 }
-void disableIRQ()
+void enableIRQ()
 {
 	asm("mrs r0, cpsr \n"
 	"bic r0, r0, #0x80 \n"
 	"msr cpsr, r0":::"r0");
 }
-void enableIRQ()
+void disableIRQ()
 {
 	asm("mrs r0, cpsr \n"
 	"orr r0, r0, #0x80 \n"
 	"msr cpsr, r0":::"r0");
 }
 
-void disableFIQ()
+void enableFIQ()
 {
 	asm("mrs r0, cpsr \n"
 	"bic r0, r0, #0x40 \n"
 	"msr cpsr, r0":::"r0");
 }
-void enableFIQ()
+void disableFIQ()
 {
 	asm("mrs r0, cpsr \n"
 	"orr r0, r0, #0x40 \n"

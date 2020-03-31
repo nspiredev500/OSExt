@@ -1,9 +1,9 @@
 #include "../kernel.h"
 
 
-static uint32_t *remapped_fast_timer = (uint32_t*) 0xe9010000;
-static uint32_t *remapped_first_timer = (uint32_t*) 0xe90c0000;
-static uint32_t *remapped_second_timer = (uint32_t*) 0xe90d0000;
+static volatile uint32_t *remapped_fast_timer = (volatile uint32_t*) 0xe9010000;
+static volatile uint32_t *remapped_first_timer = (volatile uint32_t*) 0xe90c0000;
+static volatile uint32_t *remapped_second_timer = (volatile uint32_t*) 0xe90d0000;
 
 
 

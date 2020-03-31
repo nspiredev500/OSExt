@@ -225,10 +225,7 @@ void file_hookfunc()
 
 void draw_hookfunc()
 {
-	// somehow this crashes on hardware
-	// so I guess we have do do the costly memcopy always, even when we don't 
-	// want to use the screen
-	/*
+	
 	if (! drawhook_enabled)
 	{
 		void* old_framebuffer = get_old_framebuffer_address();
@@ -243,7 +240,7 @@ void draw_hookfunc()
 		*LCD_UPBASE = old_framebuffer;
 		return;
 	}
-	*/
+	
 	*LCD_UPBASE = getKernelPhysicalAddress(get_front_framebuffer_address());
 	void* old_framebuffer = get_old_framebuffer_address();
 	if (HOOK_SAVED_REGS(drawhook)[2] == os_value(os_framebuffer1_addrs,sizeof(os_framebuffer1_addrs)/sizeof(uint32_t)))

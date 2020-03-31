@@ -1,7 +1,7 @@
 #include "../kernel.h"
 
 
-static uint32_t *remapped_usb = (uint32_t*) 0xe9100000;
+static volatile uint32_t *remapped_usb = (volatile uint32_t*) 0xe9100000;
 
 
 

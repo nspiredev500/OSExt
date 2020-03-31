@@ -61,6 +61,12 @@ void sprintf_safe(char *result,char *str,uint32_t length,...)
 				c += 4;
 				continue;
 			}
+			if (*(c+1) == 'L' && *(c+2) == 'f')
+			{
+				index += sprint_double_safe(result+index,length-index,va_arg(va,double),2);
+				c += 3;
+				continue;
+			}
 		}
 		*(result+index) = *c;
 		index++;
@@ -111,11 +117,31 @@ void sprintf_safe_va(char *result,char *str,uint32_t length,va_list va)
 				c += 4;
 				continue;
 			}
+			if (*(c+1) == 'L' && *(c+2) == 'f')
+			{
+				index += sprint_double_safe(result+index,length-index,va_arg(va,double),2);
+				c += 3;
+				continue;
+			}
 		}
 		*(result+index) = *c;
 		index++;
 		c++;
 	}
+}
+
+
+uint32_t sprint_double_safe(char* string,uint32_t length,double a,uint32_t roundto)
+{
+	uint32_t h = sprint_uint64_base_safe(string,length,(uint64_t) a,10);
+	if (h >= length-1)
+	{
+		return h;
+	}
+	string[h] = '.';
+	h++;
+	h += sprint_uint64_base_safe(string+h,length-h,((uint64_t) (a*k_pow(10,roundto)))-((uint64_t) (((uint64_t)a)*k_pow(10,roundto))),10);
+	return h;
 }
 
 uint32_t sprint_uint64_base_safe(char* string,uint32_t length,uint64_t a,uint32_t base)

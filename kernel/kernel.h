@@ -27,8 +27,8 @@
 #include "libk/math.h"
 #include "libk/string.h"
 
-
-
+#include "drivers/power.h"
+#include "drivers/irq_controller.h"
 #include "drivers/i2c.h"
 #include "drivers/touchpad.h"
 #include "drivers/uart.h"
@@ -36,12 +36,11 @@
 #include "drivers/rtc.h"
 #include "drivers/watchdog.h"
 #include "drivers/keypad.h"
-#include "drivers/power.h"
 #include "drivers/timer.h"
 #include "drivers/usb.h"
 #include "drivers/adc.h"
 #include "drivers/nand.h"
-#include "drivers/irq_controller.h"
+
 
 
 
@@ -92,7 +91,6 @@ volatile void** LCD_UPBASE;
 const uint32_t SMALL_PAGE_SIZE;
 const uint32_t LARGE_PAGE_SIZE;
 const uint32_t SECTION_SIZE;
-
 
 
 

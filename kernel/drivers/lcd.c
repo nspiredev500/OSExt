@@ -1,6 +1,9 @@
 #include "../kernel.h"
 
 
+// TODO use remapped registers when available
+
+
 volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;
 
 // gets locked if the kernel transfers control over the lcd framebuffer to itself
@@ -26,6 +29,12 @@ void initLCDDriver()
 	
 	framebuffer1 = requestLCDFramebuffer();
 	framebuffer2 = requestLCDFramebuffer();
+	
+	
+}
+void remappLCD(void* address)
+{
+	LCD_UPBASE = (volatile void**) ((uint32_t) address+0x10);
 	
 	
 }
