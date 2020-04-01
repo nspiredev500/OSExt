@@ -40,154 +40,166 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 
 
 
-void timer_enable(uint32_t timer)
+void timer_enable(uint32_t timermodule,uint32_t timer)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
 	vic_set_fiq(17+timer);
 	vic_enable(17+timer);
-	remapped_misc[5+timer*2] |= 0b11;
-	
-	
-	
-	
-	
+	remapped_misc[5+timer*2] |= 0b1;
+	remapped_timer[2+timer*8] |= 0b10100010;
 }
 
-void timer_disable(uint32_t timer)
+void timer_disable(uint32_t timermodule,uint32_t timer)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
 	vic_disable(17+timer);
 	vic_set_irq(17+timer);
 	remapped_misc[5+timer*2] &= ~0b1;
-	
-	
-	
-	
+	remapped_timer[2+timer*8] &= ~0b10100000;
 }
 
-uint32_t timer_value(uint32_t timer)
+uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
-	
-	
-	
-	
+	return remapped_timer[1+timer*8];
 }
-void timer_set_load(uint32_t timer,uint32_t load)
+void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
-	
-	
-	
-	
+	remapped_timer[timer*8] = load;
 }
 
-void timer_set_prescaler(uint32_t timer,uint8_t prescale)
+void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
-	
-	
-	
+	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
+	if (enabled)
+		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
+	remapped_timer[2+timer*8] &= 0b1100;
+	remapped_timer[2+timer*8] |= (prescale & 0b11) << 2;
+	if (enabled)
+		remapped_timer[2+timer*8] |= 0b10000000;
 }
-void timer_set_mode(uint32_t timer,uint8_t mode)
+void timer_set_mode(uint32_t timermodule,uint32_t timer,uint8_t mode)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
-	
-	
-	
+	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
+	if (enabled)
+		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
+	remapped_timer[2+timer*8] &= ~(0b1 << 6);
+	remapped_timer[2+timer*8] |= (mode & 0b1) << 6;
+	if (enabled)
+		remapped_timer[2+timer*8] |= 0b10000000;
 }
 
 
-bool timer_irq_status(uint32_t timer)
+bool timer_irq_status(uint32_t timermodule)
 {
-	if (timer > 2)
+	if (timermodule > 2)
+		return false;
+	if (remapped_misc[4+timermodule*2] != 0)
+		return true;
+	else
+		return false;
+}
+void timer_irq_clear(uint32_t timermodule)
+{
+	if (timermodule > 2)
 		return;
-	
-	
-	
-	
-	
+	remapped_misc[4+timermodule*2] = 0xffffffff;
 }
-void timer_irq_clear(uint32_t timer)
+
+
+
+bool timer_irq_enabled(uint32_t timermodule,uint32_t timer)
 {
-	if (timer > 2)
+	if (timer > 1)
+		return false;
+	if (timermodule > 2)
+		return false;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	if (((remapped_timer[2+timer*8] >> 5) & 0b1) == 0b1)
+		return true;
+	else
+		return false;
+}
+void timer_set_irq_enabled(uint32_t timermodule,uint32_t timer,bool irq)
+{
+	if (timer > 1)
 		return;
-	
-	
-	
-	
-	
-}
-
-
-
-bool timer_irq_enabled(uint32_t timer)
-{
-	if (timer > 2)
+	if (timermodule > 2)
 		return;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
+	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;
-	if (timer == 2)
+	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
-	
-	
-	
-}
-void timer_set_irq_enabled(uint32_t timer)
-{
-	if (timer > 2)
-		return;
-	volatile uint32_t *remapped_timer = remapped_fast_timer;
-	if (timer == 1)
-		remapped_timer = remapped_first_timer;
-	if (timer == 2)
-		remapped_timer = remapped_second_timer;
-	
-	
-	
-	
+	if (irq)
+	{
+		remapped_timer[2+timer*8] |= 0b100000;
+	}
+	else
+	{
+		remapped_timer[2+timer*8] &= ~0b100000;
+	}
 }
 
 
