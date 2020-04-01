@@ -52,6 +52,10 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
 	vic_set_fiq(17+timer);
 	vic_enable(17+timer);
 	remapped_misc[5+timer*2] |= 0b1;
@@ -70,6 +74,10 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
 	vic_disable(17+timer);
 	vic_set_irq(17+timer);
 	remapped_misc[5+timer*2] &= ~0b1;
@@ -87,6 +95,11 @@ uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 		remapped_timer = remapped_first_timer;
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
 	return remapped_timer[1+timer*8];
 }
 void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load)
@@ -100,6 +113,11 @@ void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load)
 		remapped_timer = remapped_first_timer;
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
 	remapped_timer[timer*8] = load;
 }
 
@@ -114,6 +132,10 @@ void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 		remapped_timer = remapped_first_timer;
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
 	
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
@@ -134,6 +156,10 @@ void timer_set_mode(uint32_t timermodule,uint32_t timer,uint8_t mode)
 		remapped_timer = remapped_first_timer;
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
 	
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
@@ -175,6 +201,10 @@ bool timer_irq_enabled(uint32_t timermodule,uint32_t timer)
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
 	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
 	if (((remapped_timer[2+timer*8] >> 5) & 0b1) == 0b1)
 		return true;
 	else
@@ -191,6 +221,10 @@ void timer_set_irq_enabled(uint32_t timermodule,uint32_t timer,bool irq)
 		remapped_timer = remapped_first_timer;
 	if (timermodule == 2)
 		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
 	
 	if (irq)
 	{
