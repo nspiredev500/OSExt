@@ -2,7 +2,7 @@
 #define FIQ_H
 
 
-void fiq_handler(uint32_t spsr,void* address);
+void fiq_handler(uint32_t spsr,void* address,uint32_t *regs);
 
 
 
