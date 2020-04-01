@@ -1,1 +1,1 @@
-make -j --output-sync=target
+make -j --output-sync=target clean
