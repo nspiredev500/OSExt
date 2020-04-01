@@ -29,7 +29,7 @@ uint32_t lcd_undef_inst = 0;
 uint32_t* lcd_undef_adr = NULL;
 uint32_t lcd_undef_section = 0;
 */
-uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, the rest are the registers
+uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, regs[1] is a dummy value, the rest are the registers
 {
 	uint32_t thumb = (spsr >> 5) & 0b1;
 	register uint32_t abort_address asm("r1") = 0;
@@ -92,9 +92,9 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 			// updating the thread's registers
 			running_thread->regs[16] = spsr;
 			running_thread->regs[15] = (uint32_t) address;
-			for (uint8_t i = 0;i<12;i++)
+			for (uint8_t i = 0;i<=12;i++)
 			{
-				running_thread->regs[i] = regs[i+1];
+				running_thread->regs[i] = regs[i+2];
 			}
 			register uint32_t *t_regs asm("r0") = running_thread->regs;
 			asm volatile(

@@ -265,6 +265,8 @@ void initialize()
 	// to be able to read the messages
 	keypad_press_release_barrier();
 	
+	msleep(1000);
+	
 	//freeLCD();
 	
 	

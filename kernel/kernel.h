@@ -26,6 +26,8 @@
 #include "osversion.h"
 #include "libk/math.h"
 #include "libk/string.h"
+#include "libk/wait.h"
+
 
 #include "drivers/power.h"
 #include "drivers/irq_controller.h"

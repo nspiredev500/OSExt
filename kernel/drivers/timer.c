@@ -87,9 +87,9 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 {
 	if (timer > 1)
-		return;
+		return 0;
 	if (timermodule > 2)
-		return;
+		return 0;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
 	if (timermodule == 1)
 		remapped_timer = remapped_first_timer;

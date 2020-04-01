@@ -8,7 +8,7 @@ asm(
 "undef_wrapper: \n"
 "push {r0-r12,r14} \n"
 "	mrs r0, cpsr \n"
-"	push {r0,r1} \n" // save the cpsr
+"	push {r0,r1} \n" // save the cpsr, and also r1 to make the stack 8 byte aligned
 "	orr r0, #192 \n"
 "	msr cpsr, r0 \n" // disable fiq and irq
 "	mov r0, lr \n"
@@ -29,7 +29,7 @@ asm(
 
 
 
-uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, the rest are the registers
+uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, regs[1] is a dummy value, the rest are the registers
 {
 	uint32_t thumb = (spsr >> 5) & 0b1;
 	if ((spsr & 0b11111) == 0b10011 || (spsr & 0b11111) == 0b11111)
@@ -76,9 +76,9 @@ uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t 
 			// updating the thread's registers
 			running_thread->regs[16] = spsr;
 			running_thread->regs[15] = (uint32_t) address;
-			for (uint8_t i = 0;i<12;i++)
+			for (uint8_t i = 0;i<=12;i++)
 			{
-				running_thread->regs[i] = regs[i+1];
+				running_thread->regs[i] = regs[i+2];
 			}
 			register uint32_t *t_regs asm("r0") = running_thread->regs;
 			asm volatile(

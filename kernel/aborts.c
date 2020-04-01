@@ -15,12 +15,13 @@ bool probe_address = false;
 
 uint32_t undef_stack[256];
 uint32_t abort_stack[256];
-
+uint32_t fiq_stack[256];
 
 
 
 static void *orig_abort_stack = NULL;
 static void *orig_undef_stack = NULL;
+static void *orig_fiq_stack = NULL;
 
 static const uint8_t undef_offset = 0x4;
 static const uint8_t swi_offset = 0x8;
@@ -80,6 +81,20 @@ bool install_exception_handlers()
 	"mov sp, r3 \n"
 	"msr cpsr, r2 \n":"=r" (orig_stack):"r" (new_stack):"r1", "r2");
 	orig_undef_stack = orig_stack;
+	
+	new_stack = fiq_stack+sizeof(fiq_stack)/4-4;
+	
+	asm volatile(
+	"mrs r1, cpsr \n"
+	"mov r2, r1 \n"
+	"bic r1, r1, #31 \n" // clear the mode bits
+	"orr r1, r1, #17 \n" // set the mode to fiq
+	"msr cpsr, r1\n"
+	"mov r0, sp \n"
+	"mov sp, r3 \n"
+	"msr cpsr, r2 \n":"=r" (orig_stack):"r" (new_stack):"r1", "r2");
+	orig_fiq_stack = orig_stack;
+	
 	extern void prefetch_wrapper();
 	extern void undef_wrapper();
 	extern void swi_wrapper();
@@ -156,7 +171,7 @@ bool install_exception_handlers()
 	
 	
 	
-	// TODO but the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
+	// TODO put the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
 	
 	
 	
