@@ -2,21 +2,7 @@
 #define FIQ_H
 
 
-void installFIQHandler();
-int addFIQFunction(void (*function)());
-
-
-
-
-
-
-
-
-
-
-
-
-
+void fiq_handler(uint32_t spsr,void* address);
 
 
 
