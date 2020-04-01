@@ -38,10 +38,7 @@ double adc_read_channel(uint32_t channel)
 	
 	
 	*channel_command = 0b1;
-	while ((remapped_adc[1] >> (channel*4)) == 0)
-	{
-		
-	}
+	msleep(500); // I don't know which are the right interrupt status bits, so do a sleep. 0.5 seconds should be enough, and this shouldn't be done often
 	
 	remapped_adc[1] = 0xffffffff;
 	uint32_t read = *channel_read;

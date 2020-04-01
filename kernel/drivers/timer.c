@@ -58,7 +58,7 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	
 	vic_set_fiq(17+timer);
 	vic_enable(17+timer);
-	remapped_misc[5+timer*2] |= 0b1;
+	//remapped_misc[5+timermodule*2] |= 0b1; // timer masks can't be set in misc in firebird cx emulation, maybe the normal masks are used?
 	remapped_timer[2+timer*8] |= 0b10100010;
 }
 
@@ -80,7 +80,7 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 	
 	vic_disable(17+timer);
 	vic_set_irq(17+timer);
-	remapped_misc[5+timer*2] &= ~0b1;
+	//remapped_misc[5+timermodule*2] &= ~0b1;
 	remapped_timer[2+timer*8] &= ~0b10100000;
 }
 

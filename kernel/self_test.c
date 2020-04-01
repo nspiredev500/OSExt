@@ -1,13 +1,32 @@
 #include "kernel.h"
 
 
-
+/*
 asm(
 " usermode_test: add r0, r0, #2\n"
-" ldr r1, [r0]"); // breakpoint
+" ldr r1, [r0]");
+*/
 
-
-
+asm(
+" usermode_test: \n"
+"add r0, r0, #2 \n"
+"ldr r1, [r0] \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n"
+" \n");
 
 
 bool run_self_test()
@@ -42,6 +61,9 @@ bool run_self_test()
 	
 	
 	debug_shell_println("finished userspace test");
+	
+	
+	
 	
 	intoKernelSpace();
 	

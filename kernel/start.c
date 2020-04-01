@@ -245,27 +245,63 @@ void initialize()
 	debug_shell_println("installing hooks");
 	install_hooks();
 	
+	/*
+	timer_disable(1,0);
+	timer_set_prescaler(1,0,1);
+	timer_set_mode(1,0,0);
+	timer_enable(1,0);
+	timer_set_load(1,0,0xffffffff);
+	msleep(1000);
+	timer_disable(1,0);
+	debug_shell_println("msleep(1000), timer ticks: %lld",0xffffffff-timer_value(1,0));
+	
+	
+	
+	
+	debug_shell_println("testing sleep, screen will flash with an intervall of 1 second");
+	keypad_press_release_barrier();
+	
+	void* flash_framebuffer = get_front_framebuffer_address();
+	
+	
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,255,0,0);
+	msleep(1000);
+	
+	
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,255,0);
+	msleep(1000);
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,255);
+	msleep(1000);
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,0);
+	debug_shell_reset();
+	*/
 	
 	/*
-	debug_shell_println("double: %Lf",12.0);
+	
+	
+	debug_shell_println("double:");
 	debug_shell_println("vbatt: %Lfv",adc_read_channel(1));
 	debug_shell_println("vsys: %Lfv",adc_read_channel(2));
 	debug_shell_println("b12: %Lfv",adc_read_channel(4));
-	*/
 	
 	
-	/*
+	
+	debug_shell_println("in uint32_t:");
 	debug_shell_println("vbatt: %dv",(uint32_t)adc_read_channel(1));
 	debug_shell_println("vsys: %dv",(uint32_t)adc_read_channel(2));
 	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
-	*/
+	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	// to be able to read the messages
 	keypad_press_release_barrier();
+	*/
 	
-	msleep(1000);
 	
 	//freeLCD();
 	

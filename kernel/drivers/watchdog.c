@@ -4,7 +4,8 @@
 
 
 static volatile uint32_t *remapped_watchdog = (volatile uint32_t*) 0xe9060000;
-// runs at 33 MHz
+// runs at 33 MHz if the old lcd_compat.c is right, at 22.5MHz if hackspire is right
+// 33 MHz from my timing tests with a stopwatch and msleep(1000) and one of the 32KHz timers and msleep(1000)
 /*
 	remapped_watchdog[0] = load register
 	remapped_watchdog[1] = value register
@@ -94,7 +95,7 @@ void watchdog_set_period(uint32_t milis)
 {
 	power_enable_device(13);
 	remapped_watchdog[0x300] = 0x1ACCE551;
-	remapped_watchdog[0] = 33000*milis;
+	remapped_watchdog[0] = 33000*milis; // if at 33MHz
 	remapped_watchdog[0x300] = 0;
 }
 
