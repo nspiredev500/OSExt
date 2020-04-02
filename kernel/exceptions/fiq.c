@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 
@@ -134,9 +134,10 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	
 	
 	
-	
+	/*
 	if (vic_fiq_status() != 0)
 		panic("fiq handler could not acknowledge all interrupts!\n");
+	*/
 	if ((spsr & 0b11111) == 0b10000) // usr mode
 	{
 		if (fiq_status & (0b1 << 3) && watchdog_function() == WATCHDOG_WAIT) // watchdog timer

@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 bool syscall_tracker = false;
 extern uint32_t syscall_mask;
