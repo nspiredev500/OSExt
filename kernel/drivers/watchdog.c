@@ -19,13 +19,30 @@ static volatile uint32_t *remapped_watchdog = (volatile uint32_t*) 0xe9060000;
 
 static bool watchdog_oneshot = false;
 static bool watchdog_reset = false;
+static volatile bool usr_expired = false;
 static uint32_t function = 0;
 /*
 	what function the watchdog timer currently serves in the kernel
 	0 = reset, kernel panic if fired
-	1 = wait, fiq handler just returns if in priviledged mode, returns to svc mode if in usr mode, timer is disabled
+	1 = wait, fiq handler just returns if in privileged mode, returns to svc mode if in usr mode, timer is disabled
+	2 = user mode watchdog: sets usr_expired to true if in privileged mode, returns to svc mode if in usr mode
+		when returning from a syscall and the timer is re-enabled, but expires while still in privileged mode, the process gets another timelice as the timer restarts
 */
 
+bool watchdog_usr_expired()
+{
+	return usr_expired;
+}
+
+void watchdog_clear_usr_expired()
+{
+	bool fiq = isFIQ();
+	if (fiq)
+		disableFIQ();
+	usr_expired = false;
+	if (fiq)
+		enableFIQ();
+}
 
 uint32_t watchdog_function()
 {

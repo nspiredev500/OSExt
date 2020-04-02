@@ -245,6 +245,58 @@ void initialize()
 	debug_shell_println("installing hooks");
 	install_hooks();
 	
+	
+	/*
+	debug_shell_println("testing timer interrupts");
+	disableIRQ();
+	
+	
+	debug_shell_println("testing fast timer 0 interrupt");
+	timer_enable(0,0);
+	wait_for_interrupt();
+	timer_disable(0,0);
+	debug_shell_println("testing fast timer 1 interrupt");
+	timer_enable(0,1);
+	wait_for_interrupt();
+	timer_disable(0,1);
+	
+	
+	debug_shell_println("testing first timer 0 interrupt");
+	timer_enable(1,0);
+	wait_for_interrupt();
+	timer_disable(1,0);
+	debug_shell_println("testing first timer 1 interrupt");
+	timer_enable(1,1);
+	wait_for_interrupt();
+	timer_disable(1,1);
+	
+	
+	
+	
+	debug_shell_println("testing second timer 0 interrupt");
+	timer_enable(2,0);
+	wait_for_interrupt();
+	timer_disable(2,0);
+	debug_shell_println("testing second timer 1 interrupt");
+	timer_enable(2,1);
+	wait_for_interrupt();
+	timer_disable(2,1);
+	*/
+	
+	
+	
+	
+	/*
+	debug_shell_println("installing watchdog fiq");
+	timer_disable(1,0);
+	timer_set_prescaler(1,0,1);
+	timer_set_mode(1,0,1);
+	timer_enable(1,0);
+	timer_set_load(1,0,2000);
+	*/
+	
+	
+	
 	/*
 	timer_disable(1,0);
 	timer_set_prescaler(1,0,1);
@@ -294,13 +346,13 @@ void initialize()
 	debug_shell_println("vbatt: %dv",(uint32_t)adc_read_channel(1));
 	debug_shell_println("vsys: %dv",(uint32_t)adc_read_channel(2));
 	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
-	
+	*/
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	// to be able to read the messages
 	keypad_press_release_barrier();
-	*/
+	
 	
 	
 	//freeLCD();

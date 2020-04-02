@@ -149,9 +149,16 @@ HOOK_DEFINE(drawhook)
 	
 	disableFIQ();
 	disableIRQ();
-	DEBUGPRINTLN_1("drawhook entered")
+	//DEBUGPRINTLN_1("drawhook entered")
 	call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
-	DEBUGPRINTLN_1("drawhook exited")
+	/*
+	DEBUGPRINTLN_1("timer value: %d",timer_value(2,0))
+	if (timer_irq_status(2,0))
+	{
+		DEBUGPRINTLN_1("timer irq")
+	}
+	*/
+	//DEBUGPRINTLN_1("drawhook exited")
 	//draw_hookfunc();
 	enableFIQ();
 	enableIRQ();
