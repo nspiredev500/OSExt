@@ -43,6 +43,68 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 */
 
 
+void timer_save_state(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	state->load = remapped_timer[0+timer*8];
+	state->control = remapped_timer[2+timer*8];
+	state->bgload = remapped_timer[6+timer*8];
+}
+
+void timer_resume_state(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	remapped_timer[2+timer*8] &= ~(0b1 << 7); // disable the timer
+	remapped_timer[0+timer*8] = state->load;
+	remapped_timer[6+timer*8] = state->bgload;
+	remapped_timer[2+timer*8] = (state->control & (~(0b1 << 7)));
+	remapped_timer[2+timer*8] |= state->control & (0b1 << 7); // set the timer to the control state
+}
+
+
+void timer_return_os(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	
+	vic_disable(17+timermodule);
+	vic_set_irq(17+timermodule);
+	
+	timer_resume_state(timermodule,timer,state);
+	
+	vic_enable(17+timermodule);
+}
+
+
+
 
 void timer_enable(uint32_t timermodule,uint32_t timer)
 {

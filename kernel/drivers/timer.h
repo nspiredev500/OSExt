@@ -10,6 +10,18 @@
 	fast timer = 2
 */
 
+struct timer_state {
+	uint32_t load;
+	uint32_t control;
+	uint32_t bgload;
+};
+
+void timer_save_state(uint32_t timermodule,uint32_t timer,struct timer_state *state);
+void timer_resume_state(uint32_t timermodule,uint32_t timer,struct timer_state *state);
+
+void timer_return_os(uint32_t timermodule,uint32_t timer,struct timer_state *state);
+
+
 void timer_enable(uint32_t timermodule,uint32_t timer);
 void timer_disable(uint32_t timermodule,uint32_t timer);
 

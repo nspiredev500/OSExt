@@ -29,6 +29,34 @@ static uint32_t function = 0;
 		when returning from a syscall and the timer is re-enabled, but expires while still in privileged mode, the process gets another timelice as the timer restarts
 */
 
+
+void watchdog_save_state(struct watchdog_state *state)
+{
+	power_enable_device(13);
+	state->load = remapped_watchdog[0];
+	state->control = remapped_watchdog[2];
+}
+
+
+void watchdog_resume_state(struct watchdog_state *state)
+{
+	power_enable_device(13);
+	remapped_watchdog[0x300] = 0x1ACCE551;
+	remapped_watchdog[2] = 0;
+	remapped_watchdog[0] = state->load;
+	remapped_watchdog[2] = state->control;
+	remapped_watchdog[0x300] = 0;
+}
+
+void watchdog_return_os(struct watchdog_state *state)
+{
+	vic_disable(3);
+	vic_set_irq(3);
+	watchdog_resume_state(state);
+	vic_enable(3);
+}
+
+
 bool watchdog_usr_expired()
 {
 	return usr_expired;
