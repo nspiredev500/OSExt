@@ -19,13 +19,58 @@ static volatile uint32_t *remapped_watchdog = (volatile uint32_t*) 0xe9060000;
 
 static bool watchdog_oneshot = false;
 static bool watchdog_reset = false;
+static volatile bool usr_expired = false;
 static uint32_t function = 0;
 /*
 	what function the watchdog timer currently serves in the kernel
 	0 = reset, kernel panic if fired
-	1 = wait, fiq handler just returns if in priviledged mode, returns to svc mode if in usr mode, timer is disabled
+	1 = wait, fiq handler just returns if in privileged mode, returns to svc mode if in usr mode, timer is disabled
+	2 = user mode watchdog: sets usr_expired to true if in privileged mode, returns to svc mode if in usr mode
+		when returning from a syscall and the timer is re-enabled, but expires while still in privileged mode, the process gets another timelice as the timer restarts
 */
 
+
+void watchdog_save_state(struct watchdog_state *state)
+{
+	power_enable_device(13);
+	state->load = remapped_watchdog[0];
+	state->control = remapped_watchdog[2];
+}
+
+
+void watchdog_resume_state(struct watchdog_state *state)
+{
+	power_enable_device(13);
+	remapped_watchdog[0x300] = 0x1ACCE551;
+	remapped_watchdog[2] = 0;
+	remapped_watchdog[0] = state->load;
+	remapped_watchdog[2] = state->control;
+	remapped_watchdog[0x300] = 0;
+}
+
+void watchdog_return_os(struct watchdog_state *state)
+{
+	vic_disable(3);
+	vic_set_irq(3);
+	watchdog_resume_state(state);
+	vic_enable(3);
+}
+
+
+bool watchdog_usr_expired()
+{
+	return usr_expired;
+}
+
+void watchdog_clear_usr_expired()
+{
+	bool fiq = isFIQ();
+	if (fiq)
+		disableFIQ();
+	usr_expired = false;
+	if (fiq)
+		enableFIQ();
+}
 
 uint32_t watchdog_function()
 {

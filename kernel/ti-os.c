@@ -73,6 +73,14 @@ static inline int wa_syscall4(int nr, int p1, int p2, int p3, int p4)
 	return r0;
 }
 
+
+
+
+
+
+
+
+
 int TCT_Local_Control_Interrupts(int mask)
 {
 	return wa_syscall1(e_TCT_Local_Control_Interrupts,mask);
@@ -103,6 +111,58 @@ void ascii2utf16(char *string16,char *string, size_t size)
 {
 	wa_syscall3(e_ascii2utf16, (int) string16,(int) string,size);
 }
+
+
+
+
+NUC_FILE* nuc_fopen(char *path,char *mode)
+{
+	return (NUC_FILE*) wa_syscall2(e_fopen,(int) path,(int) mode);
+}
+
+
+void nuc_fclose(NUC_FILE* f)
+{
+	wa_syscall1(e_fclose,(int) f);
+}
+
+
+uint32_t nuc_fread(void* buffer,uint32_t elements,uint32_t size,NUC_FILE* f)
+{
+	return wa_syscall4(e_fread,(int) buffer,elements,size,(int) f);
+}
+
+
+uint32_t nuc_fwrite(void* buffer,uint32_t elements,uint32_t size,NUC_FILE* f)
+{
+	return wa_syscall4(e_fwrite,(int) buffer,elements,size,(int) f);
+}
+
+
+int32_t nuc_fseek(NUC_FILE* f,int32_t offset, int32_t whence)
+{
+	return wa_syscall3(e_fseek,(int) f,offset,whence);
+}
+
+
+int32_t nuc_fflush(NUC_FILE* f)
+{
+	return wa_syscall1(e_fflush,(int) f);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // currently not working

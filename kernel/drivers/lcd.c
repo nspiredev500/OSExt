@@ -16,7 +16,7 @@ static void *old_framebuffer = NULL;
 
 
 
-static uint16_t rgbto565(uint32_t r,uint32_t g,uint32_t b);
+uint16_t rgbto565(uint32_t r,uint32_t g,uint32_t b);
 
 
 // false if lcd framebuffer is pointing to the ti framebuffer
@@ -90,7 +90,7 @@ void freeLCD()
 	own_framebuffer = false;
 }
 
-static uint16_t rgbto565(uint32_t r,uint32_t g,uint32_t b)
+uint16_t rgbto565(uint32_t r,uint32_t g,uint32_t b)
 {
 	if (! (r>255|| g>255|| b>255))
 	{
@@ -206,6 +206,27 @@ void framebuffer_setpixel(void *buff,uint32_t x,uint32_t y,uint32_t r, uint32_t 
 	}
 }
 
+void framebuffer_setpixel565(void *buff,uint32_t x,uint32_t y,uint16_t rgb565)
+{
+	// add cases for other screen versions
+	if (x < 320 && y < 240)
+	{
+		uint16_t* buffer = buff;
+		buffer[x*240+y] = rgb565;
+		return;
+	}
+}
+
+void framebuffer_draw_img565(void *buff,struct img565* img,uint32_t xs,uint32_t ys)
+{
+	for (uint32_t x = 0;x<img->width;x++)
+	{
+		for (uint32_t y = 0;y<img->height;y++)
+		{
+			framebuffer_setpixel565(buff,xs+x,ys+y,img->data[x+y*img->height]);
+		}
+	}
+}
 
 void framebuffer_fillrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, uint32_t g,uint32_t b)
 {

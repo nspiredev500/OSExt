@@ -23,11 +23,15 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 	remapped_timer[0] = timer1 load register
 	remapped_timer[1] = timer1 value
 	remapped_timer[2] = timer1 control
+	remapped_timer[3] = timer 1 interrupt clear
+	remapped_timer[4] = timer 1 raw interrupt status
 	remapped_timer[6] = timer1 background load
 	remapped_timer[8] = timer2 load register
 	remapped_timer[9] = timer2 value
 	remapped_timer[10] = timer2 control
 	remapped_timer[14] = timer2 background load
+	remapped_timer[11] = timer 2 interrupt clear
+	remapped_timer[12] = timer 2 raw interrupt status
 */
 
 
@@ -37,6 +41,68 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 	first timer = 1
 	second timer = 2
 */
+
+
+void timer_save_state(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	state->load = remapped_timer[0+timer*8];
+	state->control = remapped_timer[2+timer*8];
+	state->bgload = remapped_timer[6+timer*8];
+}
+
+void timer_resume_state(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	remapped_timer[2+timer*8] &= ~(0b1 << 7); // disable the timer
+	remapped_timer[0+timer*8] = state->load;
+	remapped_timer[6+timer*8] = state->bgload;
+	remapped_timer[2+timer*8] = (state->control & (~(0b1 << 7)));
+	remapped_timer[2+timer*8] |= state->control & (0b1 << 7); // set the timer to the control state
+}
+
+
+void timer_return_os(uint32_t timermodule,uint32_t timer,struct timer_state *state)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	
+	vic_disable(17+timermodule);
+	vic_set_irq(17+timermodule);
+	
+	timer_resume_state(timermodule,timer,state);
+	
+	vic_enable(17+timermodule);
+}
+
 
 
 
@@ -56,8 +122,8 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	power_enable_device(12);
 	power_enable_device(13);
 	
-	vic_set_fiq(17+timer);
-	vic_enable(17+timer);
+	vic_set_fiq(17+timermodule);
+	vic_enable(17+timermodule);
 	//remapped_misc[5+timermodule*2] |= 0b1; // timer masks can't be set in misc in firebird cx emulation, maybe the normal masks are used?
 	remapped_timer[2+timer*8] |= 0b10100010;
 }
@@ -78,8 +144,8 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 	power_enable_device(12);
 	power_enable_device(13);
 	
-	vic_disable(17+timer);
-	vic_set_irq(17+timer);
+	vic_disable(17+timermodule);
+	vic_set_irq(17+timermodule);
 	//remapped_misc[5+timermodule*2] &= ~0b1;
 	remapped_timer[2+timer*8] &= ~0b10100000;
 }
@@ -171,20 +237,46 @@ void timer_set_mode(uint32_t timermodule,uint32_t timer,uint8_t mode)
 }
 
 
-bool timer_irq_status(uint32_t timermodule)
+bool timer_irq_status(uint32_t timermodule,uint32_t timer)
 {
+	if (timer > 1)
+		return false;
 	if (timermodule > 2)
 		return false;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	/*
 	if (remapped_misc[4+timermodule*2] != 0)
 		return true;
 	else
 		return false;
+	*/
+	if ((remapped_timer[4+timer*8] & 0b1) == 0b1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
-void timer_irq_clear(uint32_t timermodule)
+void timer_irq_clear(uint32_t timermodule,uint32_t timer)
 {
+	if (timer > 1)
+		return;
 	if (timermodule > 2)
 		return;
-	remapped_misc[4+timermodule*2] = 0xffffffff;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	remapped_timer[3+timer*8] = 0;
+	//remapped_misc[4+timermodule*2] = 0xffffffff;
 }
 
 

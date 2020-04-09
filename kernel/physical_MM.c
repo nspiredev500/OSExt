@@ -117,7 +117,7 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 		{
 			if (((uint32_t) page % alignment) == 0)
 			{
-				DEBUGPRINTLN_1("aligned page found: 0x%x",page)
+				//DEBUGPRINTLN_1("aligned page found: 0x%x",page)
 				bool free = true;
 				for (uint32_t b = 0;b<size;b++)
 				{
@@ -131,9 +131,9 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 				{
 					for (uint32_t b = 0;b<size;b++)
 					{
-						DEBUGPRINTLN_1("setting page 0x%x used",page+SMALL_PAGE_SIZE*b)
+						//DEBUGPRINTLN_1("setting page 0x%x used",page+SMALL_PAGE_SIZE*b)
 						setPageUsedBit(page+SMALL_PAGE_SIZE*b,true);
-						DEBUGPRINTLN_1("used: %d",isPageUsed(page+SMALL_PAGE_SIZE*b))
+						//DEBUGPRINTLN_1("used: %d",isPageUsed(page+SMALL_PAGE_SIZE*b))
 					}
 					return page;
 				}
@@ -144,7 +144,13 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 	return NULL;
 }
 
-
+void freeConsecutivePages(void* pages,uint32_t size)
+{
+	for (uint32_t i = 0;i<size;i++)
+	{
+		setPageUsedBit(pages+SMALL_PAGE_SIZE*i,false);
+	}
+}
 
 
 
@@ -462,6 +468,22 @@ bool physical_mm_self_test()
 	}
 	removePageblock(pages[0]);
 	
+	allocPageblock(100);
+	
+	
+	for (uint32_t i = 0;i<100;i++)
+	{
+		void *page = usePage();
+		if (page != pages[0].start + SMALL_PAGE_SIZE*i)
+		{
+			DEBUGPRINTLN_1("usePages not returning expected pages! exp.: 0x%x, got: 0x%x",pages[0].start + SMALL_PAGE_SIZE*i,page)
+			return false;
+		}
+	}
+	
+	
+	
+	removePageblock(pages[0]);
 	DEBUGPRINTLN_1("\nfinished physical memory manager self test\n\n\n")
 	
 	

@@ -22,7 +22,7 @@ void setPagedOutBit(void *page,bool pagedout);
 
 
 void* useConsecutivePages(uint32_t size,uint32_t alignment);
-
+void freeConsecutivePages(void* pages,uint32_t size);
 
 
 

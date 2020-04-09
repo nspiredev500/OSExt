@@ -15,8 +15,6 @@ void initializeKernelSpace();
 
 struct address_space* getKernelSpacePointer();
 
-
-
 void addVirtualKernelPage(void* page, void* virtual_address);
 void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 

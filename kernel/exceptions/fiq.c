@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 
@@ -15,6 +15,12 @@ asm(
 "bl fiq_handler \n"
 "pop {r0-r8,r14} \n"
 "subs pc, lr, #4 \n");
+
+
+static void __attribute__ ((noreturn)) reset(void) {
+	*(volatile unsigned*)0x900A0008 = 2;
+	__builtin_unreachable();
+}
 
 static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 {
@@ -109,15 +115,27 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 17)) // Fast timer
 	{
-		timer_irq_clear(0);
+		timer_irq_clear(0,0);
+		timer_irq_clear(0,1);
 	}
 	if (fiq_status & (0b1 << 18)) // first timer
 	{
-		timer_irq_clear(1);
+		if (timer_irq_status(1,0)) // watchdog fiq timer to reboot / enter debug console
+		{
+			if (isKeyPressed(KEY_ENTER) && isKeyPressed(KEY_TAB) && isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_A))
+			{
+				reset();
+			}
+		}
+		//DEBUGPRINTLN_1("fiq from first timer!")
+		timer_irq_clear(1,0);
+		timer_irq_clear(1,1);
 	}
 	if (fiq_status & (0b1 << 19)) // second timer
 	{
-		timer_irq_clear(2);
+		//DEBUGPRINTLN_1("fiq from second timer!")
+		timer_irq_clear(2,0);
+		timer_irq_clear(2,1);
 	}
 	if (fiq_status & (0b1 << 20)) // I2C
 	{
@@ -134,9 +152,10 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	
 	
 	
-	
+	/*
 	if (vic_fiq_status() != 0)
 		panic("fiq handler could not acknowledge all interrupts!\n");
+	*/
 	if ((spsr & 0b11111) == 0b10000) // usr mode
 	{
 		if (fiq_status & (0b1 << 3) && watchdog_function() == WATCHDOG_WAIT) // watchdog timer

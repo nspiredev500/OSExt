@@ -5,6 +5,19 @@
 #define WATCHDOG_INVALID 0
 #define WATCHDOG_WAIT 1
 
+
+struct watchdog_state {
+	uint32_t load;
+	uint32_t control;
+};
+
+
+void watchdog_save_state(struct watchdog_state *state);
+void watchdog_resume_state(struct watchdog_state *state);
+
+void watchdog_return_os(struct watchdog_state *state);
+
+
 uint32_t watchdog_function();
 void watchdog_set_function(uint32_t func);
 

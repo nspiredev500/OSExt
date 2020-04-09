@@ -123,6 +123,12 @@ void initializeKernelSpace()
 	remappUART((void*) (0xe9000000+0x00020000));
 	
 	
+	
+	register uint32_t domain_register asm("r1");
+	asm volatile("mrc p15, 0, r1, c3, c0, 0":"=r" (domain_register)::);
+	domain_register &= ~0b1100; // set domain 1 to no access
+	asm volatile("mcr p15, 0, r1, c3, c0, 0"::"r" (domain_register):);
+	
 	kernel_space_initialized = true;
 }
 
@@ -298,14 +304,14 @@ void migrateKernelCPT(uint32_t section,uint32_t *migrate_cpt,uint32_t pages)
 	DEBUGPRINTF_3("migrating %d pages from section 0x%x from page table 0x%x",pages,section,migrate_cpt)
 	
 	
-	DEBUGPRINTLN_3("requesting linkedlist entry")
+	//DEBUGPRINTLN_3("requesting linkedlist entry")
 	LinkedList *cptd = requestLinkedListEntry();
-	DEBUGPRINTLN_3("writing section to linkedlist entry")
+	//DEBUGPRINTLN_3("writing section to linkedlist entry")
 	cptd->data = (void*) section;
 	
-	DEBUGPRINTLN_3("requesting linkedlist entry")
+	//DEBUGPRINTLN_3("requesting linkedlist entry")
 	LinkedList *cpt = requestLinkedListEntry();
-	DEBUGPRINTLN_3("requesting cptd for entry")
+	//DEBUGPRINTLN_3("requesting cptd for entry")
 	cpt->data = requestCPT();
 	DEBUGPRINTF_3(" to page table 0x%x\n",getPhysicalAddress(&kernel_space,cpt->data))
 	DEBUGPRINTLN_3("memsetting page table")
@@ -339,16 +345,18 @@ uint32_t* getKernelCPT(void* address)
 	return cpt->data;
 }
 
+
+
 void addVirtualKernelPage(void* page, void* virtual_address)
 {
-	DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
+	//DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
 	
 	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);
 	uint32_t index = 0;
 	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
 	if (sec == NULL)
 	{
-		DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
+		//DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
 		
 		ensureCPTCapacity();
 		ensureLinkedListCapacity();
@@ -423,7 +431,9 @@ void addVirtualPage(struct address_space *space,void* page, void* virtual_addres
 		addLinkedListEntry(&space->cptds,cptd);
 		LinkedList *cpt = requestLinkedListEntry();
 		cpt->data = requestCPT();
-		k_memset(cpt->data,0,1024);
+		DEBUGPRINTLN_1("returned CPT: 0x%x",cpt->data)
+		k_memset(cpt->data,0,1024); // this memset somehow deletes one slab descriptor used pointer
+		
 		addLinkedListEntry(&space->cpts,cpt);
 		
 		space->tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));

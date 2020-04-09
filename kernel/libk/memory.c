@@ -11,7 +11,6 @@ void* align4Bytes(void* address)
 	return (void*) ((adr & (~ 0b11)) + 0b100);
 }
 
-
 void *k_memset(void *str,int c, size_t n)
 {
 	unsigned char cc = (unsigned char) c;

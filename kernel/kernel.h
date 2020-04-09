@@ -11,6 +11,9 @@
 #include <syscall-list.h>
 
 
+#include "img565.h"
+#include "nspire_menus.h"
+
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
@@ -20,9 +23,9 @@
 #include "process.h"
 #include "thread.h"
 #include "LinkedList.h"
-#include "chars.h"
-#include "digits.h"
-#include "ascii.h"
+#include "charset/chars.h"
+#include "charset/digits.h"
+#include "charset/ascii.h"
 #include "osversion.h"
 #include "libk/math.h"
 #include "libk/string.h"
@@ -43,20 +46,24 @@
 #include "drivers/adc.h"
 #include "drivers/nand.h"
 
+#include "exceptions/syscalls.h"
+#include "exceptions/data_abort.h"
+#include "exceptions/prefetch_abort.h"
+#include "exceptions/undefined_instruction.h"
+#include "exceptions/fiq.h"
+#include "exceptions/irq.h"
+#include "exceptions/aborts.h"
 
 
 
+
+#include "bmp.h"
+#include "background.h"
+#include "nspire_menus.h"
 #include "uninstall.h"
 #include "scheduler.h"
-#include "fiq.h"
 #include "virtual_MM.h"
 #include "physical_MM.h"
-#include "syscalls.h"
-#include "data_abort.h"
-#include "prefetch_abort.h"
-#include "undefined_instruction.h"
-#include "irq.h"
-#include "aborts.h"
 #include "panic.h"
 #include "reloc.h"
 #include "start.h"

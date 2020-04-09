@@ -103,6 +103,12 @@ $(build_dir)/%.o: $(CURDIR)/libk/%.c $(HEADERS)
 $(build_dir)/%.o: $(CURDIR)/drivers/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
+$(build_dir)/%.o: $(CURDIR)/charset/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+$(build_dir)/%.o: $(CURDIR)/exceptions/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
 
