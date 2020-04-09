@@ -40,6 +40,9 @@ void* const kernel_heap_start;
 void* getKernelHeapNextPage();
 void setKernelHeapNextPage(void* next);
 
+void addKernelHeapPage(void* page);
+
+
 void initSlabAllocator();
 
 void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size);

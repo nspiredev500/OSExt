@@ -144,7 +144,13 @@ void* useConsecutivePages(uint32_t size,uint32_t alignment)
 	return NULL;
 }
 
-
+void freeConsecutivePages(void* pages,uint32_t size)
+{
+	for (uint32_t i = 0;i<size;i++)
+	{
+		setPageUsedBit(pages+SMALL_PAGE_SIZE*i,false);
+	}
+}
 
 
 

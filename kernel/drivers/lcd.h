@@ -22,7 +22,7 @@ void lcd_write10pchar(int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn,
 
 
 
-
+void framebuffer_setpixel565(void *buff,uint32_t x,uint32_t y,uint16_t rgb565);
 void framebuffer_draw_img565(void *buff,struct img565* img,uint32_t x,uint32_t y);
 void framebuffer_setpixel(void *buff,uint32_t x,uint32_t y,uint32_t r, uint32_t g,uint32_t b);
 void framebuffer_fillrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, uint32_t g,uint32_t b);

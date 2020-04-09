@@ -366,7 +366,24 @@ void initialize()
 	}
 	*/
 	
+	debug_shell_println("searching background image...");
 	
+	NUC_FILE *f = nuc_fopen("/documents/background.bmp.tns","rb");
+	if (f != NULL)
+	{
+		debug_shell_println("background image found");
+		struct img565 *img = load_bmp_file(f);
+		if (img != NULL)
+		{
+			debug_shell_println_rgb("background image loaded",0,0,255);
+			background_set_image(img);
+		}
+		else
+		{
+			debug_shell_println_rgb("background image could not be loaded",255,0,0);
+		}
+		nuc_fclose(f);
+	}
 	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);

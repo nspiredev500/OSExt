@@ -31,6 +31,9 @@ struct dib_header_win {
 
 struct img565* load_bmp_file(NUC_FILE* f)
 {
+	intoKernelSpaceSaveAddressSpace();
+	
+	
 	struct bmp_header bmp_h;
 	//nuc_fread(&bmp_h.,sizeof(),1,f);
 	nuc_fread(&bmp_h.identifier,2,1,f);
@@ -42,6 +45,7 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	if (bmp_h.identifier != BMP_WIN)
 	{
 		DEBUGPRINTLN_1("wrong bmp format: 0x%x!",bmp_h.identifier)
+		restoreAddressSpace();
 		return NULL;
 	}
 	DEBUGPRINTLN_1("pixel offset: %d",bmp_h.pixel_offset)
@@ -49,10 +53,14 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	
 	DEBUGPRINTLN_1("file size: %d",bmp_h.size)
 	
-	void* rest_file = kmalloc(bmp_h.size-14);
+	bool ti = false;
+	void* ti_raw = NULL;
+	
+	uint32_t pages = (bmp_h.size/SMALL_PAGE_SIZE)+1;
+	void* rest_file = useConsecutivePages(pages,0);
 	if (rest_file == NULL)
 	{
-		DEBUGPRINTLN_1("could not allocate memory for the file!")
+		DEBUGPRINTLN_1("not enough pages for the image!")
 		return NULL;
 	}
 	nuc_fread(rest_file,bmp_h.size-14,1,f);
@@ -63,16 +71,18 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	
 	if (dib.color_planes != 1)
 	{
-		kfree(rest_file);
+		freeConsecutivePages(rest_file,pages);
 		DEBUGPRINTLN_1("color planes != 1! : %d",dib.color_planes)
+		restoreAddressSpace();
 		return NULL;
 	}
 	
 	DEBUGPRINTLN_1("bpp: %d",dib.bpp)
 	if (dib.compression != CMP_NONE)
 	{
-		kfree(rest_file);
+		freeConsecutivePages(rest_file,pages);
 		DEBUGPRINTLN_1("bmp uses compression!")
+		restoreAddressSpace();
 		return NULL;
 	}
 	
@@ -88,8 +98,9 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	
 	if (img == NULL)
 	{
-		kfree(rest_file);
+		freeConsecutivePages(rest_file,pages);
 		DEBUGPRINTLN_1("could not allocate an img565")
+		restoreAddressSpace();
 		return NULL;
 	}
 	
@@ -106,54 +117,11 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	}
 	
 	DEBUGPRINTLN_1("rowsize: %d",rowsize)
-	/*
-	int32_t direction;
-	int32_t start;
-	int32_t compare;
-	if (dib.width == 0 || dib.height == 0)
-	{
-		DEBUGPRINTLN_1("zero width or height image!")
-		kfree(rest_file);
-		destroy_img565(img);
-		return NULL;
-	}
-	if (dib.height > 0)
-	{
-		// bottom up
-		direction = -1;
-		start = height-1;
-		compare = -1;
-	}
-	else
-	{
-		// top down
-		direction = 1;
-		start = 0;
-		compare = height;
-	}
-	*/
 	
 	switch (dib.bpp)
 	{
 		
 	case 24: // blue byte, green byte, red byte
-		/*
-		for (int32_t y = start;y != compare;y+=direction)
-		{
-			//DEBUGPRINTLN_1("row: %d",y)
-			for (uint32_t x = 0; x<width;x++)
-			{
-				//DEBUGPRINTLN_1("col: %d",x)
-				char *pixel = pixel_data+rowsize*y+x*3;
-				DEBUGPRINTLN_1("x: %d, y: %d  r: %d, g:%d, b:%d",x,y,pixel[2],pixel[1],pixel[0])
-				if (direction == -1)
-					img_data[x+(height-y)*height] = rgbto565(pixel[2],pixel[1],pixel[0]);
-				else
-					img_data[x+y*height] = rgbto565(pixel[2],pixel[1],pixel[0]);
-			}
-			
-		}
-		*/
 		for (uint32_t y = 0;y<height;y++)
 		{
 			/*
@@ -164,7 +132,7 @@ struct img565* load_bmp_file(NUC_FILE* f)
 			for (uint32_t x = 0;x<width;x++)
 			{
 				char *pixel = pixel_data+rowsize*y+x*3;
-				DEBUGPRINTLN_1("x: %d, y: %d  r: %d, g:%d, b:%d",x,y,pixel[2],pixel[1],pixel[0])
+				//DEBUGPRINTLN_1("x: %d, y: %d  r: %d, g:%d, b:%d",x,y,pixel[2],pixel[1],pixel[0])
 				if (dib.height > 0)
 					img_data[x+((height-1)-y)*height] = rgbto565(pixel[2],pixel[1],pixel[0]);
 				else
@@ -174,8 +142,9 @@ struct img565* load_bmp_file(NUC_FILE* f)
 		break;
 	default:
 		DEBUGPRINTLN_1("unsupported bit-per-pixel-value")
-		kfree(rest_file);
+		freeConsecutivePages(rest_file,pages);
 		destroy_img565(img);
+		restoreAddressSpace();
 		return NULL;
 	}
 	
@@ -187,15 +156,14 @@ struct img565* load_bmp_file(NUC_FILE* f)
 	
 	
 	
-	
-	kfree(rest_file);
-	
+	freeConsecutivePages(rest_file,pages);
 	
 	
 	
 	
 	
 	
+	restoreAddressSpace();
 	return img;
 }
 

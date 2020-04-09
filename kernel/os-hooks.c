@@ -261,6 +261,7 @@ void draw_hookfunc()
 		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
 	}
 	
+	background_draw_image(old_framebuffer,old_framebuffer);
 	
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);

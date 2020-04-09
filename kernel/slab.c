@@ -47,6 +47,9 @@ struct cache_t *framebuffer_cache = NULL;
 
 
 
+static LinkedList* big_objects = NULL; // list of big object allocated with kmalloc
+static LinkedList* big_objects_size = NULL; // list of big object allocated with kmalloc
+
 static struct slab_desc_t* requestSlabDesc()
 {
 	return alloc_object_from_cache(slab_cache);
@@ -55,6 +58,12 @@ static struct slab_desc_t* requestSlabDesc()
 static void destroySlabDesc(struct slab_desc_t* slab)
 {
 	free_object_from_cache(slab_cache,slab);
+}
+
+void addKernelHeapPage(void* page)
+{
+	addVirtualKernelPage(page,kernel_heap_next_page);
+	kernel_heap_next_page += SMALL_PAGE_SIZE;
 }
 
 
@@ -404,11 +413,6 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		if (cache->free == NULL)
 		{
 			growCache(cache);
-			if (cache->obj_size == 1024)
-			{
-				print_cacheinfo();
-				asm(".long 0xE1212374"); // bkpt
-			}
 			return alloc_object_from_cache(cache);
 		}
 		else
@@ -459,13 +463,6 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		if (cslab == NULL)
 		{
 			growCache(cache);
-			/*
-			if (cache->obj_size == 1024)
-			{
-				print_cacheinfo();
-				asm(".long 0xE1212374"); // bkpt
-			}
-			*/
 			return alloc_object_from_cache(cache);
 		}
 		cache->free = cslab->next;
@@ -670,7 +667,24 @@ void* kmalloc(uint32_t size)
 	if (size > 1024)
 	{
 		DEBUGPRINTLN_1("kmalloc: size too big for size cache!")
-		// TODO relay to physical memory allocator
+		/*
+		LinkedList* size_entry = requestLinkedListEntry();
+		size_entry->next = big_objects_size;
+		size_entry->data = (void*) ((size/SMALL_PAGE_SIZE)+1);
+		
+		LinkedList* entry = requestLinkedListEntry();
+		entry->next = big_objects;
+		entry->data = useConsecutivePages((uint32_t) size_entry->data,0);
+		if (entry->data == NULL)
+		{
+			freeLinkedListEntry(entry);
+			freeLinkedListEntry(size_entry);
+			return NULL;
+		}
+		big_objects_size = size_entry;
+		big_objects = entry;
+		return (void*) ((entry->data-old_RAM)+remapped_RAM);
+		*/
 		return NULL;
 	}
 	struct cache_t *best_fit_cache = NULL;
@@ -710,6 +724,25 @@ void* kmalloc(uint32_t size)
 void kfree(void* obj)
 {
 	DEBUGPRINTLN_1("kfree: freeing object at: 0x%x!",obj)
+	/*
+	uint32_t index = 0;
+	LinkedList* entry = searchLinkedListEntry(&big_objects,(void*) ((obj-remapped_RAM)+old_RAM),&index);
+	if (entry != NULL)
+	{
+		LinkedList* size_entry = getLinkedListEntry(&big_objects_size,index);
+		if (size_entry == NULL)
+		{
+			DEBUGPRINTLN_1("no size entry for bigobject by kmalloc!")
+			panic("no size entry for bigobject by kmalloc!");
+		}
+		else
+		{
+			freeConsecutivePages(entry->data,(uint32_t) size_entry->data);
+			return;
+		}
+	}
+	*/
+	
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
@@ -730,6 +763,27 @@ void kfree(void* obj)
 
 void kfree_hint(void* obj,uint32_t size)
 {
+	/*
+	if (size > 1024)
+	{
+		uint32_t index = 0;
+		LinkedList* entry = searchLinkedListEntry(&big_objects,(void*) ((obj-remapped_RAM)+old_RAM),&index);
+		if (entry != NULL)
+		{
+			LinkedList* size_entry = getLinkedListEntry(&big_objects_size,index);
+			if (size_entry == NULL)
+			{
+				DEBUGPRINTLN_1("no size entry for bigobject by kmalloc!")
+				panic("no size entry for bigobject by kmalloc!");
+			}
+			else
+			{
+				freeConsecutivePages(entry->data,(uint32_t) size_entry->data);
+				return;
+			}
+		}
+	}
+	*/
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{

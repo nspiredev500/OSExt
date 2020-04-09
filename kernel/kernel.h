@@ -12,7 +12,7 @@
 
 
 #include "img565.h"
-
+#include "nspire_menus.h"
 
 #include "libk/memory.h"
 #include "libk/mutex.h"
@@ -58,6 +58,7 @@
 
 
 #include "bmp.h"
+#include "background.h"
 #include "nspire_menus.h"
 #include "uninstall.h"
 #include "scheduler.h"
