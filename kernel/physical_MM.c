@@ -462,6 +462,22 @@ bool physical_mm_self_test()
 	}
 	removePageblock(pages[0]);
 	
+	allocPageblock(100);
+	
+	
+	for (uint32_t i = 0;i<100;i++)
+	{
+		void *page = usePage();
+		if (page != pages[0].start + SMALL_PAGE_SIZE*i)
+		{
+			DEBUGPRINTLN_1("usePages not returning expected pages! exp.: 0x%x, got: 0x%x",pages[0].start + SMALL_PAGE_SIZE*i,page)
+			return false;
+		}
+	}
+	
+	
+	
+	removePageblock(pages[0]);
 	DEBUGPRINTLN_1("\nfinished physical memory manager self test\n\n\n")
 	
 	

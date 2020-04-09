@@ -202,8 +202,8 @@ void initialize()
 	debug_shell_reset();
 	setShellFramebuffer(get_front_framebuffer_address());
 	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
-	
-	
+	//print_cacheinfo();
+	//asm(".long 0xE1212374"); // bkpt
 	debug_shell_println("running general self-test");
 	
 	
@@ -238,7 +238,8 @@ void initialize()
 		keypad_press_release_barrier();
 		return;
 	}
-	
+	//print_cacheinfo();
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	
@@ -348,8 +349,32 @@ void initialize()
 	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
 	*/
 	
+	/*
+	NUC_FILE *f = nuc_fopen("/documents/ndless/test2.bmp.tns","rb");
+	if (f != NULL)
+	{
+		struct img565* img = load_bmp_file(f);
+		nuc_fclose(f);
+		
+		
+		if (img != NULL)
+		{
+			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
+			keypad_press_release_barrier();
+			destroy_img565(img);
+		}
+	}
+	*/
+	
+	
+	
+	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
+	
+	print_cacheinfo();
+	
+	
 	// to be able to read the messages
 	keypad_press_release_barrier();
 	

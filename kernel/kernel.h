@@ -11,6 +11,9 @@
 #include <syscall-list.h>
 
 
+#include "img565.h"
+
+
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
@@ -52,6 +55,10 @@
 #include "exceptions/aborts.h"
 
 
+
+
+#include "bmp.h"
+#include "nspire_menus.h"
 #include "uninstall.h"
 #include "scheduler.h"
 #include "virtual_MM.h"

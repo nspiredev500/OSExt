@@ -47,6 +47,16 @@ struct cache_t *framebuffer_cache = NULL;
 
 
 
+static struct slab_desc_t* requestSlabDesc()
+{
+	return alloc_object_from_cache(slab_cache);
+}
+
+static void destroySlabDesc(struct slab_desc_t* slab)
+{
+	free_object_from_cache(slab_cache,slab);
+}
+
 
 // adds a SPD for the page in the CPT, that is not tracked by the virtual memory manager
 // allocates a CPT temporarily if no one is there
@@ -163,9 +173,13 @@ void setKernelHeapNextPage(void* next)
 
 void growCache(struct cache_t* cache)
 {
+	DEBUGPRINTF_1("growing cache: ")
+	DEBUGPRINTF_1(cache->name)
+	DEBUGPRINTF_1("\n")
 	// TODO disable fiqs while handling the unlisted kernel pages, so that if a new address space gets created, they will be also copied into that
 	if (cache->obj_size < SMALL_PAGE_SIZE)
 	{
+		
 		void* page = usePage();
 		if (page == NULL)
 		{
@@ -181,7 +195,16 @@ void growCache(struct cache_t* cache)
 		k_memset(virtpage,0,SMALL_PAGE_SIZE);
 		kernel_heap_next_page += SMALL_PAGE_SIZE;
 		
-		struct slab_desc_t *slab = virtpage;
+		struct slab_desc_t *slab;
+		if (cache->obj_size >= 128)
+		{
+			slab = requestSlabDesc();
+		}
+		else
+		{
+			slab = virtpage;
+		}
+		
 		slab->size = 1;
 		slab->start = virtpage;
 		slab->next = NULL;
@@ -199,6 +222,7 @@ void growCache(struct cache_t* cache)
 		cache->free = slab;
 		
 		
+		
 		// page is added to the slab allocator, now add it to the virtual memory manager
 		if (cpt != NULL)
 		{
@@ -211,6 +235,8 @@ void growCache(struct cache_t* cache)
 		{
 			addVirtualKernelPage(page,virtpage);
 		}
+		
+		return;
 	}
 	else
 	{
@@ -314,6 +340,7 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 					cache->partial = cslab;
 					return true;
 				}
+				prevslab = cslab;
 				cslab = cslab->next;
 			}
 		}
@@ -338,6 +365,7 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 				cache->partial = cslab;
 				return true;
 			}
+			prevslab = cslab;
 			cslab = cslab->next;
 		}
 		cslab = cache->partial;
@@ -361,8 +389,9 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 				}
 				return true;
 			}
+			prevslab = cslab;
+			cslab = cslab->next;
 		}
-		cslab = cslab->next;
 	}
 	return false;
 }
@@ -375,6 +404,11 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		if (cache->free == NULL)
 		{
 			growCache(cache);
+			if (cache->obj_size == 1024)
+			{
+				print_cacheinfo();
+				asm(".long 0xE1212374"); // bkpt
+			}
 			return alloc_object_from_cache(cache);
 		}
 		else
@@ -425,6 +459,13 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		if (cslab == NULL)
 		{
 			growCache(cache);
+			/*
+			if (cache->obj_size == 1024)
+			{
+				print_cacheinfo();
+				asm(".long 0xE1212374"); // bkpt
+			}
+			*/
 			return alloc_object_from_cache(cache);
 		}
 		cache->free = cslab->next;
@@ -457,28 +498,74 @@ bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj)
 		uint8_t *used = slab->start+sizeof(struct slab_desc_t);
 		uint32_t index = offset/obj_size;
 		uint32_t bit = index % 8;
-		used[index/8] = used[offset/obj_size] & (~ (0b1 << bit));
+		used[index/8] = used[index/8] & (~ (0b1 << bit));
 		return true;
 	}
 	else
 	{
 		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
-		int64_t offset = ((int32_t)slab->start)-((int32_t)slab->start);
-		uint8_t *used = slab->used;
-		if (used == NULL)
-		{
-			panic("slab allocator: used array in slab = NULL!\n");
-		}
-		if (offset < 0 || offset/obj_size > objs)
+		if ((uint32_t) obj < (uint32_t) slab->start)
 		{
 			return false;
 		}
+		uint32_t offset = ((uint32_t)obj)-((uint32_t)slab->start);
+		if (offset/obj_size > objs)
+		{
+			return false;
+		}
+		uint8_t *used = slab->used;
+		if (used == NULL)
+		{
+			DEBUGPRINTLN_1("obj size: %d",obj_size);
+			panic("slab allocator free: used array in slab = NULL!\n");
+		}
 		uint32_t index = offset/obj_size;
 		uint32_t bit = index % 8;
-		used[index/8] = used[offset/obj_size] & (~ (0b1 << bit));
+		used[index/8] = used[index/8] & (~ (0b1 << bit));
 		return true;
 	}
 }
+
+void print_cacheinfo()
+{
+	struct cache_t *ccache = caches;
+	while (ccache != NULL)
+	{
+		DEBUGPRINTF_1("cachename:")
+		DEBUGPRINTF_1(ccache->name)
+		DEBUGPRINTF_1("\n")
+		DEBUGPRINTLN_1("cache size: %d",ccache->obj_size)
+		DEBUGPRINTLN_1("full slabs:")
+		struct slab_desc_t *slab = ccache->full;
+		while (slab != NULL)
+		{
+			DEBUGPRINTLN_1("  address: 0x%x",slab)
+			DEBUGPRINTLN_1("  data: 0x%x",slab->start)
+			DEBUGPRINTLN_1("  used: 0x%x",slab->used)
+			slab = slab->next;
+		}
+		DEBUGPRINTLN_1("partial slabs:")
+		slab = ccache->partial;
+		while (slab != NULL)
+		{
+			DEBUGPRINTLN_1("  address: 0x%x",slab)
+			DEBUGPRINTLN_1("  data: 0x%x",slab->start)
+			DEBUGPRINTLN_1("  used: 0x%x",slab->used)
+			slab = slab->next;
+		}
+		DEBUGPRINTLN_1("free slabs:")
+		slab = ccache->free;
+		while (slab != NULL)
+		{
+			DEBUGPRINTLN_1("  address: 0x%x",slab)
+			DEBUGPRINTLN_1("  data: 0x%x",slab->start)
+			DEBUGPRINTLN_1("  used: 0x%x",slab->used)
+			slab = slab->next;
+		}
+		ccache = ccache->next;
+	}
+}
+
 
 void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 {
@@ -520,7 +607,7 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 		uint8_t *used = slab->used;
 		if (used == NULL)
 		{
-			panic("slab allocator: used array in slab = NULL!\n");
+			panic("slab allocator alloc: used array in slab = NULL!\n");
 		}
 		uint32_t objs = (slab->size*SMALL_PAGE_SIZE) / obj_size;
 		for (uint32_t i = 0;i<objs;i++)
@@ -561,7 +648,7 @@ bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size)
 		uint8_t *used = slab->used;
 		if (used == NULL)
 		{
-			panic("slab allocator: used array in slab = NULL!\n");
+			panic("slab allocator isfree: used array in slab = NULL!\n");
 		}
 		
 		for (uint32_t i = 0;i<(objs/obj_size)+1;i++)
@@ -579,6 +666,7 @@ bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size)
 // no cache with enough object size was found 
 void* kmalloc(uint32_t size)
 {
+	DEBUGPRINTLN_1("kmalloc: size: %d",size)
 	if (size > 1024)
 	{
 		DEBUGPRINTLN_1("kmalloc: size too big for size cache!")
@@ -589,40 +677,49 @@ void* kmalloc(uint32_t size)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
+		DEBUGPRINTLN_1("kmalloc: current cache size: %d",ccache->obj_size)
 		if ((ccache->flags & 0b1) != 0b1) // no_kmalloc flag not set
 		{
+			DEBUGPRINTLN_1("kmalloc: current cache can be used for malloc")
 			if (ccache->obj_size == size)
 			{
+				DEBUGPRINTLN_1("kmalloc: current cache is best fit")
 				best_fit_cache = ccache;
 				break;
 			}
 			if (ccache->obj_size > size)
 			{
-				best_fit_cache = ccache;
+				if (best_fit_cache == NULL || ccache->obj_size < best_fit_cache->obj_size)
+					best_fit_cache = ccache;
 			}
 		}
 		ccache = ccache->next;
 	}
-	if (ccache == NULL)
+	if (best_fit_cache == NULL)
 	{
+		DEBUGPRINTLN_1("kmalloc: no cache found!")
 		return NULL;
 	}
 	else
 	{
+		DEBUGPRINTLN_1("kmalloc: cache size: %d!",best_fit_cache->obj_size)
 		return alloc_object_from_cache(best_fit_cache);
 	}
 }
 
 void kfree(void* obj)
 {
+	DEBUGPRINTLN_1("kfree: freeing object at: 0x%x!",obj)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
+		DEBUGPRINTLN_1("kfree: current cache size: %d",ccache->obj_size)
 		 // no_kmalloc flag not set, because objects from that can't be allocated anyways
 		if ((ccache->flags & 0b1) != 0b1)
 		{
-			if (free_object_from_cache(ccache,obj))
+			if (free_object_from_cache(ccache,obj)) // if it returns true, the object with the specified address was freed
 			{
+				DEBUGPRINTLN_1("kfree: object freed!")
 				return;
 			}
 		}
@@ -832,6 +929,8 @@ void initSlabAllocator()
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
+	
+	
 	
 	
 	

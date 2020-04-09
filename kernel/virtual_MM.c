@@ -431,7 +431,9 @@ void addVirtualPage(struct address_space *space,void* page, void* virtual_addres
 		addLinkedListEntry(&space->cptds,cptd);
 		LinkedList *cpt = requestLinkedListEntry();
 		cpt->data = requestCPT();
-		k_memset(cpt->data,0,1024);
+		DEBUGPRINTLN_1("returned CPT: 0x%x",cpt->data)
+		k_memset(cpt->data,0,1024); // this memset somehow deletes one slab descriptor used pointer
+		
 		addLinkedListEntry(&space->cpts,cpt);
 		
 		space->tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));

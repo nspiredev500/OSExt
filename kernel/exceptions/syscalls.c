@@ -141,12 +141,11 @@ uint32_t (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 	10: kill
 	11: link
 	12: lseek
-	13: sbrk
-	14: stat
-	15: times
-	16: unlink
-	17: wait
-	18: gettimeofday
+	13: stat
+	14: times
+	15: unlink
+	16: wait
+	17: gettimeofday
 	
 	
 */
