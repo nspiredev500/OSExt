@@ -5,7 +5,8 @@ Right now it can't really do anything, but I'm working on it.<br>
 
 Planned for the future (in order of priority):
 short-term:
-- bringing back the miniclock in the top right, without flickering this time
+- <del>bringing back the miniclock in the top right, without flickering this time</del>
+  just need to make the time setting dialog now
 - starting work on a kernel api for programs to use
 - porting newlib to my kernel, and add my kernel api to it
 - making drivers for the lcd, keypad and touchpad
