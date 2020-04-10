@@ -389,7 +389,7 @@ void initialize()
 		}
 		nuc_fclose(f);
 	}
-	
+	background_update();
 	
 	/*
 	i2c_set_port(0xe4);
