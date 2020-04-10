@@ -223,7 +223,7 @@ void framebuffer_draw_img565(void *buff,struct img565* img,uint32_t xs,uint32_t 
 	{
 		for (uint32_t y = 0;y<img->height;y++)
 		{
-			framebuffer_setpixel565(buff,xs+x,ys+y,img->data[x+y*img->height]);
+			framebuffer_setpixel565(buff,xs+x,ys+y,img->data[x+y*img->width]);
 		}
 	}
 }

@@ -377,6 +377,9 @@ void initialize()
 		{
 			debug_shell_println_rgb("background image loaded",0,0,255);
 			background_set_image(img);
+			keypad_press_release_barrier();
+			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
+			keypad_press_release_barrier();
 		}
 		else
 		{
@@ -386,8 +389,6 @@ void initialize()
 	}
 	
 	
-	
-	debug_shell_println("testing touchpad driver");
 	/*
 	i2c_set_port(0xe4);
 	debug_shell_println("0xE4: %d",(uint32_t) i2c_read());
@@ -416,8 +417,7 @@ void initialize()
 	//print_cacheinfo();
 	
 	
-	touchpad_max_x();
-	touchpad_max_x();
+	
 	
 	// to be able to read the messages
 	keypad_press_release_barrier();

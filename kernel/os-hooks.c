@@ -256,6 +256,7 @@ void draw_hookfunc()
 	}
 	void* framebuffer = get_front_framebuffer_address();
 	
+	background_draw_image(old_framebuffer,old_framebuffer);
 	
 	if (draw_clock)
 	{
@@ -298,7 +299,7 @@ void draw_hookfunc()
 		
 	}
 	
-	background_draw_image(old_framebuffer,old_framebuffer);
+	
 	
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);
