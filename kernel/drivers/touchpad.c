@@ -175,19 +175,35 @@ uint16_t touchpad_max_y()
 
 bool toucpad_is_arrow(enum toucpad_arrow arrow)
 {
+	uint32_t fx = touchpad_max_x()/5;
+	uint32_t fy = touchpad_max_y()/5;
+	if (! touchpad_pressed())
+		return false;
 	switch (arrow)
 	{
 	case 0: // up
-		
+		if (touchpad_y_abs() >= touchpad_max_y()-fy)
+		{
+			return true;
+		}
 		break;
 	case 1: // right
-		
+		if (touchpad_x_abs() >= touchpad_max_x()-fx)
+		{
+			return true;
+		}
 		break;
 	case 2: // down
-		
+		if (touchpad_y_abs() <= fy)
+		{
+			return true;
+		}
 		break;
 	case 3: // left
-		
+		if (touchpad_x_abs() <= fx)
+		{
+			return true;
+		}
 		break;
 	}
 	return false;

@@ -175,6 +175,10 @@ void file_hookfunc()
 		set_time_dialog();
 	}
 	
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_PI))
+	{
+		background_update();
+	}
 	
 	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
 	{
