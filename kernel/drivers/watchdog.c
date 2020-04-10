@@ -122,6 +122,7 @@ uint32_t watchdog_value()
 	return remapped_watchdog[1];
 }
 
+/*
 void watchdog_set_value(uint32_t value)
 {
 	power_enable_device(13);
@@ -129,11 +130,21 @@ void watchdog_set_value(uint32_t value)
 	remapped_watchdog[0] = value;
 	remapped_watchdog[0x300] = 0;
 }
+*/
 
 uint32_t watchdog_load()
 {
 	power_enable_device(13);
 	return remapped_watchdog[0];
+}
+
+
+void watchdog_set_load(uint32_t load)
+{
+	power_enable_device(13);
+	remapped_watchdog[0x300] = 0x1ACCE551;
+	remapped_watchdog[0] = load;
+	remapped_watchdog[0x300] = 0;
 }
 
 void watchdog_set_period(uint32_t milis)

@@ -134,9 +134,9 @@ struct img565* load_bmp_file(NUC_FILE* f)
 				char *pixel = pixel_data+rowsize*y+x*3;
 				//DEBUGPRINTLN_1("x: %d, y: %d  r: %d, g:%d, b:%d",x,y,pixel[2],pixel[1],pixel[0])
 				if (dib.height > 0)
-					img_data[x+((height-1)-y)*height] = rgbto565(pixel[2],pixel[1],pixel[0]);
+					img_data[x+((height-1)-y)*width] = rgbto565(pixel[2],pixel[1],pixel[0]);
 				else
-					img_data[x+y*height] = rgbto565(pixel[2],pixel[1],pixel[0]);
+					img_data[x+y*width] = rgbto565(pixel[2],pixel[1],pixel[0]);
 			}
 		}
 		break;
