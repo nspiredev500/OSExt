@@ -1,3 +1,7 @@
+build_dir_raw ?= ../build
+build_dir = $(build_dir_raw)/uninstaller
+bin_dir ?= ../bin
+
 DEBUG = FALSE
 
 GCC = nspire-gcc
@@ -6,7 +10,7 @@ GXX = nspire-g++
 LD  = nspire-ld
 GENZEHN = genzehn
 
-GCCFLAGS = -Wall -W -marm -Wno-unused-parameter
+GCCFLAGS = -Wall -W -marm
 LDFLAGS =
 ZEHNFLAGS = --name "uninstall osext" --240x320-support true
 
@@ -16,33 +20,36 @@ else
 	GCCFLAGS += -O0 -g
 endif
 
-OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c))
-OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
-OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
-EXE = "uninstall_osext"
+OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c -printf "$(build_dir)/%f "))
+OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp -printf "$(build_dir)/%f "))
+OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S -printf "$(build_dir)/%f "))
+EXE = uninstall_osext
 DISTDIR = .
 vpath %.tns $(DISTDIR)
 vpath %.elf $(DISTDIR)
 
-all: $(EXE).tns
+all: $(build_dir)/$(EXE).tns
+	
 
-%.o: %.c
+
+$(build_dir)/%.o: $(CURDIR)/%.c
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
-%.o: %.cpp
+$(build_dir)/%.o: $(CURDIR)/%.cpp
 	$(GXX) $(GCCFLAGS) -c $< -o $@
 	
-%.o: %.S
+$(build_dir)/%.o: $(CURDIR)/%.S
 	$(AS) -c $< -o $@
 
-$(EXE).elf: $(OBJS)
-	mkdir -p $(DISTDIR)
+$(build_dir)/$(EXE).elf: $(OBJS)
+	mkdir -p $(build_dir) && \
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-$(EXE).tns: $(EXE).elf
-	$(GENZEHN) --input $^ --output $@.zehn $(ZEHNFLAGS)
-	make-prg $@.zehn $@
-	rm $@.zehn
+$(build_dir)/$(EXE).tns: $(build_dir)/$(EXE).elf
+	$(GENZEHN) --input $^ --output $@.zehn $(ZEHNFLAGS) && \
+	make-prg $@.zehn $@ && \
+	rm $@.zehn && \
+	cp $(build_dir)/$(EXE).tns $(bin_dir)/$(EXE).tns
 
 clean:
-	rm -f $(OBJS) $(DISTDIR)/$(EXE).tns $(DISTDIR)/$(EXE).elf $(DISTDIR)/$(EXE).zehn
+	-rm -f $(OBJS) $(build_dir)/$(EXE).tns $(build_dir)/$(EXE).elf $(build_dir)/$(EXE).zehn

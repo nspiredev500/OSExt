@@ -202,13 +202,13 @@ void initialize()
 	debug_shell_reset();
 	setShellFramebuffer(get_front_framebuffer_address());
 	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
-	
-	
+	//print_cacheinfo();
+	//asm(".long 0xE1212374"); // bkpt
 	debug_shell_println("running general self-test");
 	
 	
 	//keypad_press_release_barrier();
-	
+	// construct the pages for the remapped stack
 	void* page = usePage();
 	if (page == NULL)
 	{
@@ -217,10 +217,18 @@ void initialize()
 		return;
 	}
 	addVirtualKernelPage(page,(void*) 0xe8000000);
+	page = usePage();
+	if (page == NULL)
+	{
+		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
+		keypad_press_release_barrier();
+		return;
+	}
+	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
 	
 	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
 	
-	setPageUsedBit(page,false);
+	//setPageUsedBit(page,false);
 	
 	
 	//b = true;
@@ -230,7 +238,8 @@ void initialize()
 		keypad_press_release_barrier();
 		return;
 	}
-	
+	//print_cacheinfo();
+	//asm(".long 0xE1212374"); // bkpt
 	
 	
 	
@@ -238,13 +247,155 @@ void initialize()
 	install_hooks();
 	
 	
+	/*
+	debug_shell_println("testing timer interrupts");
+	disableIRQ();
 	
+	
+	debug_shell_println("testing fast timer 0 interrupt");
+	timer_enable(0,0);
+	wait_for_interrupt();
+	timer_disable(0,0);
+	debug_shell_println("testing fast timer 1 interrupt");
+	timer_enable(0,1);
+	wait_for_interrupt();
+	timer_disable(0,1);
+	
+	
+	debug_shell_println("testing first timer 0 interrupt");
+	timer_enable(1,0);
+	wait_for_interrupt();
+	timer_disable(1,0);
+	debug_shell_println("testing first timer 1 interrupt");
+	timer_enable(1,1);
+	wait_for_interrupt();
+	timer_disable(1,1);
+	
+	
+	
+	
+	debug_shell_println("testing second timer 0 interrupt");
+	timer_enable(2,0);
+	wait_for_interrupt();
+	timer_disable(2,0);
+	debug_shell_println("testing second timer 1 interrupt");
+	timer_enable(2,1);
+	wait_for_interrupt();
+	timer_disable(2,1);
+	*/
+	
+	
+	
+	
+	/*
+	debug_shell_println("installing watchdog fiq");
+	timer_disable(1,0);
+	timer_set_prescaler(1,0,1);
+	timer_set_mode(1,0,1);
+	timer_enable(1,0);
+	timer_set_load(1,0,2000);
+	*/
+	
+	
+	
+	/*
+	timer_disable(1,0);
+	timer_set_prescaler(1,0,1);
+	timer_set_mode(1,0,0);
+	timer_enable(1,0);
+	timer_set_load(1,0,0xffffffff);
+	msleep(1000);
+	timer_disable(1,0);
+	debug_shell_println("msleep(1000), timer ticks: %lld",0xffffffff-timer_value(1,0));
+	
+	
+	
+	
+	debug_shell_println("testing sleep, screen will flash with an intervall of 1 second");
+	keypad_press_release_barrier();
+	
+	void* flash_framebuffer = get_front_framebuffer_address();
+	
+	
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,255,0,0);
+	msleep(1000);
+	
+	
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,255,0);
+	msleep(1000);
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,255);
+	msleep(1000);
+	
+	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,0);
+	debug_shell_reset();
+	*/
+	
+	/*
+	
+	
+	debug_shell_println("double:");
+	debug_shell_println("vbatt: %Lfv",adc_read_channel(1));
+	debug_shell_println("vsys: %Lfv",adc_read_channel(2));
+	debug_shell_println("b12: %Lfv",adc_read_channel(4));
+	
+	
+	
+	debug_shell_println("in uint32_t:");
+	debug_shell_println("vbatt: %dv",(uint32_t)adc_read_channel(1));
+	debug_shell_println("vsys: %dv",(uint32_t)adc_read_channel(2));
+	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
+	*/
+	
+	/*
+	NUC_FILE *f = nuc_fopen("/documents/ndless/test2.bmp.tns","rb");
+	if (f != NULL)
+	{
+		struct img565* img = load_bmp_file(f);
+		nuc_fclose(f);
+		
+		
+		if (img != NULL)
+		{
+			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
+			keypad_press_release_barrier();
+			destroy_img565(img);
+		}
+	}
+	*/
+	
+	debug_shell_println("searching background image...");
+	
+	NUC_FILE *f = nuc_fopen("/documents/background.bmp.tns","rb");
+	if (f != NULL)
+	{
+		debug_shell_println("background image found");
+		struct img565 *img = load_bmp_file(f);
+		if (img != NULL)
+		{
+			debug_shell_println_rgb("background image loaded",0,0,255);
+			background_set_image(img);
+		}
+		else
+		{
+			debug_shell_println_rgb("background image could not be loaded",255,0,0);
+		}
+		nuc_fclose(f);
+	}
 	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
+	
+	print_cacheinfo();
+	
+	
 	// to be able to read the messages
 	keypad_press_release_barrier();
+	
+	
 	
 	//freeLCD();
 	

@@ -1,10 +1,28 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <syscall-list.h>
 
 const uint32_t SECTION_SIZE = 1024*1024;
 void* const virtual_base_address = (void* const) 0xe0000000;
 
+static inline int wa_syscall1(int nr, int p1)
+{
+	register int r0 asm("r0") = p1;
+  
+	asm volatile(
+		"swi %[nr]\n"
+		: "=r" (r0)
+		: [nr] "i" (nr), "r" (r0)
+		: "memory", "r1", "r2", "r3", "r4", "r12", "lr");
+  
+	return r0;
+}
+
+void ti_free(void *ptr)
+{
+	wa_syscall1(e_free,(uint32_t) ptr);
+}
 
 int main(int argsn,char **argc)
 {
@@ -25,12 +43,13 @@ int main(int argsn,char **argc)
 			if (control_reg != 0)
 			{
 				// clean the virtual address space
-				for (uint32_t i = (uint32_t) virtual_base_address;i<0xfff00000;i+=SECTION_SIZE)
+				for (uint64_t i = (uint32_t) virtual_base_address;i<0xffff0000;i+=SECTION_SIZE)
 				{
 					tt[i >> 20] = 0;
 				}
 				// free the old kernel
-				free((void*) control_reg);
+				ti_free((void*) control_reg);
+				return 0;
 			}
 			else
 			{

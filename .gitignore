@@ -40,6 +40,11 @@
 !ndless.cfg.tns
 *.class
 
+build/*
+
+
+
+
 # Debug files
 *.dSYM/
 *.su

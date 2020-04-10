@@ -1,4 +1,10 @@
-DEBUG = FALSE
+DEBUG = FLASE
+
+
+build_dir_raw ?= ../build
+build_dir = $(build_dir_raw)/kernel
+bin_dir ?= ../bin
+
 
 #GCC = nspire-gcc
 #AS  = nspire-as
@@ -27,18 +33,18 @@ NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
 GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej
 # -march=armv5tej-s
 # ignore unused things to clean warnings up
-GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter
+GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-but-set-variable
 
 ifeq (DEBUG, TRUE)
 	GCCFLAGS += -O0
 endif
 #-Xlinker -m -Xlinker armelf_osext
-LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T ldscript.ld -static-libgcc -lgcc
+LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "30" --240x320-support true --uses-lcd-blit false
 
-OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c))
-OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp))
-OBJS += $(patsubst %.S, %.o, $(shell find . -depth -name \*.S))
+OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c -printf "$(build_dir)/%f "))
+OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp -printf "$(build_dir)/%f "))
+OBJS += $(patsubst %.S, %.o, $(shell find . -depth -name \*.S -printf "$(build_dir)/%f "))
 DISTDIR = .
 
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
@@ -46,8 +52,9 @@ HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
 
 
 
-all: osext.tns debug.elf
+all: $(build_dir)/osext.tns  $(build_dir)/debug.elf
 	
+
 
 HEADERS: ;
 
@@ -59,37 +66,60 @@ HEADERS: ;
 remake: clean
 	$(MAKE) all
 
-osext.tns: osext.elf
+
+
+
+$(build_dir)/osext.tns: $(build_dir)/osext.elf
+	cd $(build_dir) && \
 	cp osext.elf osext-nodebug.elf && \
 	$(STRIP) --strip-debug osext-nodebug.elf && \
 	$(GENZEHN) $(ZEHNFLAGS) --input osext-nodebug.elf --output osext.tns && \
 	rm osext-nodebug.elf
+	cp $(build_dir)/osext.tns $(bin_dir)/osext.tns
 
 
-osext.elf: $(OBJS) 
-	mkdir -p $(DISTDIR) && \
+$(build_dir)/osext.elf: $(OBJS) 
+	mkdir -p $(build_dir)/$(DISTDIR) && \
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm -f $(OBJS) osext.elf debug.elf osext.tns
+	-rm -f $(OBJS) $(build_dir)/osext.elf $(build_dir)/debug.elf $(build_dir)/osext.tns
 
-cleanbuild:
-	rm -f $(OBJS) osext.elf debug.elf
+cleanbuild: clean
+	
 
 
-debug.elf: osext.elf
+$(build_dir)/debug.elf: $(build_dir)/osext.elf
+	cd $(build_dir) && \
 	$(OBJCOPY) --only-keep-debug osext.elf debug.elf
 
 
-%.o: %.c $(HEADERS)
+
+
+$(build_dir)/%.o: $(CURDIR)/libk/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
-%.o: %.cpp $(HEADERS)
+$(build_dir)/%.o: $(CURDIR)/drivers/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+$(build_dir)/%.o: $(CURDIR)/charset/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+$(build_dir)/%.o: $(CURDIR)/exceptions/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
+$(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+$(build_dir)/%.o: $(CURDIR)/%.cpp $(HEADERS)
 	$(GXX) $(GCCFLAGS) -c $< -o $@
 
 
-%.o: %.S 
+$(build_dir)/%.o: $(CURDIR)/%.S 
 	$(AS) -c $< -o $@
 
 

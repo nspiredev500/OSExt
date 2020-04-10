@@ -11,41 +11,65 @@
 #include <syscall-list.h>
 
 
-#include "mutex.h"
+#include "img565.h"
+#include "nspire_menus.h"
+
+#include "libk/memory.h"
+#include "libk/mutex.h"
+#include "libk/modes.h"
+
+
+#include "ti-os.h"
 #include "process.h"
 #include "thread.h"
 #include "LinkedList.h"
-#include "chars.h"
-#include "digits.h"
-#include "ascii.h"
+#include "charset/chars.h"
+#include "charset/digits.h"
+#include "charset/ascii.h"
 #include "osversion.h"
+#include "libk/math.h"
+#include "libk/string.h"
+#include "libk/wait.h"
 
+
+#include "drivers/power.h"
+#include "drivers/irq_controller.h"
+#include "drivers/i2c.h"
+#include "drivers/touchpad.h"
+#include "drivers/uart.h"
+#include "drivers/lcd.h"
+#include "drivers/rtc.h"
+#include "drivers/watchdog.h"
+#include "drivers/keypad.h"
+#include "drivers/timer.h"
+#include "drivers/usb.h"
+#include "drivers/adc.h"
+#include "drivers/nand.h"
+
+#include "exceptions/syscalls.h"
+#include "exceptions/data_abort.h"
+#include "exceptions/prefetch_abort.h"
+#include "exceptions/undefined_instruction.h"
+#include "exceptions/fiq.h"
+#include "exceptions/irq.h"
+#include "exceptions/aborts.h"
+
+
+
+
+#include "bmp.h"
+#include "background.h"
+#include "nspire_menus.h"
 #include "uninstall.h"
 #include "scheduler.h"
-#include "watchdog.h"
-#include "fiq.h"
 #include "virtual_MM.h"
 #include "physical_MM.h"
-#include "syscalls.h"
-#include "data_abort.h"
-#include "prefetch_abort.h"
-#include "undefined_instruction.h"
-#include "irq.h"
-#include "lcd.h"
-#include "rtc.h"
-#include "aborts.h"
 #include "panic.h"
-#include "uart.h"
-#include "memory.h"
 #include "reloc.h"
 #include "start.h"
-#include "string.h"
-#include "math.h"
 #include "slab.h"
 #include "self_test.h"
-#include "keypad.h"
 #include "debug_shell.h"
-#include "modes.h"
 #include "os-hooks.h"
 
 
@@ -76,7 +100,6 @@ volatile void** LCD_UPBASE;
 const uint32_t SMALL_PAGE_SIZE;
 const uint32_t LARGE_PAGE_SIZE;
 const uint32_t SECTION_SIZE;
-
 
 
 

@@ -1,0 +1,91 @@
+menu sizes
+
+about:
+0, 23 - 319, 219
+
+
+
+battery popup:
+yellow with black text, can be from 141, 0 - 319, 118
+
+
+explorer:
+mostly white screen, sample 319, 239 for white
+
+
+
+document settings:
+25, 4 - 294, 235
+
+
+document:
+1, 27 - 318, 238
+
+
+
+
+handheld setup:
+7,4 - 313, 235
+
+
+
+
+hints:
+0, 23 - 319, 218
+
+innovator hub:
+6, 58 - 315, 182
+
+
+
+
+language dialog:
+38, 67 - 281, 173
+
+can expand white to 109, 174 - 283, 218
+
+
+login:
+41, 53 - 297, 187
+
+
+main menu:
+dark gray bar from top to 23
+
+
+
+network:
+59, 69 - 262, 171
+
+
+recent files:
+popup in main menu from 191, 106 to 122 wide,
+variable length, gray bar on right side and bottom
+
+
+
+scratchpad:
+11, 11 - 312, 232
+
+
+
+settings popup:
+light gray, 6,78 - 170, 191
+
+
+
+status:
+5,4 - 314, 235
+
+
+
+
+
+
+
+
+
+
+
+
+
