@@ -26,7 +26,7 @@ void background_draw_image(void* nspire_framebuffer,void* framebuffer)
 	}
 	uint16_t *nspire = nspire_framebuffer;
 	bool not_main = false;
-	for (uint32_t i = 0;i<MENU_LANGUAGE_POPUP;i++)
+	for (uint32_t i = 0;i<MENU_ANY;i++)
 	{
 		if (menu_open(nspire_framebuffer,i))
 		{

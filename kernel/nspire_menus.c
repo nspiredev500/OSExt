@@ -31,7 +31,7 @@ bool menu_open(void* nspire_framebuffer_raw,enum nspire_menu menu)
 			return true;
 		break;
 	case MENU_EXPLORER:
-		if (nspire_framebuffer[200] == menucolor3)
+		if (nspire_framebuffer[42*240+32] == menucolor3)
 			return true;
 		break;
 	case MENU_DOC_SETTINGS:
@@ -51,11 +51,11 @@ bool menu_open(void* nspire_framebuffer_raw,enum nspire_menu menu)
 			return true;
 		break;
 	case MENU_INNOVATOR:
-		if (nspire_framebuffer[10*240+177] == menucolor2)
+		if (nspire_framebuffer[50*240+133] == menucolor7)
 			return true;
 		break;
 	case MENU_LANGUAGE:
-		if (nspire_framebuffer[43*240+165] == menucolor2)
+		if (nspire_framebuffer[103*240+130] == menucolor7)
 			return true;
 		break;
 	case MENU_LOGIN:
@@ -74,7 +74,7 @@ bool menu_open(void* nspire_framebuffer_raw,enum nspire_menu menu)
 			return true;
 		break;
 	case MENU_SCRATCHPAD:
-		if (nspire_framebuffer[180*240+10] == menucolor5 && nspire_framebuffer[60] == rgbto565(0,0,0))
+		if (nspire_framebuffer[180*240+10] == menucolor1 && nspire_framebuffer[60] == rgbto565(0,0,0))
 			return true;
 		break;
 	case MENU_SETTINGS_POPUP:
@@ -87,6 +87,14 @@ bool menu_open(void* nspire_framebuffer_raw,enum nspire_menu menu)
 		break;
 	case MENU_LANGUAGE_POPUP:
 		if (nspire_framebuffer[267*240+216] == rgbto565(255,255,255))
+			return true;
+		break;
+	case MENU_POPUP_ANY:
+		if (nspire_framebuffer[168*240+78] == menucolor8 || nspire_framebuffer[168*240+78] == menucolor9 || nspire_framebuffer[168*240+78] == menucolor1)
+			return true;
+		break;
+	case MENU_ANY:
+		if (nspire_framebuffer[160*240+120] != rgbto565(0,0,0) || nspire_framebuffer[120] != rgbto565(0,0,0) || nspire_framebuffer[319*240+120] != rgbto565(0,0,0))
 			return true;
 		break;
 	default:
