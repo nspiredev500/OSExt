@@ -19,7 +19,7 @@ void msleep(uint32_t milis)
 	bool reset = watchdog_is_reset();
 	watchdog_disable();
 	watchdog_set_reset(false);
-	uint32_t value = watchdog_value();
+	uint32_t load = watchdog_load();
 	uint32_t function = watchdog_function();
 	
 	watchdog_set_function(WATCHDOG_WAIT);
@@ -35,7 +35,7 @@ void msleep(uint32_t milis)
 	
 	
 	watchdog_set_function(function);
-	watchdog_set_value(value);
+	watchdog_set_load(load);
 	if (reset)
 	{
 		watchdog_set_reset(true);

@@ -26,8 +26,10 @@ void watchdog_enable();
 void watchdog_disable();
 
 uint32_t watchdog_value();
-void watchdog_set_value(uint32_t value);
+//void watchdog_set_value(uint32_t value);
 uint32_t watchdog_load();
+uint32_t watchdog_set_load(uint32_t load);
+
 
 void watchdog_set_period(uint32_t milis);
 
