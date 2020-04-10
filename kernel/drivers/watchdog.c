@@ -139,7 +139,7 @@ uint32_t watchdog_load()
 }
 
 
-uint32_t watchdog_set_load(uint32_t load)
+void watchdog_set_load(uint32_t load)
 {
 	power_enable_device(13);
 	remapped_watchdog[0x300] = 0x1ACCE551;
