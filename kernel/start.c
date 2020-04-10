@@ -386,11 +386,38 @@ void initialize()
 	}
 	
 	
+	
+	debug_shell_println("testing touchpad driver");
+	/*
+	i2c_set_port(0xe4);
+	debug_shell_println("0xE4: %d",(uint32_t) i2c_read());
+	debug_shell_println("0xE5: %d",(uint32_t) i2c_read());
+	debug_shell_println("0xE6: %d",(uint32_t) i2c_read());
+	debug_shell_println("0xE7: %d",(uint32_t) i2c_read());
+	*/
+	//debug_shell_println("x: %d, y: %d, maxx: %d, maxy: %d",(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs(),(uint32_t) touchpad_max_x(),(uint32_t) touchpad_max_y());
+	
+	/*
+	while (true)
+	{
+		framebuffer_fillrect(get_back_framebuffer_address(),0,0,320,240,0,0,0);
+		char buff[40];
+		k_memset(buff,'\0',35);
+		sprintf_safe(buff,"x: %d, y: %d",30,(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs());
+		framebuffer_write10pstring_ascii(buff,get_back_framebuffer_address(),100,100,255,0,0,ascii10p);
+		blitLCDBuffer();
+		msleep(5);
+	}
+	*/
+	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	
-	print_cacheinfo();
+	//print_cacheinfo();
 	
+	
+	touchpad_max_x();
+	touchpad_max_x();
 	
 	// to be able to read the messages
 	keypad_press_release_barrier();

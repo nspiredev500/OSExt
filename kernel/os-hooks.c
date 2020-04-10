@@ -152,6 +152,11 @@ HOOK_DEFINE(drawhook)
 	HOOK_RESTORE_RETURN(drawhook);
 };
 
+
+static void set_time_dialog();
+
+
+
 static volatile bool drawhook_enabled = false;
 static uint32_t hookcounter = 0;
 static uint32_t lastchanged = 0;
@@ -167,14 +172,7 @@ void file_hookfunc()
 	
 	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
 	{
-		
-		
-		
-		
-		
-		
-		
-		
+		set_time_dialog();
 	}
 	
 	
@@ -194,6 +192,34 @@ void file_hookfunc()
 	
 	lastrun = getRTCValue();
 }
+
+
+
+static void set_time_dialog()
+{
+	
+	uint32_t selected = 0;
+	//int year = 2020, month = 4,day = 10,hour = 0,minute = 0,second = 0;
+	int numbers[6];
+	numbers[0] = 2020;
+	numbers[1] = 0;
+	numbers[2] = 0;
+	numbers[3] = 0;
+	numbers[4] = 0;
+	numbers[5] = 0;
+	while (! isKeyPressed(KEY_ESCAPE))
+	{
+		// TODO make the touchpad driver and use the arrows to change the numbers
+		
+		
+		
+		
+		msleep(50);
+	}
+	setRTCValue(date2timestamp(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
+}
+
+
 
 void draw_hookfunc()
 {
@@ -259,6 +285,17 @@ void draw_hookfunc()
 		
 		framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
 		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
+		
+		
+		/*
+		char buff[40];
+		k_memset(buff,'\0',35);
+		sprintf_safe(buff,"x: %d, y: %d",30,(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs());
+		framebuffer_write10pstring_ascii(buff,old_framebuffer,100,100,255,0,0,ascii10p);
+		*/
+		
+		
+		
 	}
 	
 	background_draw_image(old_framebuffer,old_framebuffer);
