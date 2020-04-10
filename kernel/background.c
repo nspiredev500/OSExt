@@ -2,7 +2,7 @@
 
 
 
-static const uint32_t slideshow_time = 5; // the time an image is shown before the transition in seconds
+static const uint32_t slideshow_time = 15; // the time an image is shown before the transition in seconds
 static const uint32_t slideshow_transition = 10;
 
 static uint32_t last_changed = 0;
