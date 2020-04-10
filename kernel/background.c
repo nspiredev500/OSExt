@@ -39,11 +39,11 @@ void background_draw_image(void* nspire_framebuffer,void* framebuffer)
 	{
 		for (uint32_t x = 0;x<320;x++)
 		{
-			for (uint32_t y = 0;y<240;y++)
+			for (uint32_t y = 23;y<240;y++)
 			{
 				if (nspire[x*240+y] == black)
 				{
-					framebuffer_setpixel565(framebuffer,x,y,image->data[x+y*240]);
+					framebuffer_setpixel565(framebuffer,x,y,image->data[x+y*image->width]);
 				}
 			}
 		}
