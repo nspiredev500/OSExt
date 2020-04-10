@@ -377,9 +377,11 @@ void initialize()
 		{
 			debug_shell_println_rgb("background image loaded",0,0,255);
 			background_set_image(img);
+			/*
 			keypad_press_release_barrier();
 			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
 			keypad_press_release_barrier();
+			*/
 		}
 		else
 		{

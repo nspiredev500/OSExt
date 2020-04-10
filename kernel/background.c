@@ -43,7 +43,7 @@ void background_draw_image(void* nspire_framebuffer,void* framebuffer)
 			{
 				if (nspire[x*240+y] == black)
 				{
-					framebuffer_setpixel565(framebuffer,x,y,image->data[x+y*240]);
+					framebuffer_setpixel565(framebuffer,x,y,image->data[x+y*image->width]);
 				}
 			}
 		}
