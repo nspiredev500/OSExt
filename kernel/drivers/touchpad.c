@@ -173,7 +173,7 @@ uint16_t touchpad_max_y()
 
 
 
-bool toucpad_is_arrow(enum toucpad_arrow arrow)
+bool touchpad_is_arrow(enum toucpad_arrow arrow)
 {
 	uint32_t fx = touchpad_max_x()/5;
 	uint32_t fy = touchpad_max_y()/5;

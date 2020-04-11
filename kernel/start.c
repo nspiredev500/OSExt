@@ -73,9 +73,16 @@ int main(int argsn,char **argc)
 			{
 				// kernel base address already used and interrupt vector high probably means osext is already installed
 				// so uninstall it
-				asm volatile("swi 0xf80000":"=r" (control_reg)::); // use the uninstall syscall
+				bool irq = isIRQ();
+				if (irq)
+				{
+					disableIRQ();
+				}
+				asm volatile("swi 0xf80000\n"
+				".long 0xE1212374":"=r" (control_reg)::); // use the uninstall syscall
 				if (control_reg != 0)
 				{
+					DEBUGPRINTLN_1("old kernel base: 0x%x",control_reg);
 					// clean the virtual address space
 					for (uint32_t i = (uint32_t) virtual_base_address;i<0xfff00000;i+=SECTION_SIZE)
 					{
@@ -86,8 +93,17 @@ int main(int argsn,char **argc)
 				}
 				else
 				{
+					DEBUGPRINTLN_1("uninstall not successful");
+					if (irq)
+					{
+						enableIRQ();
+					}
 					// uninstallation could not be done
 					return 0xDEAD;
+				}
+				if (irq)
+				{
+					enableIRQ();
 				}
 			}
 		}

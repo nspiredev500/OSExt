@@ -2,7 +2,7 @@
 
 
 
-uint32_t uninstall_osext(uint32_t* regs)
+void uninstall_osext(uint32_t* regs)
 {
 	
 	
@@ -73,7 +73,7 @@ uint32_t uninstall_osext(uint32_t* regs)
 	
 	DEBUGPRINTLN_1("returning")
 	
-	return (uint32_t) getKernelMallocedPointer();
+	syscall_set_reg(regs,0,(uint32_t) getKernelMallocedPointer());
 }
 
 
