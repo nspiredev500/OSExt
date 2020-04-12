@@ -115,11 +115,11 @@ void set_time_dialog()
 			break;
 		}
 		
-		
+		/*
 		k_memset(buffer,'\0',35);
 		sprintf_safe(buffer,"x: %d, y: %d",30,(uint32_t) rep.x,(uint32_t) rep.y);
 		framebuffer_write10pstring_ascii(buffer,framebuffer,0,10,255,0,0,ascii10p);
-		
+		*/
 		
 		
 		
