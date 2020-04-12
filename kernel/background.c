@@ -264,7 +264,10 @@ void background_update()
 
 
 
-
+void debug_clock()
+{
+	
+}
 
 
 

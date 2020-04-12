@@ -56,7 +56,7 @@
 
 
 
-
+#include "time-dialog.h"
 #include "bmp.h"
 #include "background.h"
 #include "nspire_menus.h"
