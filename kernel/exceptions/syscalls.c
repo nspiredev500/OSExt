@@ -119,12 +119,12 @@ asm(
 
 
 #define SYSCALL_SIZE 1
-uint32_t (*swi_table[SYSCALL_SIZE])(uint32_t* regs);
+void (*swi_table[SYSCALL_SIZE])(uint32_t* regs);
 
 
 
 #define USER_SYSCALL_SIZE 0
-uint32_t (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
+void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 
 /*
 	User Mode System Calls:
@@ -151,6 +151,38 @@ uint32_t (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 */
 
 
+void syscall_set_reg(uint32_t *regs,uint32_t reg,uint32_t value)
+{
+	if (reg > 1 && reg < 13)
+	{
+		regs[reg-2] = value;
+	}
+	if (reg == 1)
+	{
+		regs[13] = value;
+	}
+	if (reg == 0)
+	{
+		regs[15] = value;
+	}
+}
+uint32_t syscall_get_reg(uint32_t *regs,uint32_t reg)
+{
+	if (reg > 1 && reg < 13)
+	{
+		return regs[reg-2];
+	}
+	if (reg == 1)
+	{
+		return regs[13];
+	}
+	if (reg == 0)
+	{
+		return regs[15];
+	}
+	return 0;
+}
+
 
 
 void init_syscall_table()
@@ -163,7 +195,7 @@ void init_syscall_table()
 }
 
 
-uint32_t swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, spsr, r1, cpsr, r0
+void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
 	//asm(".long 0xE1212374"); // bkpt
 	uint32_t max_swi = sizeof(user_swi_table)/sizeof(uint32_t (*)());
@@ -181,7 +213,7 @@ uint32_t swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12,
 	//  TODO stop the timeslice timer
 	
 	// TODO use system time to record the time spend in the system call
-	uint32_t ret = user_swi_table[swi_number](regs);
+	user_swi_table[swi_number](regs);
 	
 	
 	
@@ -189,14 +221,31 @@ uint32_t swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12,
 	// TODO restart the timeslice timer
 	
 	
-	return ret;
 }
 
 
 
-uint32_t swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, spsr, r1, cpsr, r0
+void swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
 	//asm(".long 0xE1212374"); // bkpt
+	DEBUGPRINTLN_1("r2: 0x%x",regs[0])
+	DEBUGPRINTLN_1("r3: 0x%x",regs[1])
+	DEBUGPRINTLN_1("r4: 0x%x",regs[2])
+	DEBUGPRINTLN_1("r5: 0x%x",regs[3])
+	DEBUGPRINTLN_1("r6: 0x%x",regs[4])
+	DEBUGPRINTLN_1("r7: 0x%x",regs[5])
+	DEBUGPRINTLN_1("r8: 0x%x",regs[6])
+	DEBUGPRINTLN_1("r9: 0x%x",regs[7])
+	DEBUGPRINTLN_1("r10: 0x%x",regs[8])
+	DEBUGPRINTLN_1("r11: 0x%x",regs[9])
+	DEBUGPRINTLN_1("r12: 0x%x",regs[10])
+	DEBUGPRINTLN_1("swi lr: 0x%x",regs[11])
+	DEBUGPRINTLN_1("spsr: 0x%x",regs[12])
+	DEBUGPRINTLN_1("r1: 0x%x",regs[13])
+	DEBUGPRINTLN_1("cpsr: 0x%x",regs[14])
+	DEBUGPRINTLN_1("r0: 0x%x",regs[15])
+	
+	
 	uint32_t max_swi = sizeof(swi_table)/sizeof(uint32_t (*)());
 	if (swi_number >= max_swi)
 	{
@@ -207,7 +256,24 @@ uint32_t swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, sps
 	{
 		DEBUGPRINTF_1("syscall: %d\n",swi_number)
 	}
-	return swi_table[swi_number](regs);
+	swi_table[swi_number](regs);
+	
+	DEBUGPRINTLN_1("r2: 0x%x",regs[0])
+	DEBUGPRINTLN_1("r3: 0x%x",regs[1])
+	DEBUGPRINTLN_1("r4: 0x%x",regs[2])
+	DEBUGPRINTLN_1("r5: 0x%x",regs[3])
+	DEBUGPRINTLN_1("r6: 0x%x",regs[4])
+	DEBUGPRINTLN_1("r7: 0x%x",regs[5])
+	DEBUGPRINTLN_1("r8: 0x%x",regs[6])
+	DEBUGPRINTLN_1("r9: 0x%x",regs[7])
+	DEBUGPRINTLN_1("r10: 0x%x",regs[8])
+	DEBUGPRINTLN_1("r11: 0x%x",regs[9])
+	DEBUGPRINTLN_1("r12: 0x%x",regs[10])
+	DEBUGPRINTLN_1("swi lr: 0x%x",regs[11])
+	DEBUGPRINTLN_1("spsr: 0x%x",regs[12])
+	DEBUGPRINTLN_1("r1: 0x%x",regs[13])
+	DEBUGPRINTLN_1("cpsr: 0x%x",regs[14])
+	DEBUGPRINTLN_1("r0: 0x%x",regs[15])
 }
 
 
