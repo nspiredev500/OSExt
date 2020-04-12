@@ -23,5 +23,7 @@ bool background_is_slideshow();
 void background_update();
 
 
+void debug_clock();
+
 
 #endif

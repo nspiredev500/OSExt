@@ -153,7 +153,7 @@ HOOK_DEFINE(drawhook)
 };
 
 
-static void set_time_dialog();
+
 
 
 
@@ -197,31 +197,6 @@ void file_hookfunc()
 	lastrun = getRTCValue();
 }
 
-
-
-static void set_time_dialog()
-{
-	
-	uint32_t selected = 0;
-	//int year = 2020, month = 4,day = 10,hour = 0,minute = 0,second = 0;
-	int numbers[6];
-	numbers[0] = 2020;
-	numbers[1] = 0;
-	numbers[2] = 0;
-	numbers[3] = 0;
-	numbers[4] = 0;
-	numbers[5] = 0;
-	while (! isKeyPressed(KEY_ESCAPE))
-	{
-		// TODO make the touchpad driver and use the arrows to change the numbers
-		
-		
-		
-		
-		msleep(50);
-	}
-	setRTCValue(date2timestamp(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
-}
 
 
 
@@ -377,8 +352,6 @@ void uninstall_hooks()
 	
 	
 }
-
-
 
 
 

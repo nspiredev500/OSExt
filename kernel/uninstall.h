@@ -3,7 +3,7 @@
 
 
 
-uint32_t uninstall_osext(uint32_t* regs);
+void uninstall_osext(uint32_t* regs);
 
 
 

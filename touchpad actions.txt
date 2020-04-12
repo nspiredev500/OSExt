@@ -1,0 +1,348 @@
+
+read max:
+reduced:
+touchpad write at: 0x90050038  : 0x1010101 // start of first touchpad write
+touchpad write at: 0x9005003c  : 0x2020202
+touchpad write at: 0x90050010  : 0xff00ff // switching to port 0xff
+touchpad write at: 0x90050010  : 0x100010 // switching to page 10
+touchpad write at: 0x90050038  : 0x4040404 // start of touchpad read
+touchpad write at: 0x9005003c  : 0x5050505
+touchpad write at: 0x90050010  : 0x40004 // switching to port 4
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad write at: 0x90050038  : 0x1010101// start of second touchpad write
+touchpad write at: 0x9005003c  : 0x2020202
+touchpad write at: 0x90050010  : 0xff00ff // switching to port 0xff
+touchpad write at: 0x90050010  : 0x40004 // switching to page 4
+touchpad write at: 0x90050038  : 0xb0b0b0b // touchpad write should be over
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+touchpad read: 0x90050010
+
+
+original:
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0x1010101
+touchpad write at: 0x9005003c  : 0x2020202
+touchpad write at: 0x90050010  : 0xff00ff
+touchpad write at: 0x90050010  : 0x100010
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0x4040404
+touchpad write at: 0x9005003c  : 0x5050505
+touchpad write at: 0x90050010  : 0x40004
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0x1010101
+touchpad write at: 0x9005003c  : 0x2020202
+touchpad write at: 0x90050010  : 0xff00ff
+touchpad write at: 0x90050010  : 0x40004
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0xb0b0b0b
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+
+
+
+
+
+
+
+
+
+
+read touchpad report:
+reduced:
+
+touchpad write at: 0x90050038  : 0xb0b0b0b
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+
+
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+
+
+
+touchpad write at: 0x90050038  : 0xb0b0b0b
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+
+
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+touchpad read: 0x90050010
+
+
+
+
+
+
+
+
+
+
+
+
+
+raw:
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0xb0b0b0b
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad write at: 0x90050038  : 0xb0b0b0b
+touchpad write at: 0x9005003c  : 0xc0c0c0c
+touchpad write at: 0x90050010  : 0x0
+touchpad write at: 0x90050010  : 0x1000100
+touchpad write at: 0x90050010  : 0x1010101
+touchpad write at: 0x90050010  : 0x1020102
+touchpad write at: 0x90050010  : 0x1030103
+touchpad write at: 0x90050010  : 0x1040104
+touchpad write at: 0x90050010  : 0x1050105
+touchpad write at: 0x90050010  : 0x1060106
+touchpad write at: 0x90050010  : 0x1070107
+touchpad write at: 0x90050010  : 0x1080108
+touchpad write at: 0x90050010  : 0x1090109
+touchpad write at: 0x90050010  : 0x10a010a
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050010
+touchpad read: 0x90050070
+touchpad read: 0x90050070
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

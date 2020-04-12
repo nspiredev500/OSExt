@@ -73,9 +73,16 @@ int main(int argsn,char **argc)
 			{
 				// kernel base address already used and interrupt vector high probably means osext is already installed
 				// so uninstall it
-				asm volatile("swi 0xf80000":"=r" (control_reg)::); // use the uninstall syscall
+				bool irq = isIRQ();
+				if (irq)
+				{
+					disableIRQ();
+				}
+				asm volatile("swi 0xf80000\n"
+				".long 0xE1212374":"=r" (control_reg)::); // use the uninstall syscall
 				if (control_reg != 0)
 				{
+					DEBUGPRINTLN_1("old kernel base: 0x%x",control_reg);
 					// clean the virtual address space
 					for (uint32_t i = (uint32_t) virtual_base_address;i<0xfff00000;i+=SECTION_SIZE)
 					{
@@ -86,8 +93,17 @@ int main(int argsn,char **argc)
 				}
 				else
 				{
+					DEBUGPRINTLN_1("uninstall not successful");
+					if (irq)
+					{
+						enableIRQ();
+					}
 					// uninstallation could not be done
 					return 0xDEAD;
+				}
+				if (irq)
+				{
+					enableIRQ();
 				}
 			}
 		}
@@ -99,12 +115,23 @@ int main(int argsn,char **argc)
 	}
 	return 0;
 }
-
+// from ndless sdk utils.c
+static void ut_disable_watchdog(void)
+{
+	// Disable the watchdog on CX that may trigger a reset
+	*(volatile unsigned*)0x90060C00 = 0x1ACCE551; // enable write access to all other watchdog registers
+	*(volatile unsigned*)0x90060008 = 0; // disable reset, counter and interrupt
+	*(volatile unsigned*)0x90060C00 = 0; // disable write access to all other watchdog registers
+}
 
 
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
+	disableIRQ();
+	ut_disable_watchdog();
+	
+	
 	void* framebuffer = (void*) *LCD_UPBASE;
 	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
 	setShellFramebuffer(framebuffer);
@@ -126,6 +153,7 @@ void initialize()
 		debug_shell_println_rgb("error in physical memory manager self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
+		enableIRQ();
 		return;
 	}
 	
@@ -150,6 +178,7 @@ void initialize()
 		debug_shell_println_rgb("error in virtual memory manager self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
+		enableIRQ();
 		return;
 	}
 	debug_shell_println("performing slab allocator self-test");
@@ -159,6 +188,7 @@ void initialize()
 		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
+		enableIRQ();
 		return;
 	}
 	
@@ -177,6 +207,7 @@ void initialize()
 	{
 		debug_shell_println_rgb("no page for exception vectors         aborting",255,0,0);
 		keypad_press_release_barrier();
+		enableIRQ();
 		return;
 	}
 	
@@ -214,6 +245,7 @@ void initialize()
 	{
 		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
 		keypad_press_release_barrier();
+		enableIRQ();
 		return;
 	}
 	addVirtualKernelPage(page,(void*) 0xe8000000);
@@ -222,6 +254,7 @@ void initialize()
 	{
 		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
 		keypad_press_release_barrier();
+		enableIRQ();
 		return;
 	}
 	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
@@ -236,6 +269,7 @@ void initialize()
 	{
 		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
+		enableIRQ();
 		return;
 	}
 	//print_cacheinfo();
@@ -403,11 +437,14 @@ void initialize()
 	/*
 	while (true)
 	{
+		struct touchpad_report rep;
+		touchpad_get_report(&rep);
 		framebuffer_fillrect(get_back_framebuffer_address(),0,0,320,240,0,0,0);
 		char buff[40];
 		k_memset(buff,'\0',35);
-		sprintf_safe(buff,"x: %d, y: %d",30,(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs());
-		framebuffer_write10pstring_ascii(buff,get_back_framebuffer_address(),100,100,255,0,0,ascii10p);
+		DEBUGPRINTLN_1("x: %d,y: %d,p: %d",(uint32_t) rep.x,(uint32_t) rep.y,(uint32_t) rep.pressed)
+		sprintf_safe(buff,"x: %d,y: %d,p: %d",30,(uint32_t) rep.x,(uint32_t) rep.y,(uint32_t) rep.pressed);
+		framebuffer_write10pstring_ascii(buff,get_back_framebuffer_address(),10,100,255,0,0,ascii10p);
 		blitLCDBuffer();
 		msleep(5);
 	}
@@ -452,7 +489,7 @@ void initialize()
 	
 	
 	
-	
+	enableIRQ();
 	
 	
 	
