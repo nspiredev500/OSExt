@@ -106,7 +106,12 @@ const uint32_t SECTION_SIZE;
 #define DEBUGLEVEL 3
 #define DEBUG_BREAKPOINTS 0
 
-
+#ifdef RELEASE
+	#undef DEBUGLEVEL
+	#undef DEBUG_BREAKPOINTS
+	#define DEBUGLEVEL 0
+	#define DEBUG_BREAKPOINTS 0
+#endif
 
 
 

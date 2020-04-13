@@ -30,7 +30,7 @@ GENZEHN = genzehn
 NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej $(RELEASE_KERNEL)
 # -march=armv5tej-s
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-implicit-fallthrough
@@ -58,7 +58,7 @@ all: $(build_dir)/osext.tns  $(build_dir)/debug.elf
 
 HEADERS: ;
 
-.PHONY: clean cleanbuild remake
+.PHONY: clean cleanbuild remake release release_kernel
 
 
 
@@ -66,6 +66,8 @@ HEADERS: ;
 remake: clean
 	$(MAKE) all
 
+release: clean
+	$(MAKE) "RELEASE_KERNEL=-D RELEASE"
 
 
 

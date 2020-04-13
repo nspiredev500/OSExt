@@ -478,8 +478,6 @@ void initialize()
 	
 	
 	
-	
-	
 	enableIRQ();
 	
 	
