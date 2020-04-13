@@ -39,7 +39,6 @@ asm(
 "push {r1} \n" // push the spsr, so it isn't lost in recursive syscalls
 "push {r2-r12,r14} \n"
 "mov r1, sp \n" // pointer to the register array
-//".long 0xE1212374 \n" // breakpoint
 "bl swi_handler \n"
 "pop {r2-r12,r14} \n"
 "pop {r0} \n"
@@ -60,7 +59,6 @@ asm(
 "arm_usermode: \n"
 "ldr r0, [lr, #-4] \n" // load instruction
 "bic r0, r0, #0xff000000 \n" // extract swi number
-//".long 0xE1212374 \n" // breakpoint
 "push {r1} \n"
 "mrs r1, spsr \n"
 "push {r1} \n" // push the spsr, so it isn't lost in recursive syscalls
@@ -94,14 +92,23 @@ asm(
 " \n"
 " \n"
 "thumb_usermode: \n"
+"bic r0, r0, #1 \n" // if pc+2 ends with 1 because we were in thumb mode, we have to clear that before loading
 "ldrh r0, [lr, #-2] \n" // load instruction
 "bic r0, r0, #0xff00 \n" // extract swi number
-".long 0xE1212374 \n" // breakpoint
-" \n"
-" \n"
-" \n"
-" \n"
-" \n"
+"push {r1} \n" // now push all registers to be the same as in the arm mode syscall handler
+"mrs r1, spsr \n"
+"push {r1} \n"
+"push {r2-r12,r14} \n"
+"mov r1, sp \n"
+"bl swi_handler_usr \n"
+"pop {r2-r12,r14} \n"
+"pop {r1} \n"
+"msr spsr, r1 \n"
+"pop {r1} \n"
+"pop {r0} \n"
+"msr cpsr {r0} \n"
+"pop {r0} \n"
+"movs pc, lr \n"
 " \n"
 " \n"
 " \n"
@@ -197,7 +204,6 @@ void init_syscall_table()
 
 void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
-	//asm(".long 0xE1212374"); // bkpt
 	uint32_t max_swi = sizeof(user_swi_table)/sizeof(uint32_t (*)());
 	if (swi_number >= max_swi)
 	{
@@ -227,7 +233,6 @@ void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc
 
 void swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
-	//asm(".long 0xE1212374"); // bkpt
 	DEBUGPRINTLN_1("r2: 0x%x",regs[0])
 	DEBUGPRINTLN_1("r3: 0x%x",regs[1])
 	DEBUGPRINTLN_1("r4: 0x%x",regs[2])

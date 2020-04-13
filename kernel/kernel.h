@@ -104,9 +104,14 @@ const uint32_t SECTION_SIZE;
 
 
 #define DEBUGLEVEL 3
+#define DEBUG_BREAKPOINTS 0
 
-
-
+#ifdef RELEASE
+	#undef DEBUGLEVEL
+	#undef DEBUG_BREAKPOINTS
+	#define DEBUGLEVEL 0
+	#define DEBUG_BREAKPOINTS 0
+#endif
 
 
 
@@ -157,6 +162,13 @@ const uint32_t SECTION_SIZE;
 
 
 
+#if DEBUG_BREAKPOINTS == 0
+	#define BREAKPOINT_ASM 
+	#define BREAKPOINT
+#else
+	#define BREAKPOINT_ASM ".long 0xE1212374\n"
+	#define BREAKPOINT asm volatile(".long 0xE1212374\n");
+#endif
 
 
 

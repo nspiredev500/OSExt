@@ -70,7 +70,6 @@ uint32_t call_with_stack(void* stack,void* function)
 	*/
 	register void* sp_var asm("r0") = stack;
 	register void* func_var asm("r1") = function;
-	//asm(".long 0xE1212374"); // bkpt
 	asm volatile(
 	" b continue \n"
 	" saved_sp: .long 0 \n"

@@ -5,7 +5,6 @@
 asm(
 ".global data_wrapper \n"
 "data_wrapper: \n"
-//".long 0xE1212374 \n" // bkpt
 "push {r0-r12,r14} \n"
 "	mrs r0, cpsr \n"
 "	push {r0,r1} \n" // save the cpsr, and also r1 to make the stack 8 byte aligned
@@ -47,7 +46,6 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 				DEBUGPRINTF_1("os lcd interaction: pc: 0x%x, address: 0x%x\n",((uint32_t)address)-8,abort_address)
 			}
 			
-			//asm(".long 0xE1212374"); // bkpt
 			lcd_undef_inst = *(address-1);
 			lcd_undef_adr = (address-1);
 			*(address-1) = 0x7f000f0; // undef
@@ -62,7 +60,6 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 			tt[0xC0000000 >> 20] = 0;
 			clear_caches();
 			invalidate_TLB();
-			//asm(".long 0xE1212374"); // bkpt
 			
 			return 0;
 		}

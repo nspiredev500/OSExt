@@ -213,7 +213,6 @@ int32_t show_1_numeric_input(char* title,char* subtitle,char* msg,int32_t *val)
 	int32_t mask = TCT_Local_Control_Interrupts(0);
 	bool irq = isIRQ();
 	enableIRQ();
-	//asm(".long 0xE1212374"); // bkpt
 	int32_t ret = (_show_1NumericInput(0, (const char*) title16, (const char*) subtitle16, (const char*) msg16, (int*) val, 1,INT_MIN, INT_MAX) == 5103);
 	if (! irq)
 	{
