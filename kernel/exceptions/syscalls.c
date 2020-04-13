@@ -92,14 +92,23 @@ asm(
 " \n"
 " \n"
 "thumb_usermode: \n"
+"bic r0, r0, #1 \n" // if pc+2 ends with 1 because we were in thumb mode, we have to clear that before loading
 "ldrh r0, [lr, #-2] \n" // load instruction
 "bic r0, r0, #0xff00 \n" // extract swi number
-".long 0xE1212374 \n" // breakpoint
-" \n" // TODO to thumb user mode syscalls
-" \n"
-" \n"
-" \n"
-" \n"
+"push {r1} \n" // now push all registers to be the same as in the arm mode syscall handler
+"mrs r1, spsr \n"
+"push {r1} \n"
+"push {r2-r12,r14} \n"
+"mov r1, sp \n"
+"bl swi_handler_usr \n"
+"pop {r2-r12,r14} \n"
+"pop {r1} \n"
+"msr spsr, r1 \n"
+"pop {r1} \n"
+"pop {r0} \n"
+"msr cpsr {r0} \n"
+"pop {r0} \n"
+"movs pc, lr \n"
 " \n"
 " \n"
 " \n"
