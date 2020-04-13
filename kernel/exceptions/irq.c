@@ -6,7 +6,6 @@
 asm(
 ".global irq_wrapper \n"
 "irq_wrapper: \n"
-//".long 0xE1212374 \n" // breakpoint
 "ldr pc, orig_irq_address \n"
 " \n"
 " \n"

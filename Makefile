@@ -9,7 +9,7 @@ all: installer kernel uninstaller loader
 
 
 
-.PHONY: installer kernel remake charset uninstaller cleanbuild loader
+.PHONY: installer kernel remake charset uninstaller cleanbuild loader release
 	
 
 installer:
@@ -25,6 +25,10 @@ uninstaller:
 charset:
 	$(MAKE) -C pngtoascii
 
+
+release: charset installer uninstaller loader
+	$(MAKE) -C kernel release
+	cp bin/osext.tns bin/installer/boot/osext.tns
 
 
 kernel: charset

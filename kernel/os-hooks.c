@@ -295,12 +295,10 @@ void draw_hookfunc()
 
 void install_hooks()
 {
-	//asm(".long 0xE1212374"); // bkpt
 	uint32_t adr = os_value(filehook_addrs,sizeof(filehook_addrs)/sizeof(uint32_t));
 	DEBUGPRINTLN_1("adr: 0x%x",adr)
 	if (adr != 0)
 	{
-		//asm(".long 0xE1212374"); // bkpt
 		HOOK_INSTALL(adr,filehook);
 	}
 	
@@ -331,9 +329,7 @@ void uninstall_hooks()
 	uint32_t adr = os_value(filehook_addrs,sizeof(filehook_addrs)/sizeof(uint32_t));
 	if (adr != 0)
 	{
-		//asm(".long 0xE1212374"); // bkpt
 		HOOK_UNINSTALL(adr,filehook);
-		//asm(".long 0xE1212374"); // bkpt
 	}
 	
 	if (get_os_draw_address() != 0)

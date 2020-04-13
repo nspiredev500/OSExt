@@ -875,9 +875,9 @@ void initSlabAllocator()
 	}
 	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
-	//asm(".long 0xE1212374"); // bkpt
+	
 	invalidate_TLB();
-	//asm(".long 0xE1212374"); // bkpt
+	
 	
 	
 	struct slab_desc_t *cache_slab = kernel_heap_start;
@@ -887,7 +887,7 @@ void initSlabAllocator()
 	cache_slab->start = cache_slab;
 	cache_slab->next = NULL;
 	cache_slab->used = NULL;
-	//asm(".long 0xE1212374"); // bkpt
+	
 	
 	cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
 	if (cache_cache == NULL)
@@ -896,9 +896,9 @@ void initSlabAllocator()
 		ti_free(tmp_pds_unaligned);
 		return;
 	}
-	//asm(".long 0xE1212374"); // bkpt
+	
 	cache_cache->full = NULL;
-	//asm(".long 0xE1212374"); // bkpt
+	
 	cache_cache->partial = NULL;
 	cache_cache->free = cache_slab;
 	cache_cache->obj_size = sizeof(struct cache_t);
@@ -1042,7 +1042,7 @@ void initSlabAllocator()
 	
 	
 	
-	//asm(".long 0xE1212374"); // bkpt
+	
 }
 
 

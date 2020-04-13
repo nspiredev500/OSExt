@@ -56,7 +56,6 @@ asm(
 bool install_exception_handlers()
 {
 	
-	//asm(".long 0xE1212374"); // bkpt
 	register void* orig_stack asm("r0") = NULL;
 	register void* new_stack asm("r3") = abort_stack+sizeof(abort_stack)/4-4;
 	asm volatile(

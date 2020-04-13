@@ -160,7 +160,6 @@ void relocate_self(void)
 	DEBUGPRINTF_1("entering relocated kernel\n");
 	
 	clear_caches();
-	//asm(".long 0xE1212374"); // bkpt
 	new_entry(1,(char**)0x53544c41);
 	DEBUGPRINTF_1("return from relocated kernel\n");
 	

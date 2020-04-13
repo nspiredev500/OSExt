@@ -60,7 +60,6 @@ void claimLCD()
 	{
 		return;
 	}
-	//asm(".long 0xE1212374"); // bkpt
 	own_framebuffer = true;
 	old_framebuffer = (void*) *LCD_UPBASE;
 	k_memset(framebuffer1,0,320*240*2);
@@ -74,7 +73,6 @@ void claimLCD()
 	
 	
 	clear_caches();
-	//asm(".long 0xE1212374"); // bkpt
 }
 
 
