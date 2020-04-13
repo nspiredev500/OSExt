@@ -105,7 +105,7 @@ void initializeKernelSpace()
 	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*2,tt_page+SMALL_PAGE_SIZE*2);
 	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*3,tt_page+SMALL_PAGE_SIZE*3);
 	
-	//asm(".long 0xE1212374"); // bkpt
+	
 	kernel_space.tt = tt_page;
 	
 	
@@ -135,9 +135,8 @@ void initializeKernelSpace()
 
 void changeAddressSpace(struct address_space *space)
 {
-	//asm(".long 0xE1212374"); // bkpt
 	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,space->tt);
-	//asm(".long 0xE1212374"); // bkpt
+	
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -481,44 +480,6 @@ void* getPhysicalAddress(struct address_space *space,void* address)
 	uint32_t adr = (uint32_t) address;
 	
 	
-	/*
-	// first search in the address space struct, then in the translation table itself
-	uint32_t index = -1;
-	LinkedList *cptds_entry = searchLinkedListEntry(&space->cptds, (void*) ((adr >> 20) << 20),&index);
-	if (cptds_entry != NULL)
-	{
-		LinkedList *cpt_linkedlist = getLinkedListEntry(&space->cpts,index);
-		if (cpt_linkedlist != NULL)
-		{
-			uint32_t cpt_index = ((adr & 0b11111111000000000000) >> 10)/4;
-			uint32_t *cpt = cpt_linkedlist->data;
-			uint32_t desc = cpt[cpt_index];
-			if ((desc & 0b11) == 0b10)
-			{
-				uint32_t page_offset = adr & 0b111111111111;
-				uint32_t phys = (desc & (~ 0b111111111111)) + page_offset;
-				return (void*) phys;
-			}
-			else
-			{
-				DEBUGPRINTF_3("not a small page descriptor!\n",address)
-				//asm(".long 0xE1212374"); // bkpt
-			}
-		}
-		else
-		{
-			DEBUGPRINTF_3("no corresponding cpt entry found!\n",address)
-			//asm(".long 0xE1212374"); // bkpt
-		}
-	}
-	else
-	{
-		DEBUGPRINTF_3("no coarse page table for address found!\n",address)
-		//asm(".long 0xE1212374"); // bkpt
-	}
-	*/
-	
-	
 	
 	//DEBUGPRINTF_3("resolving: 0x%x\n",address)
 	uint32_t descriptor = space->tt[adr >> 20];
@@ -582,7 +543,6 @@ void freePagesFromCoarsePageTable(uint32_t *cpt)
 		if (type == 0b1 || type == 0b11)
 		{
 			DEBUGPRINTF_3("address: 0x%x\n",cpt+i)
-			asm(".long 0xE1212374"); // bkpt
 			panic("tiny or large page found in coarse page table while freeing coarse page table!\n");
 		}
 		if (type == 0b0)

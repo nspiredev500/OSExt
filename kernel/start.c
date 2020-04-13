@@ -10,7 +10,6 @@ asm(
 "__init_lr: .word 0 \n"
 "__init_sp: .word 0 \n"
 "__entry: .global __entry\n"
-//" .long 0xE1212374\n" // bkpt
 " str lr, __init_lr\n"
 " str sp, __init_sp\n"
 " b main"
@@ -78,8 +77,7 @@ int main(int argsn,char **argc)
 				{
 					disableIRQ();
 				}
-				asm volatile("swi 0xf80000\n"
-				".long 0xE1212374":"=r" (control_reg)::); // use the uninstall syscall
+				asm volatile("swi 0xf80000\n":"=r" (control_reg)::); // use the uninstall syscall
 				if (control_reg != 0)
 				{
 					DEBUGPRINTLN_1("old kernel base: 0x%x",control_reg);
@@ -212,7 +210,7 @@ void initialize()
 	}
 	
 	
-	//asm(".long 0xE1212374"); // bkpt
+	
 	
 	debug_shell_println("switching framebuffer, press any key");
 	keypad_press_release_barrier();
@@ -220,7 +218,7 @@ void initialize()
 	
 	
 	
-	//keypad_press_release_barrier();
+	
 	
 	
 	
@@ -228,17 +226,17 @@ void initialize()
 	initLCDDriver();
 	claimLCD();
 	
-	//keypad_press_release_barrier();
+	
 	
 	debug_shell_reset();
 	setShellFramebuffer(get_front_framebuffer_address());
 	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
 	//print_cacheinfo();
-	//asm(".long 0xE1212374"); // bkpt
+	
 	debug_shell_println("running general self-test");
 	
 	
-	//keypad_press_release_barrier();
+	
 	// construct the pages for the remapped stack
 	void* page = usePage();
 	if (page == NULL)
@@ -261,10 +259,10 @@ void initialize()
 	
 	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
 	
-	//setPageUsedBit(page,false);
 	
 	
-	//b = true;
+	
+	
 	if (! b)
 	{
 		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
@@ -272,8 +270,7 @@ void initialize()
 		enableIRQ();
 		return;
 	}
-	//print_cacheinfo();
-	//asm(".long 0xE1212374"); // bkpt
+	
 	
 	
 	
@@ -477,13 +474,7 @@ void initialize()
 	
 	tt[((uint32_t)LCD_UPBASE)>>20] = 0;
 	*/
-	/*
-	uint32_t* os_lcd_writes = (uint32_t*) 0x100237c8;
-	os_lcd_writes[0] = 0xe1a00000; // nop
-	os_lcd_writes[1] = 0xe1a00000; // nop
-	os_lcd_writes[2] = 0xe1a00000; // nop
-	os_lcd_writes[3] = 0xe1a00000; // nop
-	*/
+	
 	
 	
 	
@@ -493,7 +484,7 @@ void initialize()
 	
 	
 	
-	//asm(".long 0xE1212374"); // bkpt
+	
 }
 
 

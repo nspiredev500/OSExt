@@ -38,7 +38,6 @@ static volatile uint32_t *remapped_i2c = (uint32_t*) 0xe9050000;
 void i2c_read_port(uint8_t *buffer, uint32_t length, uint32_t port)
 {
 	//i2c_set_port(port);
-	//asm(".long 0xE1212374"); // bkpt
 	remapped_i2c[14] = 0xb0b0b0b;
 	remapped_i2c[15] = 0xc0c0c0c;
 	remapped_i2c[4] = ((port & 0xff) | ((port & 0xff) << 16));

@@ -52,7 +52,6 @@ uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t 
 			clear_caches();
 			invalidate_TLB();
 			
-			//asm(".long 0xE1212374"); // bkpt
 			return 0;
 		}
 		*/
