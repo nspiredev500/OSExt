@@ -5,6 +5,9 @@ build_dir_raw ?= ../build
 build_dir = $(build_dir_raw)/kernel
 bin_dir ?= ../bin
 
+ifdef RELEASE_KERNEL
+build_dir = $(build_dir_raw)/release_kernel
+endif
 
 #GCC = nspire-gcc
 #AS  = nspire-as
@@ -58,7 +61,7 @@ all: $(build_dir)/osext.tns  $(build_dir)/debug.elf
 
 HEADERS: ;
 
-.PHONY: clean cleanbuild remake release release_kernel
+.PHONY: clean cleanbuild remake release release_kernel cleanrelease
 
 
 
@@ -66,9 +69,11 @@ HEADERS: ;
 remake: clean
 	$(MAKE) all
 
-release: clean
+release: 
 	$(MAKE) "RELEASE_KERNEL=-D RELEASE"
 
+cleanrelease: 
+	$(MAKE) "RELEASE_KERNEL=-D RELEASE" clean
 
 
 $(build_dir)/osext.tns: $(build_dir)/osext.elf

@@ -106,7 +106,7 @@ asm(
 "msr spsr, r1 \n"
 "pop {r1} \n"
 "pop {r0} \n"
-"msr cpsr {r0} \n"
+"msr cpsr, r0 \n"
 "pop {r0} \n"
 "movs pc, lr \n"
 " \n"
