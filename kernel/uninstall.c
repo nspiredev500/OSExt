@@ -26,31 +26,31 @@ void uninstall_osext(uint32_t* regs)
 	debug_shell_reset();
 	setShellFramebuffer(framebuffer);
 	
-	debug_shell_println("uninstalling osext");
+	shell_println("uninstalling osext");
 	
 	
-	debug_shell_println("resetting exception vectors");
+	shell_println("resetting exception vectors");
 	set_exception_vectors(false);
 	
 	
-	debug_shell_println("uninstalling hooks");
+	shell_println("uninstalling hooks");
 	uninstall_hooks(); // TODO uninstaller only works if hooks are immediately reused by another instance of osext, not if is just uninstalled
 	
 	
 	
 	// TODO give processes time to exit
 	
-	debug_shell_println("freeing memory");
+	shell_println("freeing memory");
 	freeAllPageblocks();
 	
 	
-	debug_shell_println("kernel base pointer: 0x%x",getKernelMallocedPointer());
+	shell_println("kernel base pointer: 0x%x",getKernelMallocedPointer());
 	
 	
 	
-	debug_shell_println_rgb("osext uninstalled",0,255,0);
+	shell_println_rgb("osext uninstalled",0,255,0);
 	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
+	shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
 	
 	*LCD_UPBASE = get_old_framebuffer_address();

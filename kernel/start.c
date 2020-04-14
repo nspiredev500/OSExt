@@ -131,7 +131,9 @@ void initialize()
 	
 	
 	void* framebuffer = (void*) *LCD_UPBASE;
-	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
+	#ifndef RELEASE
+		framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
+	#endif
 	setShellFramebuffer(framebuffer);
 	debug_shell_println("finished relocating");
 	debug_shell_println("initializing");
@@ -143,17 +145,18 @@ void initialize()
 	debug_shell_println("kernel_start: 0x%x",&_EXEC_START);
 	init_call_with_stack(&_EXEC_START);
 	
-	
-	debug_shell_println("performing physical memory manager self-test");
-	bool b = physical_mm_self_test();
-	if (! b)
-	{
-		debug_shell_println_rgb("error in physical memory manager self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
-		return;
-	}
+	#ifndef RELEASE
+		debug_shell_println("performing physical memory manager self-test");
+		bool b = physical_mm_self_test();
+		if (! b)
+		{
+			debug_shell_println_rgb("error in physical memory manager self-test         aborting",255,0,0);
+			keypad_press_release_barrier();
+			free_init_pds();
+			enableIRQ();
+			return;
+		}
+	#endif
 	
 	debug_shell_println("allocating memory");
 	allocPageblock(128);
@@ -169,26 +172,28 @@ void initialize()
 	DEBUGPRINTF_3("domains: 0x%x\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
 	*/
 	
-	debug_shell_println("performing virtual memory manager self-test");
-	b = virtual_mm_self_test();
-	if (! b)
-	{
-		debug_shell_println_rgb("error in virtual memory manager self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
-		return;
-	}
-	debug_shell_println("performing slab allocator self-test");
-	b = slab_allocator_self_test_pre_initialization();
-	if (! b)
-	{
-		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
-		return;
-	}
+	#ifndef RELEASE
+		debug_shell_println("performing virtual memory manager self-test");
+		b = virtual_mm_self_test();
+		if (! b)
+		{
+			debug_shell_println_rgb("error in virtual memory manager self-test         aborting",255,0,0);
+			keypad_press_release_barrier();
+			free_init_pds();
+			enableIRQ();
+			return;
+		}
+		debug_shell_println("performing slab allocator self-test");
+		b = slab_allocator_self_test_pre_initialization();
+		if (! b)
+		{
+			debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
+			keypad_press_release_barrier();
+			free_init_pds();
+			enableIRQ();
+			return;
+		}
+	#endif
 	
 	debug_shell_println("initializing kernel space");
 	
@@ -213,10 +218,9 @@ void initialize()
 	
 	
 	debug_shell_println("switching framebuffer, press any key");
-	keypad_press_release_barrier();
-	
-	
-	
+	#ifndef RELEASE
+		keypad_press_release_barrier();
+	#endif
 	
 	
 	
@@ -225,12 +229,16 @@ void initialize()
 	
 	initLCDDriver();
 	claimLCD();
+	#ifdef RELEASE
+		k_memcpy(get_front_framebuffer_address(),framebuffer,320*240*2);
+	#endif
+	#ifndef RELEASE
+		debug_shell_reset();
+		setShellFramebuffer(get_front_framebuffer_address());
+		debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
+	#endif
 	
 	
-	
-	debug_shell_reset();
-	setShellFramebuffer(get_front_framebuffer_address());
-	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
 	//print_cacheinfo();
 	
 	debug_shell_println("running general self-test");
@@ -257,20 +265,17 @@ void initialize()
 	}
 	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
 	
-	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
 	
-	
-	
-	
-	
-	if (! b)
-	{
-		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return;
-	}
-	
+	#ifndef RELEASE
+		b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
+		if (! b)
+		{
+			debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
+			keypad_press_release_barrier();
+			enableIRQ();
+			return;
+		}
+	#endif
 	
 	
 	
@@ -454,10 +459,10 @@ void initialize()
 	
 	
 	
-	
-	// to be able to read the messages
-	keypad_press_release_barrier();
-	
+	#ifndef RELEASE
+		// to be able to read the messages
+		keypad_press_release_barrier();
+	#endif
 	
 	
 	//freeLCD();

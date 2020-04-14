@@ -1,3 +1,4 @@
+#ifndef RELEASE
 #include "kernel.h"
 
 
@@ -93,3 +94,4 @@ bool run_self_test()
 
 
 
+#endif

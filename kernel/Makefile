@@ -38,9 +38,17 @@ GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLE
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-implicit-fallthrough
 
+
+
 ifeq (DEBUG, TRUE)
 	GCCFLAGS += -O0
 endif
+
+ifdef RELEASE_KERNEL
+GCCFLAGS += -Os
+endif
+
+
 #-Xlinker -m -Xlinker armelf_osext
 LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "30" --240x320-support true --uses-lcd-blit false

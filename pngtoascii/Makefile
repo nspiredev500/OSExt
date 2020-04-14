@@ -4,13 +4,13 @@ build_dir = $(build_dir_raw)/pngtoascii
 
 
 
-all: $(CURDIR)/../kernel/ascii.c
+all: $(CURDIR)/../kernel/charset/ascii.c
 	
 
-$(CURDIR)/../kernel/ascii.c: $(build_dir)/pngtoascii.class
+$(CURDIR)/../kernel/charset/ascii.c: $(build_dir)/pngtoascii.class
 	cp kernel_font.png $(build_dir)/kernel_font.png && \
 	(cd $(build_dir) && java pngtoascii kernel_font.png) && \
-	cp $(build_dir)/ascii.c ../kernel/ascii.c
+	cp $(build_dir)/ascii.c ../kernel/charset/ascii.c
 
 
 $(build_dir)/pngtoascii.class:

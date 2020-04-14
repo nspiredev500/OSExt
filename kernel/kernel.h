@@ -68,7 +68,9 @@
 #include "reloc.h"
 #include "start.h"
 #include "slab.h"
-#include "self_test.h"
+#ifndef RELEASE
+	#include "self_test.h"
+#endif
 #include "debug_shell.h"
 #include "os-hooks.h"
 
