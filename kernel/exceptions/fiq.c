@@ -60,6 +60,8 @@ static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old r0-r7
 {
 	uint32_t fiq_status = vic_fiq_status();
+	//debug_shell_println("fiq: %d",fiq_status);
+	//debug_shell_println("rtc irq status: %d",rtc_irq_status());
 	if (fiq_status & (0b1 << 1)) // uart port
 	{
 		panic("fiq from uart port!\n");
@@ -74,6 +76,7 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 4)) // RTC
 	{
+		//debug_shell_println("rtc interrupt");
 		systime_rtc_overflow();
 		rtc_irq_clear();
 	}
@@ -122,6 +125,10 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 19)) // second timer
 	{
+		if (timer_irq_status(SYSTIME_TIMER))
+		{
+			systime_timer_overflow();
+		}
 		//DEBUGPRINTLN_1("fiq from second timer!")
 		timer_irq_clear(2,0);
 		timer_irq_clear(2,1);
@@ -134,7 +141,7 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	{
 		panic("fiq from LCD controller!\n");
 	}
-	
+	//debug_shell_println("fiq after: %d",vic_fiq_status());
 	
 	
 	

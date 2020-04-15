@@ -157,7 +157,18 @@
 
 
 
-
+	/*
+	//debug_shell_println("rtc id: 0x%llx",rtc_peripheral_id());
+	debug_shell_println("testing rtc alarm, press any key to start");
+	keypad_press_release_barrier();
+	rtc_set_value(0xfffffffa);
+	
+	while (timer_seconds_overflows == 0)
+	{
+		wait_for_interrupt();
+	}
+	debug_shell_println("rtc alarm fired");
+	*/
 
 
 

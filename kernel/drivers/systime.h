@@ -1,7 +1,7 @@
 #ifndef SYSTIME_H
 #define SYSTIME_H
 
-uint32_t timer_seconds_overflows;
+
 
 // if not otherwise specified, use the first timer of the first timer module for the system time
 #ifndef SYSTIME_TIMER
@@ -17,9 +17,7 @@ void systime_init();
 int64_t systime_unix();
 
 
-// returns the current unix time, modified by the current time zone and the user-supplied leap seconds
-// so it should be the users clock-time
-int64_t systime_calendar();
+
 
 
 
@@ -35,13 +33,6 @@ void systime_set_unix_milis(int64_t unix_time_milis);
 void systime_set_unix(int64_t unix_time);
 
 
-
-void systime_set_leap_seconds(uint32_t leapseconds);
-
-
-// specifies the current timezone with UTC+/- x
-// daylight saving time should be entered as a different timezone
-void systime_set_timezone(int32_t timezone);
 
 
 

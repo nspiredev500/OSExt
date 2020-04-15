@@ -176,15 +176,6 @@ void initialize()
 	
 	
 	
-	rtc_set_alarm(0xffffffff);
-	rtc_set_value(0xffffffff-10);
-	
-	while (timer_seconds_overflows == 0)
-	{
-		wait_for_interrupt();
-	}
-	
-	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	

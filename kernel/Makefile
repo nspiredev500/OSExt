@@ -60,7 +60,7 @@ DISTDIR = .
 
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
 
-$(info $$CURDIR is [${CURDIR}])
+#$(info $$CURDIR is [${CURDIR}])
 
 
 all: $(build_dir)/osext.tns  $(build_dir)/debug.elf

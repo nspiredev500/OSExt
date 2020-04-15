@@ -192,6 +192,27 @@ void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load)
 	remapped_timer[timer*8] = load;
 }
 
+void timer_set_bg_load(uint32_t timermodule,uint32_t timer,uint32_t bgload)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	remapped_timer[timer*8+6] = bgload;
+}
+
+
+
 void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 {
 	if (timer > 1)
