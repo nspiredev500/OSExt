@@ -41,8 +41,8 @@ void timer_irq_clear(uint32_t timermodule,uint32_t timer);
 bool timer_irq_enabled(uint32_t timermodule,uint32_t timer);
 void timer_set_irq_enabled(uint32_t timermodule,uint32_t timer,bool irq);
 
-
-
+void timer_set_oneshot(uint32_t timermodule,uint32_t timer,bool oneshot);
+bool timer_is_oneshot(uint32_t timermodule,uint32_t timer);
 
 
 

@@ -119,9 +119,6 @@ void initializeKernelSpace()
 	tt[(0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
 	tt[(0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
 	
-	remappLCD((void*) (0xe9000000+2*SECTION_SIZE));
-	remappUART((void*) (0xe9000000+0x00020000));
-	
 	
 	
 	register uint32_t domain_register asm("r1");

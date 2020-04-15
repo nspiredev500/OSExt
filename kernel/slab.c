@@ -1021,8 +1021,8 @@ void initSlabAllocator()
 	
 	tt_cache = createCache(1024*16,1024*16,0,"translation_table_cache");
 	address_space_cache = createCache(sizeof(struct address_space),0,0,"address_space_cache");
-	process_cache = createCache(sizeof(struct Process),0,0,"process_cache");
-	thread_cache = createCache(sizeof(struct Thread),0,0,"thread_cache");
+	process_cache = createCache(sizeof(struct process),0,0,"process_cache");
+	thread_cache = createCache(sizeof(struct thread),0,0,"thread_cache");
 	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0b1,"framebuffer_cache"); // 150 KiB
 	
 	
@@ -1213,7 +1213,7 @@ void freeLCDFramebuffer(void* buff)
 }
 
 
-struct Process* requestProcess()
+struct process* requestProcess()
 {
 	return alloc_object_from_cache(process_cache);
 }
@@ -1223,7 +1223,7 @@ void freeProcess(void* proc)
 }
 
 
-struct Thread* requestThread()
+struct thread* requestThread()
 {
 	return alloc_object_from_cache(thread_cache);
 }

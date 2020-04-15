@@ -104,11 +104,11 @@ void* requestLCDFramebuffer();
 void freeLCDFramebuffer(void* buff);
 
 
-struct Process* requestProcess();
+struct process* requestProcess();
 void freeProcess(void* proc);
 
 
-struct Thread* requestThread();	
+struct thread* requestThread();	
 void freeThread(void* thread);
 
 

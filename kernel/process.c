@@ -1,11 +1,20 @@
 #include "kernel.h"
 
 
+const uint32_t MEM_WRITE = 0b1;
+const uint32_t MEM_READ = 0b10;
+const uint32_t MEM_SHARED = 0b100;
+const uint32_t MEM_COW = 0b1000;
 
 
-struct Process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
+
+
+
+
+
+struct process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
 {
-	struct Process *p = requestProcess();
+	struct process *p = requestProcess();
 	p->space = createAddressSpace();
 	p->status = 0;
 	p->priviledges = 0;
@@ -15,18 +24,12 @@ struct Process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
 	p->threads = NULL;
 	return p;
 }
-void destroyProcess(struct Process *p)
+void destroyProcess(struct process *p)
 {
 	destroyAddressSpace(p->space);
 	uint32_t i = 0;
 	LinkedList *cpt = NULL;
-	while ((cpt = getLinkedListEntry(&p->threads,i)) != NULL)
-	{
-		cpt = getLinkedListEntry(&p->threads,i);
-		destroyThread(cpt->data);
-		i++;
-	}
-	destroyLinkedList(&p->threads);
+	// TODO free the threads in the list
 }
 
 

@@ -3,12 +3,6 @@
 
 
 
-//static void* exec_start = NULL;
-void init_call_with_stack(void* start)
-{
-	//exec_start = start;
-}
-
 bool isIRQ()
 {
 	register uint32_t cpsr asm("r0") = 0;

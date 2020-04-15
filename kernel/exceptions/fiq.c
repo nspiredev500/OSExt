@@ -24,6 +24,7 @@ static void __attribute__ ((noreturn)) reset(void) {
 
 static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 {
+	struct thread* running_thread = scheduler_running();
 	if (running_thread != NULL)
 	{
 		// updating the thread's registers
@@ -53,17 +54,7 @@ static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 	{
 		panic("fiq from user mode, but no thread is running!\n");
 	}
-	// jump back into kernel mode, to svc_lr and use r0 to indicate success
-	register uint32_t *fiq_stack_start asm("r0") = fiq_stack+sizeof(fiq_stack)/4-4;
-	asm volatile(
-	" mov sp, r0 \n" // reset the fiq stack to the start
-	" mov r0, #1 \n" // 0 indicates normal return
-	" bic r1, r1, #31 \n" // clear the mode bits
-	" orr r1, r1, #19 \n" // set the mode to svc
-	" msr cpsr, r1 \n"
-	" bx lr \n" // setting the right other cpsr bits is done in thread.c, svc lr is the return address
-	:"+r" (fiq_stack_start):"r" (fiq_stack_start):"r1");
-	__builtin_unreachable();
+	scheduler_return();
 }
 
 void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old r0-r7
@@ -83,7 +74,8 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 4)) // RTC
 	{
-		panic("fiq from rtc!\n");
+		systime_rtc_overflow();
+		rtc_irq_clear();
 	}
 	if (fiq_status & (0b1 << 7)) // GPIO
 	{
@@ -120,12 +112,9 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 18)) // first timer
 	{
-		if (timer_irq_status(1,0)) // watchdog fiq timer to reboot / enter debug console
+		if (timer_irq_status(SYSTIME_TIMER))
 		{
-			if (isKeyPressed(KEY_ENTER) && isKeyPressed(KEY_TAB) && isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_A))
-			{
-				reset();
-			}
+			systime_timer_overflow();
 		}
 		//DEBUGPRINTLN_1("fiq from first timer!")
 		timer_irq_clear(1,0);

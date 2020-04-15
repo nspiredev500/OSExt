@@ -1,12 +1,12 @@
-DEBUG = FLASE
+DEBUG = FALSE
 
 
 build_dir_raw ?= ../build
 build_dir = $(build_dir_raw)/kernel
 bin_dir ?= ../bin
 
-ifdef RELEASE_KERNEL
-build_dir = $(build_dir_raw)/release_kernel
+ifdef (RELEASE_KERNEL)
+	build_dir = $(build_dir_raw)/release_kernel
 endif
 
 #GCC = nspire-gcc
@@ -44,8 +44,8 @@ ifeq (DEBUG, TRUE)
 	GCCFLAGS += -O0
 endif
 
-ifdef RELEASE_KERNEL
-GCCFLAGS += -Os
+ifdef (RELEASE_KERNEL)
+	GCCFLAGS += -Os
 endif
 
 
@@ -60,7 +60,7 @@ DISTDIR = .
 
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
 
-
+$(info $$CURDIR is [${CURDIR}])
 
 
 all: $(build_dir)/osext.tns  $(build_dir)/debug.elf
@@ -77,11 +77,14 @@ HEADERS: ;
 remake: clean
 	$(MAKE) all
 
+
 release: 
 	$(MAKE) "RELEASE_KERNEL=-D RELEASE"
 
+
 cleanrelease: 
 	$(MAKE) "RELEASE_KERNEL=-D RELEASE" clean
+
 
 
 $(build_dir)/osext.tns: $(build_dir)/osext.elf
@@ -93,12 +96,15 @@ $(build_dir)/osext.tns: $(build_dir)/osext.elf
 	cp $(build_dir)/osext.tns $(bin_dir)/osext.tns
 
 
+
 $(build_dir)/osext.elf: $(OBJS) 
 	mkdir -p $(build_dir)/$(DISTDIR) && \
 	$(LD) $^ -o $@ $(LDFLAGS)
 
+
 clean:
 	-rm -f $(OBJS) $(build_dir)/osext.elf $(build_dir)/debug.elf $(build_dir)/osext.tns
+
 
 cleanbuild: clean
 	
@@ -118,6 +124,7 @@ $(build_dir)/%.o: $(CURDIR)/libk/%.c $(HEADERS)
 $(build_dir)/%.o: $(CURDIR)/drivers/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
+
 $(build_dir)/%.o: $(CURDIR)/charset/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
@@ -129,6 +136,7 @@ $(build_dir)/%.o: $(CURDIR)/exceptions/%.c $(HEADERS)
 
 $(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
+
 
 $(build_dir)/%.o: $(CURDIR)/%.cpp $(HEADERS)
 	$(GXX) $(GCCFLAGS) -c $< -o $@

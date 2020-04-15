@@ -73,10 +73,10 @@ void background_draw_image(void* nspire_framebuffer,void* framebuffer)
 		}
 		else
 		{
-			if (getRTCValue()-last_changed > slideshow_time)
+			if (rtc_get_value()-last_changed > slideshow_time)
 			{
 				slideshow_index = next_image();
-				last_changed = getRTCValue();
+				last_changed = rtc_get_value();
 				background_draw_image(nspire_framebuffer,framebuffer);
 				return;
 			}
@@ -105,7 +105,7 @@ void background_set_slideshow(struct img565* list, uint32_t length)
 	slideshow = true;
 	image = list;
 	slideshow_index = 0;
-	last_changed = getRTCValue();
+	last_changed = rtc_get_value();
 	slideshow_length = length;
 }
 struct img565* background_get_slideshow()

@@ -45,6 +45,9 @@
 #include "drivers/usb.h"
 #include "drivers/adc.h"
 #include "drivers/nand.h"
+#include "drivers/systime.h"
+#include "drivers/init_drivers.h"
+
 
 #include "exceptions/syscalls.h"
 #include "exceptions/data_abort.h"
@@ -73,6 +76,9 @@
 #endif
 #include "debug_shell.h"
 #include "os-hooks.h"
+#include "init-kernel.h"
+
+
 
 
 

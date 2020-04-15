@@ -128,7 +128,9 @@ void set_time_dialog()
 		blitLCDBuffer();
 		msleep(70);
 	}
-	setRTCValue(date2timestamp(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
+	
+	//setRTCValue(date2timestamp(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
+	systime_set_unix(systime_timestamp_to_unix(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
 	keypad_press_release_barrier();
 }
 

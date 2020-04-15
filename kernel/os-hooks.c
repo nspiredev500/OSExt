@@ -164,7 +164,7 @@ static uint32_t lastrun = 0;
 void file_hookfunc()
 {
 	
-	if (getRTCValue()-lastrun == 0)
+	if (rtc_get_value()-lastrun == 0)
 	{
 		return;
 	}
@@ -190,11 +190,11 @@ void file_hookfunc()
 		{
 			draw_clock = true;
 		}
-		lastchanged = getRTCValue();
+		lastchanged = rtc_get_value();
 	}
 	
 	
-	lastrun = getRTCValue();
+	lastrun = rtc_get_value();
 }
 
 
@@ -244,9 +244,9 @@ void draw_hookfunc()
 		framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
 		framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
 		
-		int hr = 0,min = 0,sec = 0;
-		timestamp2time(getRTCValue(),&hr,&min,&sec);
+		uint32_t hr = 0,min = 0,sec = 0;
 		
+		systime_unix_to_timestamp(systime_unix(),NULL,NULL,NULL,&hr,&min,&sec);
 		
 		framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
 		framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
@@ -265,19 +265,7 @@ void draw_hookfunc()
 		
 		framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
 		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
-		
-		
-		/*
-		char buff[40];
-		k_memset(buff,'\0',35);
-		sprintf_safe(buff,"x: %d, y: %d",30,(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs());
-		framebuffer_write10pstring_ascii(buff,old_framebuffer,100,100,255,0,0,ascii10p);
-		*/
-		
-		
-		
 	}
-	
 	
 	
 	

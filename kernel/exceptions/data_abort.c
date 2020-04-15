@@ -84,6 +84,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 	}
 	if ((spsr & 0b11111) == 0b10000) // user mode
 	{
+		struct thread* running_thread = scheduler_running();
 		if (running_thread != NULL)
 		{
 			// updating the thread's registers
@@ -108,17 +109,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 		{
 			panic("abort from user mode, but no thread is running!\n");
 		}
-		// jump back into kernel mode, to svc_lr and use r0 to indicate an abort
-		register uint32_t *data_stack_start asm("r0") = abort_stack+sizeof(abort_stack)/4-4;
-		asm volatile(
-		" mov sp, r0 \n" // reset the abort stack to the start
-		" mov r0, #1 \n" // 1 indicates a data abort
-		" bic r1, r1, #31 \n" // clear the mode bits
-		" orr r1, r1, #19 \n" // set the mode to svc
-		" msr cpsr, r1 \n"
-		" bx lr \n" // setting the right other cpsr bits is done in thread.c
-		:"+r" (data_stack_start):"r" (data_stack_start):"r1");
-		__builtin_unreachable();
+		scheduler_return();
 	}
 	
 	
