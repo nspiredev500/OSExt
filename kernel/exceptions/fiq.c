@@ -54,7 +54,7 @@ static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 	{
 		panic("fiq from user mode, but no thread is running!\n");
 	}
-	scheduler_return();
+	scheduler_return(SCHEDULER_OTHER);
 }
 
 void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old r0-r7

@@ -58,12 +58,15 @@
 #include "exceptions/aborts.h"
 
 
+#include "syscalls/svc/uninstall.h"
+
+
+
 
 #include "time-dialog.h"
 #include "bmp.h"
 #include "background.h"
 #include "nspire_menus.h"
-#include "uninstall.h"
 #include "scheduler.h"
 #include "virtual_MM.h"
 #include "physical_MM.h"

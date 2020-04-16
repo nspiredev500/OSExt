@@ -134,6 +134,16 @@ $(build_dir)/%.o: $(CURDIR)/exceptions/%.c $(HEADERS)
 
 
 
+$(build_dir)/%.o: $(CURDIR)/syscalls/svc/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
+$(build_dir)/%.o: $(CURDIR)/syscalls/usr/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
 $(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 

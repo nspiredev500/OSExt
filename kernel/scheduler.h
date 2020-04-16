@@ -1,10 +1,18 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+const uint32_t SCHEDULER_OK;
+const uint32_t SCHEDULER_DATA_ABORT;
+const uint32_t SCHEDULER_PREFETCH_ABORT;
+const uint32_t SCHEDULER_BREAKPOINT;
+const uint32_t SCHEDULER_UNDEFINED_INSTRUCTION;
+const uint32_t SCHEDULER_OTHER;
 
 
 
-
+// gets or sets the timeslice length in milliseconds
+void scheduler_set_timelice_length(uint32_t slice);
+uint32_t scheduler_get_timeslice_length();
 
 
 // makes the scheduler return after the next timeslice
@@ -17,8 +25,8 @@ void scheduler_end();
 void scheduler_start(uint32_t timeslices);
 
 
-// returns to the scheduler from the current thread
-void scheduler_return();
+// returns to the scheduler from the current thread, with the specified exit code
+void scheduler_return(uint32_t code);
 
 
 

@@ -109,7 +109,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 		{
 			panic("abort from user mode, but no thread is running!\n");
 		}
-		scheduler_return();
+		scheduler_return(SCHEDULER_DATA_ABORT);
 	}
 	
 	

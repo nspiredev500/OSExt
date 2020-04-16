@@ -15,7 +15,6 @@ struct thread {
 	struct thread *next;
 };
 
-struct thread *running_thread;
 
 struct thread* createThread(uint16_t tid, uint32_t pc);
 void destroyThread(struct thread *t);

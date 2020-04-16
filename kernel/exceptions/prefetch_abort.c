@@ -81,7 +81,7 @@ uint32_t prefetch_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) 
 		{
 			panic("abort from user mode, but no thread is running!\n");
 		}
-		scheduler_return();
+		scheduler_return(SCHEDULER_PREFETCH_ABORT);
 	}
 	
 	

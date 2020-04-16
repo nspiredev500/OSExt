@@ -16,7 +16,7 @@ static volatile uint32_t timer_seconds_overflows = 0;
 void systime_init()
 {
 	timer_enable(SYSTIME_TIMER);
-	timer_set_prescaler();
+	timer_set_prescaler(SYSTIME_TIMER,1);
 	timer_set_mode(SYSTIME_TIMER,0b1);
 	timer_set_oneshot(SYSTIME_TIMER,false);
 	timer_set_load(SYSTIME_TIMER,0xffffffff);

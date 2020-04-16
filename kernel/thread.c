@@ -28,7 +28,6 @@ void destroyThread(struct thread *t)
 uint32_t runThread(struct thread *t,struct thread_return_desc *ret)
 {
 	// assumes the context switch (virtual address space) is already done
-	running_thread = t;
 	register uint32_t *regs asm("r0") = t->regs;
 	register uint32_t *svc_sp asm("r2") = &(ret->sp);
 	
@@ -90,7 +89,6 @@ uint32_t runThread(struct thread *t,struct thread_return_desc *ret)
 	*/
 	
 	
-	running_thread = NULL;
 	return (uint32_t) regs;
 }
 
