@@ -22,17 +22,18 @@ STRIP = arm-osext-strip
 
 
 
-GCCFLAGS = -nostartfiles -nodefaultlibs -Wall -W -marm -Os -g -mcpu=arm926ej-s -march=armv5tej -nostdinc -I include
+
+
+GCCFLAGS = -nostartfiles -nodefaultlibs -Wall -W -marm -Os -g -mcpu=arm926ej-s -march=armv5tej -nostdinc -I include $(USE_PIC)
 # -march=armv5tej-s
 # ignore unused things to clean warnings up
 #GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-implicit-fallthrough
 
 
 
-LDFLAGS = -nostartfiles -nodefaultlibs -march=armv5tej -static-libgcc
+LDFLAGS = -nostartfiles -nodefaultlibs -march=armv5tej -static-libgcc -lgcc
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c -printf "$(build_dir)/%f "))
-OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp -printf "$(build_dir)/%f "))
 DISTDIR = .
 
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
@@ -41,6 +42,17 @@ KERNEL_HEADERS += $(patsubst %.c, %.o, $(shell find ../kernel/include -depth -na
 
 
 all: $(build_dir)/libc.a $(build_dir)/debug-libc.a crt
+	$(MAKE) shared
+
+
+shared:
+	-rm -f $(build_dir)/*.o
+	$(MAKE) "USE_PIC=-fPIC" $(build_dir)/libc.so
+
+
+$(build_dir)/libc.so: $(OBJS) 
+	$(LD) $(LDFLAGS) -shared -o $(build_dir)/libc.so $(OBJS) 
+
 
 
 

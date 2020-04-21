@@ -19,6 +19,7 @@
 
 
 void _Exit(int);
+void _exit(int);
 void exit(int);
 void abort(void);
 int abs(int);
