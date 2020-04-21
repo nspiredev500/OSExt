@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 enum bmp_type {BMP_WIN = 0x4D42};
 

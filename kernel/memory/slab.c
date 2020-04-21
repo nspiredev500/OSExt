@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 // slab allocator for the kernel

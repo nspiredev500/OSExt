@@ -11,17 +11,18 @@
 #include <syscall-list.h>
 
 
-#include "img565.h"
-#include "nspire_menus.h"
 
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
 
 
+
+#include "scheduling/process.h"
+#include "scheduling/thread.h"
+#include "scheduling/scheduler.h"
+
 #include "ti-os.h"
-#include "process.h"
-#include "thread.h"
 #include "LinkedList.h"
 #include "charset/chars.h"
 #include "charset/digits.h"
@@ -30,6 +31,14 @@
 #include "libk/math.h"
 #include "libk/string.h"
 #include "libk/wait.h"
+
+#include "gui/img565.h"
+#include "gui/nspire_menus.h"
+#include "gui/time-dialog.h"
+#include "gui/bmp.h"
+#include "gui/background.h"
+#include "gui/debug_shell.h"
+
 
 
 #include "drivers/power.h"
@@ -46,6 +55,7 @@
 #include "drivers/adc.h"
 #include "drivers/nand.h"
 #include "drivers/systime.h"
+#include "drivers/vfs.h"
 #include "drivers/init_drivers.h"
 
 
@@ -60,24 +70,18 @@
 
 #include "syscalls/svc/uninstall.h"
 
+#include "memory/physical_MM.h"
+#include "memory/virtual_MM.h"
+#include "memory/slab.h"
 
 
 
-#include "time-dialog.h"
-#include "bmp.h"
-#include "background.h"
-#include "nspire_menus.h"
-#include "scheduler.h"
-#include "virtual_MM.h"
-#include "physical_MM.h"
 #include "panic.h"
 #include "reloc.h"
 #include "start.h"
-#include "slab.h"
 #ifndef RELEASE
 	#include "self_test.h"
 #endif
-#include "debug_shell.h"
 #include "os-hooks.h"
 #include "init-kernel.h"
 

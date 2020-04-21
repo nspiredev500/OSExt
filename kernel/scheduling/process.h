@@ -1,8 +1,8 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-#include "LinkedList.h"
-#include "virtual_mm.h"
+#include "../LinkedList.h"
+#include "../memory/virtual_mm.h"
 
 
 const uint32_t MEM_WRITE;

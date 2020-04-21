@@ -5,7 +5,7 @@
 
 
 #include "hook.h"
-#include "nclockfragments.h"
+#include "gui/nclockfragments.h"
 
 // have to change clear_cache to clear_caches
 #undef HOOK_INSTALL

@@ -33,14 +33,15 @@ void scheduler_return(uint32_t code);
 void scheduler_add(struct process *p);
 
 // remove a process from the scheduler before deleting it
-void scheduler_remove(struct process *p);
+void scheduler_remove_process(struct process *p);
+void scheduler_remove_thread(struct process *p,struct thread* t);
 
 
 
-
+// returns the currently running process, or NULL if no one is running
+struct process* scheduler_running();
 // returns the currently running thread, or NULL if no one is running
-struct thread* scheduler_running();
-
+struct thread* scheduler_running_thread();
 
 
 

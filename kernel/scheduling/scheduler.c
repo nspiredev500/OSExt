@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 const uint32_t SCHEDULER_OK = 0;
@@ -16,6 +16,9 @@ static volatile bool sched_stop = false;
 
 static struct thread* running_thread = NULL;
 static struct thread_return_desc return_thread;
+
+
+static struct process* running_process = NULL;
 
 static void schedule();
 
@@ -85,11 +88,22 @@ void scheduler_add(struct process *p)
 }
 
 
+
 // remove a process from the scheduler before deleting it
-void scheduler_remove(struct process *p)
+void scheduler_remove_process(struct process *p)
 {
+	// extra case if the process is the running process
 	
 	
+	
+	
+	
+}
+
+// remove a thread from the scheduler before deleting it
+void scheduler_remove_thread(struct process *p,struct thread* t)
+{
+	// extra case if the process is the running process
 	
 	
 	
@@ -100,13 +114,18 @@ void scheduler_remove(struct process *p)
 
 
 
-// returns the currently running thread, or NULL if no one is running
+
+// returns the currently running process, or NULL if no one is running
 struct thread* scheduler_running()
+{
+	return running_process;
+}
+
+// returns the currently running thread, or NULL if no one is running
+struct thread* scheduler_running_thread()
 {
 	return running_thread;
 }
-
-
 
 
 

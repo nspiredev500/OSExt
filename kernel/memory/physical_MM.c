@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "../kernel.h"
 
 
 const uint32_t SMALL_PAGE_SIZE = 1024*4;
