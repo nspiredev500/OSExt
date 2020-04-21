@@ -1,0 +1,16 @@
+
+
+
+
+
+void exit(int code)
+{
+	
+}
+
+
+
+
+
+
+
