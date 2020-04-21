@@ -116,13 +116,13 @@ void scheduler_remove_thread(struct process *p,struct thread* t)
 
 
 // returns the currently running process, or NULL if no one is running
-struct thread* scheduler_running()
+struct process* scheduler_running_process()
 {
 	return running_process;
 }
 
 // returns the currently running thread, or NULL if no one is running
-struct thread* scheduler_running_thread()
+struct thread* scheduler_running()
 {
 	return running_thread;
 }

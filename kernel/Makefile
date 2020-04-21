@@ -144,6 +144,18 @@ $(build_dir)/%.o: $(CURDIR)/syscalls/usr/%.c $(HEADERS)
 
 
 
+$(build_dir)/%.o: $(CURDIR)/scheduling/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+$(build_dir)/%.o: $(CURDIR)/memory/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
+
+
+
 $(build_dir)/%.o: $(CURDIR)/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 

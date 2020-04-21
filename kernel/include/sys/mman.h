@@ -23,7 +23,7 @@
 
 
 #define MCL_CURRENT 0b1
-#defne MCL_FUTURE 0b10
+#define MCL_FUTURE 0b10
 
 
 #define MAP_FAILED  0xffffffff
