@@ -152,6 +152,22 @@ $(build_dir)/%.o: $(CURDIR)/memory/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
+$(build_dir)/%.o: $(CURDIR)/gui/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

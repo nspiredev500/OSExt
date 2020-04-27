@@ -151,8 +151,20 @@ void initialize()
 	#endif
 	
 	
+	//usb_print_id_registers();
+	// usb driver in-progress
+	/*
+	debug_shell_println("saving usb state");
+	struct usb_state state;
+	usb_save_state(&state);
+	
+	debug_shell_println("resetting usb controller");
+	usb_reset();
 	
 	
+	debug_shell_println("restoring usb state");
+	usb_restore_state(&state);
+	*/
 	
 	debug_shell_println("searching background image...");
 	
