@@ -185,13 +185,17 @@ void growCache(struct cache_t* cache)
 	DEBUGPRINTF_1("growing cache: ")
 	DEBUGPRINTF_1(cache->name)
 	DEBUGPRINTF_1("\n")
-	// TODO disable fiqs while handling the unlisted kernel pages, so that if a new address space gets created, they will be also copied into that
+	struct irq_state irq_s;
+	irq_save_state(&irq_s);
+	irq_disable();
+	
 	if (cache->obj_size < SMALL_PAGE_SIZE)
 	{
 		
 		void* page = usePage();
 		if (page == NULL)
 		{
+			irq_restore_state(&irq_s);
 			panic("no page for a growing cache found!");
 		}
 		// TODO addVirtualKernelPage uses the slab allocator and if the cpt or linkedlist caches need to grow,
@@ -223,6 +227,7 @@ void growCache(struct cache_t* cache)
 			slab->used = kmalloc(((SMALL_PAGE_SIZE/cache->obj_size)/8)+1);
 			if (slab->used == NULL)
 			{
+				irq_restore_state(&irq_s);
 				panic("cache growth: could not kmalloc the used array for the slab!\n");
 			}
 		}
@@ -245,7 +250,7 @@ void growCache(struct cache_t* cache)
 			addVirtualKernelPage(page,virtpage);
 		}
 		
-		return;
+		
 	}
 	else
 	{
@@ -257,6 +262,7 @@ void growCache(struct cache_t* cache)
 		void *page = useConsecutivePages(size,cache->alignment);
 		if (page == NULL)
 		{
+			irq_restore_state(&irq_s);
 			panic("not enough consecutive pages for cache growth!\n");
 		}
 		
@@ -268,6 +274,7 @@ void growCache(struct cache_t* cache)
 		uint32_t* cpts_unaligned[100];
 		if (size >= 100)
 		{
+			irq_restore_state(&irq_s);
 			panic("cache growth: object bigger than 100 pages!\n");
 		}
 		
@@ -285,6 +292,7 @@ void growCache(struct cache_t* cache)
 		struct slab_desc_t *slab = kmalloc(sizeof(struct slab_desc_t));
 		if (slab == NULL)
 		{
+			irq_restore_state(&irq_s);
 			panic("cache growth: could not kmalloc a slab descriptor!\n");
 		}
 		uint32_t objs = (SMALL_PAGE_SIZE*size) / cache->obj_size;
@@ -294,6 +302,7 @@ void growCache(struct cache_t* cache)
 		slab->used = kmalloc((objs/8)+1);
 		if (slab->used == NULL)
 		{
+			irq_restore_state(&irq_s);
 			panic("cache growth: could not kmalloc the used array for the slab!\n");
 		}
 		
@@ -319,6 +328,7 @@ void growCache(struct cache_t* cache)
 			}
 		}
 	}
+	irq_restore_state(&irq_s);
 }
 
 bool free_object_from_cache(struct cache_t *cache,void* obj)
