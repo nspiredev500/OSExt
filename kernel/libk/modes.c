@@ -2,6 +2,32 @@
 
 
 
+void irq_save_state(struct irq_state *s)
+{
+	s->irq = isIRQ();
+	s->fiq = isFIQ();
+}
+
+void irq_disable()
+{
+	disableFIQ();
+	disableIRQ();
+}
+
+
+void irq_restore_state(struct irq_state *s)
+{
+	if (s->irq)
+	{
+		enableIRQ();
+	}
+	if (s->fiq)
+	{
+		enableFIQ();
+	}
+}
+
+
 
 bool isIRQ()
 {
