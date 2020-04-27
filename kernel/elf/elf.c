@@ -31,7 +31,7 @@ bool elf_check_header(struct elf_header *h)
 
 void elf_read_header(NUC_FILE * f,struct elf_header *h)
 {
-	char[52] header; // the ELF header is 52 bytes for 32 bit
+	char header[52]; // the ELF header is 52 bytes for 32 bit
 	nuc_fread(header,1,52,f);
 	k_memcpy(&h->magic,header,4);
 	h->wordwidth = header[4];

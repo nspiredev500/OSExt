@@ -12,6 +12,8 @@
 
 
 
+
+
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
@@ -31,6 +33,9 @@
 #include "libk/math.h"
 #include "libk/string.h"
 #include "libk/wait.h"
+
+
+#include "elf/elf.h"
 
 #include "gui/img565.h"
 #include "gui/nspire_menus.h"
