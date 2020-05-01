@@ -8,7 +8,7 @@
 // returns true if it's a valid ELF file
 bool elf_check_header(struct elf_header *h)
 {
-	if (h->magic != 0x7f454c46) // 0x7f ELF
+	if (h->magic[0] != 0x7f || h->magic[1] != 0x45 || h->magic[2] != 0x4c || h->magic[3] != 0x46) // 0x7f ELF
 	{
 		return false;
 	}

@@ -121,9 +121,9 @@ NUC_FILE* nuc_fopen(char *path,char *mode)
 }
 
 
-void nuc_fclose(NUC_FILE* f)
+int32_t nuc_fclose(NUC_FILE* f)
 {
-	wa_syscall1(e_fclose,(int) f);
+	return wa_syscall1(e_fclose,(int) f);
 }
 
 
@@ -151,10 +151,49 @@ int32_t nuc_fflush(NUC_FILE* f)
 }
 
 
+int32_t nuc_ftell(NUC_FILE* f)
+{
+	return wa_syscall1(e_ftell,(int) f);
+}
 
 
 
+int32_t nuc_stat(const char *path, struct nuc_stat *stat)
+{
+	return wa_syscall2(e_stat, (int) path, (int) stat);
+}
 
+
+
+int32_t nuc_rename(const char *old_name, const char *new_name)
+{
+	return wa_syscall2(e_rename, (int) old_name, (int) new_name);
+}
+int32_t nuc_unlink(const char *path)
+{
+	return wa_syscall1(e_unlink, (int) path);
+}
+int32_t nuc_mkdir(const char *path, int32_t mode)
+{
+	return wa_syscall2(e_rename, (int) path, (int) mode);
+}
+int32_t nuc_rmdir(const char *path)
+{
+	return wa_syscall1(e_unlink, (int) path);
+}
+
+NUC_DIR* nuc_opendir(const char *path)
+{
+	return (NUC_DIR*) wa_syscall1(e_unlink, (int) path);
+}
+struct nuc_dirent* nuc_readdir(NUC_DIR *d)
+{
+	return (struct nuc_dirent*) wa_syscall1(e_readdir, (int) d);
+}
+int32_t nuc_closedir(NUC_DIR *d)
+{
+	return wa_syscall1(e_closedir, (int) d);
+}
 
 
 

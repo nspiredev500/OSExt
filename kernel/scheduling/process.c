@@ -27,9 +27,14 @@ struct process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
 void destroyProcess(struct process *p)
 {
 	destroyAddressSpace(p->space);
-	uint32_t i = 0;
-	LinkedList *cpt = NULL;
-	// TODO free the threads in the list
+	struct thread *t = p->threads;
+	while (t != NULL)
+	{
+		struct thread *next = t->next;
+		destroyThread(t);
+		t = next;
+	}
+	freeProcess(p);
 }
 
 

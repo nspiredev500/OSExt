@@ -133,7 +133,7 @@ HOOK_DEFINE(filehook)
 	
 	disableIRQ();
 	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),file_hookfunc);
-	// some syscalls might not work with a relocated stack, so it has to be changed before changing the address space
+	// syscalls do not work with a relocated stack, so it has to be changed before changing the address space
 	file_hookfunc();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);

@@ -99,7 +99,8 @@ $(build_dir)/osext.tns: $(build_dir)/osext.elf
 
 $(build_dir)/osext.elf: $(OBJS) 
 	mkdir -p $(build_dir)/$(DISTDIR) && \
-	$(LD) $^ -o $@ $(LDFLAGS)
+	$(LD) $^ -o $@ $(LDFLAGS) && \
+	cp $(build_dir)/osext.elf $(bin_dir)/osext.elf.tns
 
 
 clean:

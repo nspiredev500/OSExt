@@ -4,7 +4,7 @@
 
 
 struct elf_header {
-	uint32_t magic;
+	char magic[4];
 	uint8_t wordwidth; // 1 = 32 bit, 2 = 64 bit
 	uint8_t endianness; // 1 = little endian, 2 = big endian
 	uint8_t elf_h_version; // elf header version
@@ -21,6 +21,12 @@ struct elf_header {
 	uint16_t sect_size;
 	uint16_t sect_count;
 	uint16_t sect_index; // Index in section header table with the section names
+};
+
+
+struct elf_desc {
+	uint32_t pages; // number of pages
+	void *start; // start in memory
 };
 
 

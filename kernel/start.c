@@ -150,6 +150,41 @@ void initialize()
 		}
 	#endif
 	
+	/*
+	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","r");
+	if (f != NULL)
+	{
+		struct elf_header h;
+		elf_read_header(f,&h);
+		if (elf_check_header(&h))
+		{
+			debug_shell_println("valid ELF file!");
+		}
+		else
+		{
+			debug_shell_println("invalid ELF file!");
+		}
+		
+		debug_shell_println("wordwidth: %d", (uint32_t) h.wordwidth);
+		debug_shell_println("endianness: %d", (uint32_t) h.endianness);
+		debug_shell_println("type: %d", (uint32_t) h.type);
+		debug_shell_println("entry: %x", (uint32_t) h.entry);
+		debug_shell_println("prog table: %d", (uint32_t) h.prog_table);
+		debug_shell_println("sect table: %d", (uint32_t) h.sect_table);
+		debug_shell_println("header size: %d", (uint32_t) h.header_size);
+		debug_shell_println("prog size: %d", (uint32_t) h.prog_size);
+		debug_shell_println("prog count: %d", (uint32_t) h.prog_count);
+		debug_shell_println("sect size: %d", (uint32_t) h.sect_size);
+		debug_shell_println("sect count: %d", (uint32_t) h.sect_count);
+		debug_shell_println("sect index: %d", (uint32_t) h.sect_index);
+		
+		nuc_fclose(f);
+	}
+	else
+	{
+		debug_shell_println("osext.elf.tns not found!");
+	}
+	*/
 	
 	//usb_print_id_registers();
 	// usb driver in-progress
@@ -166,6 +201,7 @@ void initialize()
 	usb_restore_state(&state);
 	*/
 	
+	/*
 	debug_shell_println("searching background image...");
 	
 	NUC_FILE *f = nuc_fopen("/documents/background.bmp.tns","rb");
@@ -184,6 +220,7 @@ void initialize()
 		}
 		nuc_fclose(f);
 	}
+	*/
 	background_update();
 	
 	
