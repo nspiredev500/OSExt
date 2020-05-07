@@ -116,6 +116,8 @@ uint32_t* request4Bytes();
 void free4Bytes(uint32_t* b);
 
 
+struct deferred_action* requestAction();
+void freeAction(struct deferred_action *a);
 
 
 

@@ -31,20 +31,20 @@ struct cache_t {
 }; // sizeof(struct cache) = 28
 */
 
-struct cache_t *caches = NULL;
+static struct cache_t *caches = NULL;
 
 
 // keep a pointer to each essential cache for faster access
-struct cache_t *slab_cache = NULL;
-struct cache_t *cache_cache = NULL;
-struct cache_t *linkedlist_cache = NULL;
-struct cache_t *cpt_cache = NULL;
-struct cache_t *tt_cache = NULL;
-struct cache_t *address_space_cache = NULL;
-struct cache_t *process_cache = NULL;
-struct cache_t *thread_cache = NULL;
-struct cache_t *framebuffer_cache = NULL;
-
+static struct cache_t *slab_cache = NULL;
+static struct cache_t *cache_cache = NULL;
+static struct cache_t *linkedlist_cache = NULL;
+static struct cache_t *cpt_cache = NULL;
+static struct cache_t *tt_cache = NULL;
+static struct cache_t *address_space_cache = NULL;
+static struct cache_t *process_cache = NULL;
+static struct cache_t *thread_cache = NULL;
+static struct cache_t *framebuffer_cache = NULL;
+static struct cache_t *action_cache = NULL;
 
 
 static LinkedList* big_objects = NULL; // list of big object allocated with kmalloc
@@ -1034,6 +1034,7 @@ void initSlabAllocator()
 	process_cache = createCache(sizeof(struct process),0,0,"process_cache");
 	thread_cache = createCache(sizeof(struct thread),0,0,"thread_cache");
 	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0b1,"framebuffer_cache"); // 150 KiB
+	action_cache = createCache(sizeof(struct deferred_action),0,0,"action_cache");
 	
 	
 	createCache(1,0,0,"1_byte_cache");
@@ -1254,7 +1255,14 @@ void free4Bytes(uint32_t* b)
 
 
 
-
+struct deferred_action* requestAction()
+{
+	return alloc_object_from_cache(action_cache);
+}
+void freeAction(struct deferred_action *a)
+{
+	free_object_from_cache(action_cache,a);
+}
 
 
 

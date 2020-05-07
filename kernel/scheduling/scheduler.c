@@ -93,7 +93,7 @@ void scheduler_add(struct process *p)
 void scheduler_remove_process(struct process *p)
 {
 	// extra case if the process is the running process
-	
+	// TODO scan the deferred actions for the process if it was blocked, and remove the action
 	
 	
 	
