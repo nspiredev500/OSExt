@@ -30,19 +30,31 @@ struct elf_desc {
 };
 
 
+struct elf_sect_header {
+	uint32_t name; // index into the string table section
+	uint32_t type;
+	uint32_t flags;
+	void* addr; // address in memory
+	uint32_t offset; // offset from the start of the file to the section data
+	uint32_t size; // size in bytes
+	uint32_t link;
+	uint32_t info;
+	uint32_t addraling;
+	uint32_t entsize; // size of an entry in the section
+};
+
+
 
 
 // returns true if it's a valid ELF file
 bool elf_check_header(struct elf_header *h);
 
-
-
 void elf_read_header(NUC_FILE * f,struct elf_header *h);
+void elf_read_header_mem(char* header,struct elf_header *h);
 
 
-
-
-
+struct elf_desc* elf_load_file(NUC_FILE * f,uint32_t size);
+void elf_destroy(struct elf_desc* elf);
 
 
 

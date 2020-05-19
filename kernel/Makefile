@@ -50,7 +50,7 @@ endif
 
 
 #-Xlinker -m -Xlinker armelf_osext
-LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc
+LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc -z max-page-size=4096
 ZEHNFLAGS = --name "osext"  --author "nspiredev500" --version "30" --240x320-support true --uses-lcd-blit false
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c -printf "$(build_dir)/%f "))

@@ -768,6 +768,7 @@ void kfree(void* obj)
 		}
 		ccache = ccache->next;
 	}
+	uart_printf("could not free object at: 0x%x",(uint32_t) obj);
 }
 
 
@@ -806,6 +807,7 @@ void kfree_hint(void* obj,uint32_t size)
 		}
 		ccache = ccache->next;
 	}
+	uart_printf("could not free object with hint at: 0x%x",(uint32_t) obj);
 }
 
 
