@@ -20,13 +20,27 @@ struct elf_header {
 	uint16_t prog_count;
 	uint16_t sect_size;
 	uint16_t sect_count;
-	uint16_t sect_index; // Index in section header table with the section names
+	uint16_t sect_strtab; // strtab section index 
 };
 
 
 struct elf_desc {
 	uint32_t pages; // number of pages
 	void *start; // start in memory
+	void *image; // image from the load program header
+	uint32_t image_pages;
+};
+
+
+struct elf_prog_header {
+	uint32_t type;
+	uint32_t offset;
+	uint32_t vaddr;
+	uint32_t paddr;
+	uint32_t filesz;
+	uint32_t memsz;
+	uint32_t flags;
+	uint32_t align;
 };
 
 
@@ -52,12 +66,20 @@ bool elf_check_header(struct elf_header *h);
 void elf_read_header(NUC_FILE * f,struct elf_header *h);
 void elf_read_header_mem(char* header,struct elf_header *h);
 
+void elf_alloc_image(struct elf_desc *elf);
+void elf_assemble_image(struct elf_desc *elf);
+
+
 
 struct elf_desc* elf_load_file(NUC_FILE * f,uint32_t size);
 void elf_destroy(struct elf_desc* elf);
 
 
+// modules run with PIC-code, but the GOT-addresses have to be fixed after loading
+void elf_fix_got(struct elf_desc* elf);
 
+
+void* elf_entry(struct elf_desc* elf);
 
 
 

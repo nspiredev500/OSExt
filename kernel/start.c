@@ -10,8 +10,8 @@ asm(
 "__init_lr: .word 0 \n"
 "__init_sp: .word 0 \n"
 "__entry: .global __entry\n"
-" str lr, __init_lr\n"
-" str sp, __init_sp\n"
+//" str lr, __init_lr\n"
+//" str sp, __init_sp\n"
 " b main"
 );
 
@@ -49,6 +49,12 @@ int main(int argsn,char **argc)
 {
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
 	
+	uart_printf("osext started");
+	
+	if (argsn == 1 && ((unsigned int) argc) == 0x1234abcd) //test for running elf files
+	{
+		return 100;
+	}
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
 	{
@@ -150,8 +156,8 @@ void initialize()
 		}
 	#endif
 	
-	/*
-	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","r");
+	
+	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","rb");
 	if (f != NULL)
 	{
 		struct elf_header h;
@@ -170,13 +176,55 @@ void initialize()
 		debug_shell_println("type: %d", (uint32_t) h.type);
 		debug_shell_println("entry: %x", (uint32_t) h.entry);
 		debug_shell_println("prog table: %d", (uint32_t) h.prog_table);
-		debug_shell_println("sect table: %d", (uint32_t) h.sect_table);
+		debug_shell_println("sect table: 0x%x", (uint32_t) h.sect_table);
 		debug_shell_println("header size: %d", (uint32_t) h.header_size);
 		debug_shell_println("prog size: %d", (uint32_t) h.prog_size);
 		debug_shell_println("prog count: %d", (uint32_t) h.prog_count);
 		debug_shell_println("sect size: %d", (uint32_t) h.sect_size);
 		debug_shell_println("sect count: %d", (uint32_t) h.sect_count);
-		debug_shell_println("sect index: %d", (uint32_t) h.sect_index);
+		debug_shell_println("strtab: %d", (uint32_t) h.sect_strtab);
+		
+		debug_shell_println("\n");
+		
+		
+		
+		struct nuc_stat stat;
+		if (nuc_stat("/documents/osext.elf.tns",&stat) == 0)
+		{
+			DEBUGPRINTLN_1("size: %d",stat.st_size)
+			struct elf_desc *elf = elf_load_file(f,stat.st_size);
+			if (elf == NULL)
+			{
+				DEBUGPRINTLN_1("loading failed");
+			}
+			
+			elf_alloc_image(elf);
+			
+			DEBUGPRINTLN_1("fixing GOT");
+			elf_fix_got(elf);
+			
+			DEBUGPRINTLN_1("assembling image");
+			elf_assemble_image(elf);
+			
+			DEBUGPRINTLN_1("running");
+			int (*entry)(int,char**) = elf_entry(elf);
+			if (entry != NULL)
+			{
+				DEBUGPRINTLN_1("image start: 0x%x",elf->image);
+				DEBUGPRINTLN_1("pointer:   0x%x",entry);
+				DEBUGPRINTLN_1("return value: %d",entry(1,(char**) 0x1234abcd));
+			}
+			else
+			{
+				DEBUGPRINTLN_1("no valid entry point!");
+			}
+			
+			elf_destroy(elf);
+		}
+		else
+		{
+			DEBUGPRINTLN_1("stat failed!");
+		}
 		
 		nuc_fclose(f);
 	}
@@ -184,7 +232,7 @@ void initialize()
 	{
 		debug_shell_println("osext.elf.tns not found!");
 	}
-	*/
+	
 	
 	//usb_print_id_registers();
 	// usb driver in-progress

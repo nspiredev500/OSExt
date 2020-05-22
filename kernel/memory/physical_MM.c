@@ -244,7 +244,7 @@ void setPageUsedBit(void* page,bool used)
 		if (page >= b->start && page <= b->start+SMALL_PAGE_SIZE*b->size)
 		{
 			uint32_t offset = ((uint32_t) page - (uint32_t) b->start)/SMALL_PAGE_SIZE;
-			DEBUGPRINTLN_1("page offset: %d",offset)
+			//DEBUGPRINTLN_1("page offset: %d",offset)
 			setBit128(&b->used,&b->used2,offset,used);
 		}
 	}

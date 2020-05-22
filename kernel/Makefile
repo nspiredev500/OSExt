@@ -104,7 +104,7 @@ $(build_dir)/osext.elf: $(OBJS)
 
 
 clean:
-	-rm -f $(OBJS) $(build_dir)/osext.elf $(build_dir)/debug.elf $(build_dir)/osext.tns
+	-rm -f $(OBJS) $(build_dir)/osext.elf $(build_dir)/debug.elf $(build_dir)/osext.tns $(bin_dir)/osext.tns  $(bin_dir)/osext.elf.tns
 
 
 cleanbuild: clean

@@ -2,9 +2,9 @@
 #define TI_OS
 
 
-#define SEEK_SET 1
-#define SEEK_CUR 2
-#define SEEK_END 3
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 // copied from ndless-sdk/include/nucleus.h
 

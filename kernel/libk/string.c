@@ -17,6 +17,22 @@ uint32_t k_strlen(const char *string,uint32_t max)
 }
 
 
+int32_t k_strcmp(const char *s1, const char *s2, uint32_t max)
+{
+	int32_t count = 0;
+	for (uint32_t i = 0;i<max;i++)
+	{
+		if (s1[i] == '\0' || s2[i] == '\0')
+		{
+			return count;
+		}
+		count += s1[i]-s2[i];
+	}
+	return count;
+}
+
+
+
 void sprintf_safe(char *result,char *str,uint32_t length,...)
 {
 	va_list va;
