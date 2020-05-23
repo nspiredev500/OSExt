@@ -49,7 +49,25 @@ int main(int argsn,char **argc)
 {
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
 	
-	uart_printf("osext started");
+	DEBUGPRINTLN_1("virt base: 0x%x",virtual_base_address)
+	
+	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
+	
+	DEBUGPRINTLN_1("\ngot offset: 0x%x",got_offset)
+	DEBUGPRINTLN_1("start address: 0x%x",(&_EXEC_START))
+	DEBUGPRINTLN_1("got address: 0x%x\n",(&_GOT_START))
+	
+	
+	/*
+	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
+	uint32_t *got_entry = (uint32_t*) ((uint32_t)(&_EXEC_START)+(uint32_t)got_offset);
+	
+	while (*got_entry != 0xFFFFFFFF)
+	{
+		DEBUGPRINTLN_1("got entry: 0x%x, address: 0x%x",*got_entry,got_entry);
+		got_entry++;
+	}
+	*/
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x1234abcd) //test for running elf files
 	{

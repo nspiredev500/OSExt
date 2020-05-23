@@ -6,7 +6,7 @@ ENTRY(__entry);
 SECTIONS
 {
 	.text 0x0 : {
-		_start = .;
+		/* _start = .; */
 		*(.text);
 		*(.text.*)
 	}
@@ -38,9 +38,9 @@ SECTIONS
 	
 	
 	.bss : {
-		PROVIDE(__bss_start = .);
+		/* PROVIDE(__bss_start = .); */
 		*(.bss);
-		PROVIDE(_end = .);
+		/* PROVIDE(_end = .); */
     }
 	
 	

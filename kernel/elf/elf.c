@@ -331,11 +331,14 @@ void elf_fix_got(struct elf_desc* elf)
 		}
 		DEBUGPRINTLN_1("GOT size: %d",got.size);
 		uint32_t* got_entry = elf->start+got.offset;
-		DEBUGPRINTLN_1("GOT offset: 0x%x",got_entry);
+		DEBUGPRINTLN_1("GOT offset: 0x%x",got.offset);
 		for (uint32_t i = 0;i<got.size/4;i++)
 		{
-			DEBUGPRINTLN_1("GOT entry: 0x%x, patched: 0x%x",*got_entry,*got_entry+((uint32_t) elf->image));
-			*got_entry += ((uint32_t) elf->start);
+			if (*got_entry != 0xffffffff)
+			{
+				//DEBUGPRINTLN_1("GOT entry: 0x%x, patched: 0x%x",*got_entry,*got_entry+((uint32_t) elf->image));
+				*got_entry += ((uint32_t) elf->image);
+			}
 			got_entry++;
 		}
 	}
