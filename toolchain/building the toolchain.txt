@@ -1,0 +1,29 @@
+Copy the files in the binutils and GCC directories into the source directories of gcc and bunutils respectively.
+Keep the directory structure inside these directories, for example gcc/fixincludes/mkfixinc.sh goes into (gcc source)/fixincludes
+
+After copying the files run:
+automake in (your binutils source)/ld
+autoconf in (your GCC source)/libstdc++-v3
+
+
+Then make a build directories for GCC and binutils
+Also make a directory for the finished executables and add it to your PATH
+
+
+run:
+cd (your binutils build directory)
+(your binutils source directory)/configure --target=arm-osext --prefix=(your executable directory) --with-sysroot=(path to the OSExt sysroot newlib folder) --disable-nls
+make
+make install
+
+cd (your gcc build directory)
+
+(your GCC source directory)/configure --target=arm-osext --prefix=(your executable directory) --with-sysroot=(path to the OSExt sysroot newlib folder) --enable-languages=c,c++ --disable-nls
+make all-gcc
+make all-target-libgcc
+make install-gcc
+make install-target-libgcc
+
+
+
+

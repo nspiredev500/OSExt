@@ -1,29 +1,27 @@
 DEBUG = FALSE
 
+name = battery
 
-build_dir_raw ?= ../build
-build_dir = $(build_dir_raw)/modules/battery
-bin_dir ?= ../bin
+build_dir_raw ?= ../../build
+build_dir = $(build_dir_raw)/modules/$(name)
+bin_dir ?= ../../bin
+
+
+
+
 
 
 #GCC = nspire-gcc
 #AS  = nspire-as
 #GXX = nspire-g++
 #LD  = nspire-ld
-#OBJCOPY = arm-none-eabi-objcopy
-#STRIP = arm-none-eabi-strip
-#GCC = arm-none-eabi-gcc
-#AS = arm-none-eabi-as
-#GXX = arm-none-eabi-g++
-#LD = arm-none-eabi-gcc
-#OBJCOPY = arm-none-eabi-objcopy
-#STRIP = arm-none-eabi-strip
-GCC = arm-osext-gcc
-AS = arm-osext-as
-GXX = arm-osext-g++
-LD = arm-osext-gcc
-OBJCOPY = arm-osext-objcopy
-STRIP = arm-osext-strip
+
+OBJCOPY = arm-none-eabi-objcopy
+STRIP = arm-none-eabi-strip
+GCC = arm-none-eabi-gcc
+AS = arm-none-eabi-as
+GXX = arm-none-eabi-g++
+LD = arm-none-eabi-gcc
 
 
 NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
@@ -46,7 +44,7 @@ endif
 
 
 #-Xlinker -m -Xlinker armelf_osext
-LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc
+LDFLAGS = -marm -mcpu=arm926ej-s -march=armv5tej -nostdlib -static-pie -T $(CURDIR)/ldscript.ld -static-libgcc -lgcc -z max-page-size=4096
 
 OBJS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.c -printf "$(build_dir)/%f "))
 OBJS += $(patsubst %.cpp, %.o, $(shell find . -depth -name \*.cpp -printf "$(build_dir)/%f "))
@@ -58,7 +56,7 @@ HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
 #$(info $$CURDIR is [${CURDIR}])
 
 
-all: 
+all: $(bin_dir)/modules/$(name).elf.tns
 	
 
 
@@ -70,13 +68,18 @@ HEADERS: ;
 
 
 clean:
-	-rm -f $(OBJS) 
+	-rm -f $(OBJS) $(bin_dir)/modules/$(name).elf.tns $(bin_dir)/modules/$(name)-debug.elf.tns
 
 
+$(bin_dir)/modules/$(name).elf.tns: $(build_dir)/$(name).elf
+	cp $(build_dir)/$(name).elf $(bin_dir)/modules/$(name).elf.tns && \
+	cp $(build_dir)/$(name).elf $(bin_dir)/modules/$(name)-debug.elf.tns && \
+	$(STRIP) --strip-debug $(bin_dir)/modules/$(name).elf.tns
 
 	
-
-
+$(build_dir)/$(name).elf: $(OBJS)
+	mkdir -p $(build_dir)/$(DISTDIR) && \
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 
 

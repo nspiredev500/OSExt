@@ -13,20 +13,24 @@ endif
 #AS  = nspire-as
 #GXX = nspire-g++
 #LD  = nspire-ld
-#OBJCOPY = arm-none-eabi-objcopy
-#STRIP = arm-none-eabi-strip
-#GCC = arm-none-eabi-gcc
-#AS = arm-none-eabi-as
-#GXX = arm-none-eabi-g++
-#LD = arm-none-eabi-gcc
-#OBJCOPY = arm-none-eabi-objcopy
-#STRIP = arm-none-eabi-strip
-GCC = arm-osext-gcc
-AS = arm-osext-as
-GXX = arm-osext-g++
-LD = arm-osext-gcc
-OBJCOPY = arm-osext-objcopy
-STRIP = arm-osext-strip
+
+
+
+OBJCOPY = arm-none-eabi-objcopy
+STRIP = arm-none-eabi-strip
+GCC = arm-none-eabi-gcc
+AS = arm-none-eabi-as
+GXX = arm-none-eabi-g++
+LD = arm-none-eabi-gcc
+
+
+
+#GCC = arm-osext-gcc
+#AS = arm-osext-as
+#GXX = arm-osext-g++
+#LD = arm-osext-gcc
+#OBJCOPY = arm-osext-objcopy
+#STRIP = arm-osext-strip
 GENZEHN = genzehn
 
 
