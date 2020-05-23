@@ -174,7 +174,7 @@ void initialize()
 		}
 	#endif
 	
-	
+	/*
 	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","rb");
 	if (f != NULL)
 	{
@@ -188,6 +188,7 @@ void initialize()
 		{
 			debug_shell_println("invalid ELF file!");
 		}
+		
 		
 		debug_shell_println("wordwidth: %d", (uint32_t) h.wordwidth);
 		debug_shell_println("endianness: %d", (uint32_t) h.endianness);
@@ -250,6 +251,10 @@ void initialize()
 	{
 		debug_shell_println("osext.elf.tns not found!");
 	}
+	*/
+	
+	
+	
 	
 	
 	//usb_print_id_registers();
@@ -287,8 +292,10 @@ void initialize()
 		nuc_fclose(f);
 	}
 	*/
-	background_update();
 	
+	#if _BACKGROUND_IMAGES == true
+		background_update();
+	#endif
 	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);

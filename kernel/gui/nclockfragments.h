@@ -1,3 +1,6 @@
+
+
+#if _CLOCK == true
 //Contents of this file are from levak's ncklock
 /* Optimized LeapYear Detection (with optimized modulos) */
 int maxDayInMonth(unsigned month, int leap) {
@@ -79,3 +82,4 @@ void timestamp2date(unsigned long t, int * year, int * month, int * day, int * h
     t = timestamp2time(t, hr, min, sec);
     timestamp2day(t, year, month, day);
 }
+#endif

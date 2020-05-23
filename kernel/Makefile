@@ -59,6 +59,7 @@ OBJS += $(patsubst %.S, %.o, $(shell find . -depth -name \*.S -printf "$(build_d
 DISTDIR = .
 
 HEADERS = $(patsubst %.c, %.o, $(shell find . -depth -name \*.h))
+HEADERS += ../config.h
 
 #$(info $$CURDIR is [${CURDIR}])
 

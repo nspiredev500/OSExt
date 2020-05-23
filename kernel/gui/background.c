@@ -1,7 +1,7 @@
 #include "../kernel.h"
 
 
-
+#if _BACKGROUND_IMAGES == true
 static const uint32_t slideshow_time = 15; // the time an image is shown before the transition in seconds
 static const uint32_t slideshow_transition = 10;
 
@@ -282,3 +282,4 @@ void debug_clock()
 
 
 
+#endif

@@ -146,7 +146,8 @@ HOOK_DEFINE(drawhook)
 	int intmask = TCT_Local_Control_Interrupts(-1);
 	
 	disableIRQ();
-	call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
+	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
+	draw_hookfunc();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(drawhook);
@@ -169,16 +170,20 @@ void file_hookfunc()
 		return;
 	}
 	
+	#if _CLOCK == true
+		if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
+		{
+			set_time_dialog();
+		}
+	#endif
 	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
-	{
-		set_time_dialog();
-	}
 	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_PI))
-	{
-		background_update();
-	}
+	#if _BACKGROUND_IMAGES == true
+		if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_PI))
+		{
+			background_update();
+		}
+	#endif
 	
 	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
 	{
@@ -235,38 +240,41 @@ void draw_hookfunc()
 	}
 	void* framebuffer = get_front_framebuffer_address();
 	
-	background_draw_image(old_framebuffer,old_framebuffer);
+	#if _BACKGROUND_IMAGES == true
+		background_draw_image(old_framebuffer,old_framebuffer);
+	#endif
 	
-	if (draw_clock)
-	{
-		uint32_t clockx = 180;
-		uint32_t clocky = 1;
-		framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
-		framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
-		
-		uint32_t hr = 0,min = 0,sec = 0;
-		
-		systime_unix_to_timestamp(systime_unix(),NULL,NULL,NULL,&hr,&min,&sec);
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
-		
-		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
-		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
-		
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
-		
-		
-		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
-		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
-		
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
-	}
-	
+	#if _CLOCK == true
+		if (draw_clock)
+		{
+			uint32_t clockx = 180;
+			uint32_t clocky = 1;
+			framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
+			framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
+			
+			uint32_t hr = 0,min = 0,sec = 0;
+			
+			systime_unix_to_timestamp(systime_unix(),NULL,NULL,NULL,&hr,&min,&sec);
+			
+			framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
+			framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
+			
+			framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
+			framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
+			
+			
+			framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
+			framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
+			
+			
+			framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
+			framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
+			
+			
+			framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
+			framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
+		}
+	#endif
 	
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);

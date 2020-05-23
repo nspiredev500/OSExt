@@ -1,6 +1,10 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
+#include "../config.h"
+
+
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>

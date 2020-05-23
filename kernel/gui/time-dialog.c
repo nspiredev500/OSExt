@@ -1,8 +1,6 @@
 #include "../kernel.h"
 
-
-
-
+#if _CLOCK == true
 
 
 
@@ -138,3 +136,4 @@ void set_time_dialog()
 
 
 
+#endif
