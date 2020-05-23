@@ -9,8 +9,21 @@ all: installer kernel uninstaller loader modules
 
 
 
-.PHONY: installer kernel remake charset uninstaller cleanbuild loader release modules clean_charset
+.PHONY: installer kernel remake charset uninstaller cleanbuild loader release modules clean_charset configure
 	
+
+config/config: config/config.c
+	cd config && \
+	$(CC) config.c -o config
+
+
+configure: config/config
+	cd config && \
+	./config
+
+config.h: config/config
+	cd config && \
+	./config
 
 
 modules:
@@ -40,7 +53,7 @@ release:  installer uninstaller loader
 	cp bin/osext.tns bin/installer/boot/osext.tns
 
 
-kernel: 
+kernel: config.h
 	$(MAKE) -C kernel
 	cp bin/osext.tns bin/installer/boot/osext.tns
 
