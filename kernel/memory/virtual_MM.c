@@ -118,7 +118,15 @@ void initializeKernelSpace()
 	tt[(0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
 	tt[(0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
 	tt[(0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
-	tt[(0xe9000000+6*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000);
+	//tt[(0xe9000000+6*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000);
+	// NAND region is 16 MB big not just one
+	for (uint32_t i = 0;i<16;i++)
+	{
+		tt[(0xe9000000+(6+i)*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000+(i*SECTION_SIZE));
+	}
+	
+	
+	
 	
 	
 	
@@ -230,7 +238,14 @@ struct address_space* createAddressSpace()
 	tt[(0xe9000000+3*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xdc000000);
 	tt[(0xe9000000+4*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0xc4000000);
 	tt[(0xe9000000+5*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x8ff00000);
-	tt[(0xe9000000+6*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000);
+	//tt[(0xe9000000+6*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000);
+	// NAND region is 16 MB big not just one
+	for (uint32_t i = 0;i<16;i++)
+	{
+		tt[(0xe9000000+(6+i)*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000+(i*SECTION_SIZE));
+	}
+	
+	
 	
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
 	
