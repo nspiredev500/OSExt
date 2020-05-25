@@ -297,6 +297,31 @@ void initialize()
 		background_update();
 	#endif
 	
+	/*
+	static volatile uint32_t *remapped_nand_ctl = (uint32_t*)  (0xe95f1000);
+	debug_shell_println("nandctl status: 0x%x",remapped_nand_ctl[0]);
+	debug_shell_println("nandctl interface status: 0x%x",remapped_nand_ctl[1]);
+	debug_shell_println("NAND peripheral id: 0x%x",nand_controller_peripheral_id());
+	debug_shell_println("NAND primecell id: 0x%x",nand_controller_prime_cell_id());
+	*/
+	
+	
+	
+	// doesn't yet work on hardware
+	/*
+	nand_command(NAND_READ0,0);
+	debug_shell_println("first nand word: 0x%x",nand_read_word());
+	while (true)
+	{
+		keypad_press_release_barrier();
+	}
+	*/
+	
+	
+	
+	
+	
+	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);

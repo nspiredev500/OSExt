@@ -244,6 +244,100 @@ void elf_assemble_image(struct elf_desc *elf)
 	}
 }
 
+// returns a pointer to a copy of the section's data, or NULL if an error occurred.
+//sect_pages will be set to the number of pages the copy takes in memory
+void* elf_copy_section(struct elf_desc *elf,const char* searched_name,uint32_t *sect_pages,uint32_t *sect_pages)
+{
+	if (elf == NULL)
+	{
+		return NULL;
+	}
+	if (elf->start == NULL)
+	{
+		return NULL;
+	}
+	if (sect_pages == NULL) // would be no way to free it then
+	{
+		return NULL;
+	}
+	struct elf_header h;
+	elf_read_header_mem(elf->start,&h);
+	if (! elf_check_header(&h))
+	{
+		DEBUGPRINTLN_1("invalid header!");
+		return NULL;
+	}
+	if (h.sect_count != 0)
+	{
+		uint32_t sect_headers = h.sect_count;
+		void* sect_header = elf->start + h.sect_table;
+		struct elf_sect_header strtab;
+		bool found = false;
+		DEBUGPRINTLN_1("section offset: 0x%x",h.sect_table);
+		
+		if (h.sect_table + (h.sect_strtab * h.sect_size) + sizeof(struct elf_sect_header) > elf->pages*SMALL_PAGE_SIZE)
+		{
+			DEBUGPRINTLN_1("strtab header out of bounds!");
+			return NULL;
+		}
+		k_memcpy(&strtab,elf->start + h.sect_table + h.sect_strtab * h.sect_size,sizeof(struct elf_sect_header));
+		
+		
+		if (strtab.offset >= elf->pages*SMALL_PAGE_SIZE) // out of bounds
+		{
+			DEBUGPRINTLN_1("string table out of bounds!");
+			return NULL;
+		}
+		
+		found = false;
+		sect_header = elf->start + h.sect_table;
+		struct elf_sect_header section;
+		// search for the string table, so we can look up the names of the sections to find the sections
+		for (uint32_t i = 0;i<sect_headers;i++)
+		{
+			if (sect_header < elf->start || sect_header + sizeof(struct elf_sect_header) >= elf->start + (elf->pages*SMALL_PAGE_SIZE)) // out of bounds
+			{
+				return NULL;
+			}
+			k_memcpy(&section,sect_header,sizeof(struct elf_sect_header));
+			char *name = elf->start + strtab.offset + section.name;
+			if ((void*) name < elf->start || (void*)  name >= elf->start + (elf->pages*SMALL_PAGE_SIZE))
+			{
+				return NULL;
+			}
+			uint32_t maxlen = (uint32_t) ((elf->start + elf->pages*SMALL_PAGE_SIZE) - (void*) name);
+			if (k_strcmp(name,searched_name,maxlen-1) == 0 && k_strlen(name,maxlen-1) == k_strlen(searched_name,100))
+			{
+				found = true;
+				break;
+			}
+			sect_header += h.sect_size;
+		}
+		if (! found)
+		{
+			return NULL;
+		}
+		if (section.offset + section.size > elf->pages*SMALL_PAGE_SIZE)
+		{
+			return NULL;
+		}
+		*sect_pages = (section.size/SMALL_PAGE_SIZE)+1;
+		void* copy = useConsecutivePages(*sect_pages,0);
+		if (copy == NULL)
+		{
+			*sect_pages = 0;
+			return NULL;
+		}
+		else
+		{
+			return copy;
+		}
+	}
+	return NULL;
+}
+
+
+
 // modules run with PIC-code, but the GOT-addresses have to be fixed after loading
 void elf_fix_got(struct elf_desc* elf)
 {
@@ -363,8 +457,47 @@ void elf_destroy(struct elf_desc* elf)
 	kfree_hint(elf,sizeof(struct elf_desc));
 }
 
+// destroys the file in memory and the elf_desc, but not the elf image
+void elf_destroy_without_image(struct elf_desc* elf)
+{
+	if (elf == NULL)
+	{
+		return;
+	}
+	if (elf->start != NULL)
+	{
+		freeConsecutivePages(elf->start,elf->pages);
+	}
+	kfree_hint(elf,sizeof(struct elf_desc));
+}
 
-
+// to free the file and the image separately
+void elf_destroy_file_mem(struct elf_desc* elf)
+{
+	if (elf == NULL)
+	{
+		return;
+	}
+	if (elf->start != NULL)
+	{
+		freeConsecutivePages(elf->start,elf->pages);
+	}
+	elf->start = NULL;
+	elf->pages = 0;
+}
+void elf_destroy_image(struct elf_desc* elf)
+{
+	if (elf == NULL)
+	{
+		return;
+	}
+	if (elf->image != NULL)
+	{
+		freeConsecutivePages(elf->image,elf->image_pages);
+	}
+	elf->image = NULL;
+	elf->image_pages = 0;
+}
 
 
 

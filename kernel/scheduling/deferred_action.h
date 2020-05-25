@@ -2,6 +2,8 @@
 #define DEFERRED_ACTION_H
 
 
+// TODO make locks and use one in the deferred action
+//      locks should use reference counting
 
 struct deferred_syscall {
 	uint32_t number;

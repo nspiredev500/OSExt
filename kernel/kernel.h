@@ -39,6 +39,7 @@
 
 
 #include "elf/elf.h"
+#include "modules/modules.h"
 
 #include "gui/img565.h"
 #include "gui/nspire_menus.h"
