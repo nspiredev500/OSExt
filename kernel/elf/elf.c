@@ -246,7 +246,7 @@ void elf_assemble_image(struct elf_desc *elf)
 
 // returns a pointer to a copy of the section's data, or NULL if an error occurred.
 //sect_pages will be set to the number of pages the copy takes in memory
-void* elf_copy_section(struct elf_desc *elf,const char* searched_name,uint32_t *sect_pages,uint32_t *sect_pages)
+void* elf_copy_section(struct elf_desc *elf,const char* searched_name,uint32_t *sect_pages)
 {
 	if (elf == NULL)
 	{

@@ -144,6 +144,8 @@ bool init_kernel()
 	install_hooks();
 	
 	
+	debug_shell_println("initializing module system");
+	module_system_init();
 	
 	
 	return true;

@@ -44,13 +44,10 @@ SECTIONS
     }
 	
 	
-	
-	
-	
-	
 	_EXEC_START = ADDR(.text);
 	/* _EXEC_END doesn't take the GOT into account
 	*/
+	
 	_TEXT_START = ADDR(.text);
 	_DATA_START = ADDR(.data);
 	_BSS_START = ADDR(.bss);
@@ -61,7 +58,6 @@ SECTIONS
 	_GOT_START = ADDR (.got);
 	_GOT_SIZE = SIZEOF (.got);
 }
-
 
 
 

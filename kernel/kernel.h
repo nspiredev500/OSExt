@@ -99,8 +99,6 @@
 
 
 extern char _EXEC_START;
-// _EXEC_END doesn't take the GOT into account
-//extern char _EXEC_END;
 extern char _EXEC_SIZE;
 
 

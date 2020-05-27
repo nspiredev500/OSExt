@@ -15,21 +15,27 @@
 	
 */
 
-static const char* symtab_path = "/documents/modules/symtab.elf.tns";
-static const char* modules_path = "/documents/modules";
+//static const char* symtab_path = "/documents/symtab.tns";
+//static const char* strtab_path = "/documents/strtab.tns";
+static const char* modules_path = "/documents/";
+
+
+static void* modules_export[] = {&kmalloc,&kfree};
+static const char* modules_export_names[] = {"kmalloc","kfree"};
 
 
 
-static char* osext_strtab = NULL;
-static void* osext_symtab = NULL;
-static uint32_t strtab_pages = 0;
-static uint32_t symtab_pages = 0;
+//static char* osext_strtab = NULL;
+//static void* osext_symtab = NULL;
+//static uint32_t strtab_pages = 0;
+//static uint32_t symtab_pages = 0;
 
 struct module *modules = NULL;
 
 
 void module_system_init()
 {
+	/*
 	struct nuc_stat stat;
 	if (nuc_stat(symtab_path,&stat) != 0)
 	{
@@ -40,37 +46,40 @@ void module_system_init()
 	{
 		return;
 	}
-	struct elf_header h;
-	elf_read_header(f,&h);
-	if (! elf_check_header(&h))
+	symtab_pages = (stat.st_size/SMALL_PAGE_SIZE)+1;
+	osext_symtab = useConsecutivePages(symtab_pages,0);
+	if (osext_symtab == NULL)
 	{
 		nuc_fclose(f);
 		return;
 	}
-	
-	struct elf_desc elf = elf_load_file(f,stat.st_size);
-	if (elf_desc == NULL)
-	{
-		nuc_fclose(f);
-		return;
-	}
+	nuc_fread(osext_symtab,1,stat.st_size,f);
 	nuc_fclose(f);
 	
-	osext_strtab = elf_copy_section(elf,".strtab",&strtab_pages);
-	if (osext_strtab == NULL)
-	{
-		elf_destroy(elf);
-		return;
-	}
-	osext_symtab = elf_copy_section(elf,".symtab",&symtab_pages);
-	if (osext_strtab == NULL)
-	{
-		elf_destroy(elf);
-		return;
-	}
-	elf_destroy(elf);
 	
 	
+	if (nuc_stat(strtab_path,&stat) != 0)
+	{
+		freeConsecutivePages(osext_symtab,symtab_pages);
+		return;
+	}
+	f = nuc_fopen(strtab_path,"rb");
+	if (f == NULL)
+	{
+		freeConsecutivePages(osext_symtab,symtab_pages);
+		return;
+	}
+	strtab_pages = (stat.st_size/SMALL_PAGE_SIZE)+1;
+	osext_strtab = useConsecutivePages(strtab_pages,0);
+	if (osext_strtab == NULL)
+	{
+		freeConsecutivePages(osext_symtab,symtab_pages);
+		nuc_fclose(f);
+		return;
+	}
+	nuc_fread(osext_strtab,1,stat.st_size,f);
+	nuc_fclose(f);
+	*/
 	
 	
 	
@@ -83,7 +92,7 @@ void module_uninstall(const char *name)
 	struct module *mod = modules;
 	while (mod != NULL)
 	{
-		if (k_strlen(name,100) == k_strlen(mod->name,100) && k_strcmp(name,mod->name) == 0)
+		if (k_strlen(name,100) == k_strlen(mod->name,100) && k_strcmp(name,mod->name,100) == 0)
 		{
 			mod->module_end();
 			freeConsecutivePages(mod->start,mod->pages);
@@ -107,16 +116,26 @@ void module_uninstall(const char *name)
 // only works in kernel space
 void module_install(const char *name)
 {
+	uint32_t pathlen = k_strlen(modules_path,100)+k_strlen(name,100)+2;
+	char *path = kmalloc(pathlen);
+	k_memset(path,'\0',pathlen);
+	k_memcpy(path,modules_path,k_strlen(modules_path,100));
+	k_memcpy(path+k_strlen(modules_path,100),name,k_strlen(name,100));
+	
 	struct nuc_stat stat;
 	if (nuc_stat(name,&stat) != 0)
 	{
+		kfree(path);
 		return;
 	}
 	NUC_FILE* f = nuc_fopen(name,"rb");
 	if (f == NULL)
 	{
+		kfree(path);
 		return;
 	}
+	kfree(path);
+	
 	struct elf_header h;
 	elf_read_header(f,&h);
 	if (! elf_check_header(&h))
@@ -125,8 +144,8 @@ void module_install(const char *name)
 		return;
 	}
 	
-	struct elf_desc elf = elf_load_file(f,stat.st_size);
-	if (elf_desc == NULL)
+	struct elf_desc *elf = elf_load_file(f,stat.st_size);
+	if (elf == NULL)
 	{
 		nuc_fclose(f);
 		return;
@@ -166,12 +185,12 @@ void module_install(const char *name)
 	
 	
 	newmod->name = name_copy; // remember to free the name when uninstalling the module!
-	newmod->start = elf.image;
-	newmod->pages = elf.image_pages;
+	newmod->start = elf->image;
+	newmod->pages = elf->image_pages;
 	newmod->next = NULL;
 	
 	
-	(void (*)()) (*module_entry)(void* (*)()) = entry;
+	void* (*module_entry)(void*) = entry;
 	newmod->module_end = NULL;
 	newmod->module_end = module_entry(&module_search_function);
 	if (newmod->module_end == NULL)
@@ -204,9 +223,42 @@ void module_install(const char *name)
 
 void* module_search_function(const char *name)
 {
-	
-	
-	
+	/*
+	if (osext_strtab == NULL || osext_symtab == NULL)
+	{
+		return NULL;
+	}
+	struct elf_symtab_entry sym;
+	// (index+1)*sizeof(struct elf_symtab_entry), because +sizeof(struct elf_symtab_entry) because we will access the structure at that point
+	for (uint32_t index = 0;(index+1)*sizeof(struct elf_symtab_entry) < symtab_pages*SMALL_PAGE_SIZE;index++)
+	{
+		k_memcpy(&sym,osext_symtab+index*sizeof(struct elf_symtab_entry),sizeof(struct elf_symtab_entry));
+		if ((sym.info & 0xf) == 2 && (sym.info >> 4) == 1) // function and global
+		{
+			if (sym.name <= strtab_pages*SMALL_PAGE_SIZE)
+			{
+				uint32_t maxlen = strtab_pages*SMALL_PAGE_SIZE - sym.name;
+				if (k_strlen(osext_strtab+sym.name,maxlen) == k_strlen(name,100) && k_strcmp(osext_strtab+sym.name,name,100) == 0) // is the name right?
+				{
+					uint32_t kernel_size = (uint32_t) (&_EXEC_SIZE-&_EXEC_START);
+					if (sym.value > kernel_size)
+					{
+						return NULL;
+					}
+					return (&_TEXT_START)+sym.value;
+				}
+			}
+		}
+	}
+	return NULL;
+	*/
+	for (uint32_t i = 0;i<sizeof(modules_export)/4;i++)
+	{
+		if (k_strlen(modules_export_names[i],100) == k_strlen(name,100) && k_strcmp(name,modules_export_names[i],100) == 0)
+		{
+			return modules_export[i];
+		}
+	}
 	return NULL;
 }
 

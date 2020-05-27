@@ -105,7 +105,7 @@ int TCT_Local_Control_Interrupts(int mask);
 //int32_t show_1_numeric_input(char* title,char* subtitle,char* msg,int32_t *val);
 
 
-NUC_FILE* nuc_fopen(char *path,char *mode);
+NUC_FILE* nuc_fopen(const char *path,char *mode);
 int32_t nuc_fclose(NUC_FILE* f);
 uint32_t nuc_fread(void* buffer,uint32_t elements,uint32_t size,NUC_FILE* f);
 uint32_t nuc_fwrite(void* buffer,uint32_t elements,uint32_t size,NUC_FILE* f);

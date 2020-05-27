@@ -115,7 +115,7 @@ void ascii2utf16(char *string16,char *string, size_t size)
 
 
 
-NUC_FILE* nuc_fopen(char *path,char *mode)
+NUC_FILE* nuc_fopen(const char *path,char *mode)
 {
 	return (NUC_FILE*) wa_syscall2(e_fopen,(int) path,(int) mode);
 }

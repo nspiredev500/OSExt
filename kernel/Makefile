@@ -37,7 +37,7 @@ GENZEHN = genzehn
 NDLESS-INCLUDE = /mnt/c/Users/usertemp/Desktop/TI/Ndless/ndless-sdk/include
 
 
-GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej $(RELEASE_KERNEL)
+GCCFLAGS = -Wall -W -marm -ffreestanding -nostdlib -lgcc -Os -fPIE -g  -I $(NDLESS-INCLUDE) -mcpu=arm926ej-s -march=armv5tej $(RELEASE_KERNEL) -ldl -Wl,--export-dynamic
 # -march=armv5tej-s
 # ignore unused things to clean warnings up
 GCCFLAGS +=  -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-implicit-fallthrough
@@ -104,8 +104,7 @@ $(build_dir)/osext.tns: $(build_dir)/osext.elf
 
 $(build_dir)/osext.elf: $(OBJS) 
 	mkdir -p $(build_dir)/$(DISTDIR) && \
-	$(LD) $^ -o $@ $(LDFLAGS) && \
-	cp $(build_dir)/osext.elf $(bin_dir)/osext.elf.tns
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 
 clean:
@@ -167,6 +166,8 @@ $(build_dir)/%.o: $(CURDIR)/elf/%.c $(HEADERS)
 
 
 
+$(build_dir)/%.o: $(CURDIR)/modules/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
 

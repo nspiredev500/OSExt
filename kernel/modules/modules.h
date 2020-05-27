@@ -9,7 +9,7 @@ struct module {
 	void* start;
 	uint32_t pages;
 	struct module *next; // modules are arranged in a linked list
-}
+};
 
 
 void module_system_init();
