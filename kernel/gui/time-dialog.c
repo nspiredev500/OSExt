@@ -83,33 +83,33 @@ void set_time_dialog()
 		char buffer[100];
 		k_memset(buffer,'\0',90);
 		sprintf_safe(buffer,"y: %d mon: %d d: %d",80,numbers[0],numbers[1],numbers[2]);
-		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-k_strlen(buffer,80)*5,240/2-5,0,0,0,ascii10p);
+		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-k_strlen(buffer,80)*5,240/2-5,0,0,0);
 		
 		
 		k_memset(buffer,'\0',90);
 		sprintf_safe(buffer,"h: %d min: %d s: %d",80,numbers[3],numbers[4],numbers[5]);
-		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-k_strlen(buffer,80)*5,240/2-5+10,0,0,0,ascii10p);
+		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-k_strlen(buffer,80)*5,240/2-5+10,0,0,0);
 		
 		
 		switch (selected)
 		{
 		case 0:
-			framebuffer_write10pstring_ascii("y",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("y",framebuffer,320/2,0,0,200,0);
 			break;
 		case 1:
-			framebuffer_write10pstring_ascii("mon",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("mon",framebuffer,320/2,0,0,200,0);
 			break;
 		case 2:
-			framebuffer_write10pstring_ascii("d",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("d",framebuffer,320/2,0,0,200,0);
 			break;
 		case 3:
-			framebuffer_write10pstring_ascii("h",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("h",framebuffer,320/2,0,0,200,0);
 			break;
 		case 4:
-			framebuffer_write10pstring_ascii("min",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("min",framebuffer,320/2,0,0,200,0);
 			break;
 		case 5:
-			framebuffer_write10pstring_ascii("s",framebuffer,320/2,0,0,200,0,ascii10p);
+			framebuffer_write10pstring_ascii("s",framebuffer,320/2,0,0,200,0);
 			break;
 		}
 		

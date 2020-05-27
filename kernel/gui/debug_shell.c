@@ -25,12 +25,12 @@ void debug_shell_println_rgb(char* string,uint32_t r, uint32_t g,uint32_t b,...)
 	va_start(va,b);
 	sprintf_safe_va(str,string,180,va);
 	va_end(va);
-	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,r,g,b,ascii10p);
+	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,r,g,b);
 	line += 10;
 	char *strpart = str+32;
 	while (k_strlen(strpart,190) > 0)
 	{
-		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,r,g,b,ascii10p);
+		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,r,g,b);
 		line += 10;
 		if (line >= 240)
 		{
@@ -67,12 +67,12 @@ void debug_shell_println(char* string,...)
 	va_start(va,string);
 	sprintf_safe_va(str,string,180,va);
 	va_end(va);
-	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,255,255,255,ascii10p);
+	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,255,255,255);
 	line += 10;
 	char *strpart = str+32;
 	while (k_strlen(strpart,190) > 0)
 	{
-		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,255,255,255,ascii10p);
+		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,255,255,255);
 		line += 10;
 		if (line >= 240)
 		{
@@ -107,12 +107,12 @@ void shell_println(char* string,...) // to allow showing text in release kernels
 	va_start(va,string);
 	sprintf_safe_va(str,string,180,va);
 	va_end(va);
-	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,255,255,255,ascii10p);
+	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,255,255,255);
 	line += 10;
 	char *strpart = str+32;
 	while (k_strlen(strpart,190) > 0)
 	{
-		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,255,255,255,ascii10p);
+		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,255,255,255);
 		line += 10;
 		if (line >= 240)
 		{
@@ -145,12 +145,12 @@ void shell_println_rgb(char* string,uint32_t r, uint32_t g,uint32_t b,...)
 	va_start(va,b);
 	sprintf_safe_va(str,string,180,va);
 	va_end(va);
-	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,r,g,b,ascii10p);
+	framebuffer_write10pstring_ascii(str,shell_framebuffer,0,line,r,g,b);
 	line += 10;
 	char *strpart = str+32;
 	while (k_strlen(strpart,190) > 0)
 	{
-		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,r,g,b,ascii10p);
+		framebuffer_write10pstring_ascii(strpart,shell_framebuffer,10,line,r,g,b);
 		line += 10;
 		if (line >= 240)
 		{

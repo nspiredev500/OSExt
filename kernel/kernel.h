@@ -29,9 +29,7 @@
 
 #include "ti-os.h"
 #include "LinkedList.h"
-#include "charset/chars.h"
-#include "charset/digits.h"
-#include "charset/ascii.h"
+#include "charset/charset.h"
 #include "osversion.h"
 #include "libk/math.h"
 #include "libk/string.h"
@@ -126,7 +124,7 @@ const uint32_t SECTION_SIZE;
 
 
 #define DEBUGLEVEL 3
-#define DEBUG_BREAKPOINTS 0
+#define DEBUG_BREAKPOINTS 1
 
 #ifdef RELEASE
 	#undef DEBUGLEVEL

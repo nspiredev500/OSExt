@@ -9,7 +9,7 @@
 
 bool init_kernel()
 {
-	
+	charset_load();
 	void* framebuffer = (void*) *LCD_UPBASE;
 	#ifndef RELEASE
 		framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);

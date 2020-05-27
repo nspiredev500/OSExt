@@ -135,13 +135,13 @@ void lcd_fillrect(uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, ui
 	}
 }
 
-void lcd_write10pchar(int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn,char c[][10][10])
+void lcd_write10pchar(int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn)
 {
 	for (int x = 0;x<10;x++)
 	{
 		for (int y = 0;y<10;y++)
 		{
-			if (c[charn][y][x] == 1)
+			if (isCharPixel(x,y,charn))
 			{
 				lcd_setpixel(xx+x,yy+y,r,g,b);
 			}
@@ -149,41 +149,43 @@ void lcd_write10pchar(int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn,
 	}
 }
 
-void lcd_write10pstring(char* string,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[][10][10],char d[][10][10])
+void lcd_write10pstring(char* string,int xx,int yy,uint32_t r, uint32_t g,uint32_t b)
 {
 	char *cchar = string;
 	while (*cchar != '\0')
 	{
-		char *images = NULL;
+		bool digit = false;
 		uint32_t charn = 0;
 		if ((*cchar >= 65 && *cchar <= 90))
 		{
-			images = (char*) c;
 			charn = *cchar - 65;
 		}
 		if ((*cchar >= 97 && *cchar <= 122))
 		{
-			images = (char*) c;
 			charn = *cchar - 97;
 		}
 		if ((*cchar >= 48 && *cchar <= 57))
 		{
-			images = (char*) d;
+			digit = true;
 			charn = *cchar - 48;
-		}
-		if (images == NULL)
-		{
-			cchar++;
-			xx += 10;
-			continue;
 		}
 		for (int x = 0;x<10;x++)
 		{
 			for (int y = 0;y<10;y++)
 			{
-				if (c[charn][y][x] == 1)
+				if (digit)
 				{
-					lcd_setpixel(xx+x,yy+y,r,g,b);
+					if (isDigitPixel(x,y,charn))
+					{
+						lcd_setpixel(xx+x,yy+y,r,g,b);
+					}
+				}
+				else
+				{
+					if (isCharPixel(x,y,charn))
+					{
+						lcd_setpixel(xx+x,yy+y,r,g,b);
+					}
 				}
 			}
 		}
@@ -251,13 +253,13 @@ void framebuffer_drawrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32
 	}
 }
 
-void framebuffer_write10pchar(void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn,char c[][10][10])
+void framebuffer_write10pchar(void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn)
 {
 	for (int x = 0;x<10;x++)
 	{
 		for (int y = 0;y<10;y++)
 		{
-			if (c[charn][y][x] == 1)
+			if (isCharPixel(x,y,charn))
 			{
 				framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
 			}
@@ -265,42 +267,58 @@ void framebuffer_write10pchar(void *buff,int xx,int yy,uint32_t r, uint32_t g,ui
 	}
 }
 
-void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[][10][10],char d[][10][10])
+void framebuffer_write10pdigit(void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,int charn)
+{
+	for (int x = 0;x<10;x++)
+	{
+		for (int y = 0;y<10;y++)
+		{
+			if (isDigitPixel(x,y,charn))
+			{
+				framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
+			}
+		}
+	}
+}
+
+void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b)
 {
 	char *cchar = string;
 	while (*cchar != '\0')
 	{
-		char (*images)[10][10] = NULL;
+		bool digit = false;
 		uint32_t charn = 0;
 		if ((*cchar >= 65 && *cchar <= 90))
 		{
-			images = c;
 			charn = *cchar - 65;
 		}
 		if ((*cchar >= 97 && *cchar <= 122))
 		{
-			images = c;
 			charn = *cchar - 97;
 		}
 		if ((*cchar >= 48 && *cchar <= 57))
 		{
-			images = d;
+			digit = true;
 			charn = *cchar - 48;
-		}
-		if (images == NULL)
-		{
-			cchar++;
-			xx += 10;
-			continue;
 		}
 		//DEBUGPRINTLN_1("cchar: %d",(uint32_t) *cchar)
 		for (int x = 0;x<10;x++)
 		{
 			for (int y = 0;y<10;y++)
 			{
-				if (images[charn][y][x] == 1)
+				if (digit)
 				{
-					framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
+					if (isDigitPixel(x,y,charn))
+					{
+						framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
+					}
+				}
+				else
+				{
+					if (isCharPixel(x,y,charn))
+					{
+						framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
+					}
 				}
 			}
 		}
@@ -309,7 +327,7 @@ void framebuffer_write10pstring(char* string,void *buff,int xx,int yy,uint32_t r
 	}
 }
 
-void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b,char c[128][10][10])
+void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b)
 {
 	char *cchar = string;
 	while (*cchar != '\0')
@@ -319,7 +337,7 @@ void framebuffer_write10pstring_ascii(char* string,void *buff,int xx,int yy,uint
 			for (int y = 0;y<10;y++)
 			{
 				
-				if (c[(uint32_t) *cchar][y][x] == 1)
+				if (isAsciiPixel(x,y,*cchar))
 				{
 					framebuffer_setpixel(buff,xx+x,yy+y,r,g,b);
 				}
