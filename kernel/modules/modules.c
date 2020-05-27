@@ -19,10 +19,9 @@
 //static const char* strtab_path = "/documents/strtab.tns";
 static const char* modules_path = "/documents/";
 
-
-static void* modules_export[] = {&kmalloc,&kfree};
-static const char* modules_export_names[] = {"kmalloc","kfree"};
-
+#define EXPORTED_NUM 3
+static void* modules_export[EXPORTED_NUM];
+static const char* modules_export_names[EXPORTED_NUM];
 
 
 //static char* osext_strtab = NULL;
@@ -35,54 +34,13 @@ struct module *modules = NULL;
 
 void module_system_init()
 {
-	/*
-	struct nuc_stat stat;
-	if (nuc_stat(symtab_path,&stat) != 0)
-	{
-		return;
-	}
-	NUC_FILE* f = nuc_fopen(symtab_path,"rb");
-	if (f == NULL)
-	{
-		return;
-	}
-	symtab_pages = (stat.st_size/SMALL_PAGE_SIZE)+1;
-	osext_symtab = useConsecutivePages(symtab_pages,0);
-	if (osext_symtab == NULL)
-	{
-		nuc_fclose(f);
-		return;
-	}
-	nuc_fread(osext_symtab,1,stat.st_size,f);
-	nuc_fclose(f);
+	modules_export[0] = kmalloc;
+	modules_export[1] = kfree;
+	modules_export[2] = uart_printf;
 	
-	
-	
-	if (nuc_stat(strtab_path,&stat) != 0)
-	{
-		freeConsecutivePages(osext_symtab,symtab_pages);
-		return;
-	}
-	f = nuc_fopen(strtab_path,"rb");
-	if (f == NULL)
-	{
-		freeConsecutivePages(osext_symtab,symtab_pages);
-		return;
-	}
-	strtab_pages = (stat.st_size/SMALL_PAGE_SIZE)+1;
-	osext_strtab = useConsecutivePages(strtab_pages,0);
-	if (osext_strtab == NULL)
-	{
-		freeConsecutivePages(osext_symtab,symtab_pages);
-		nuc_fclose(f);
-		return;
-	}
-	nuc_fread(osext_strtab,1,stat.st_size,f);
-	nuc_fclose(f);
-	*/
-	
-	
-	
+	modules_export_names[0] = "kmalloc";
+	modules_export_names[1] = "kfree";
+	modules_export_names[2] = "uart_printf";
 }
 
 // only works in kernel space
@@ -116,21 +74,27 @@ void module_uninstall(const char *name)
 // only works in kernel space
 void module_install(const char *name)
 {
-	uint32_t pathlen = k_strlen(modules_path,100)+k_strlen(name,100)+2;
+	uint32_t pathlen = k_strlen(modules_path,100)+k_strlen(name,100)+4+k_strlen(".elf.tns",100);
 	char *path = kmalloc(pathlen);
 	k_memset(path,'\0',pathlen);
 	k_memcpy(path,modules_path,k_strlen(modules_path,100));
 	k_memcpy(path+k_strlen(modules_path,100),name,k_strlen(name,100));
+	k_memcpy(path+k_strlen(modules_path,100)+k_strlen(name,100),".elf.tns",k_strlen(".elf.tns",100));
+	
+	DEBUGPRINTLN_1("loading module: %s",path);
+	
 	
 	struct nuc_stat stat;
-	if (nuc_stat(name,&stat) != 0)
+	if (nuc_stat(path,&stat) != 0)
 	{
+		DEBUGPRINTLN_1("could not stat");
 		kfree(path);
 		return;
 	}
-	NUC_FILE* f = nuc_fopen(name,"rb");
+	NUC_FILE* f = nuc_fopen(path,"rb");
 	if (f == NULL)
 	{
+		DEBUGPRINTLN_1("could not open");
 		kfree(path);
 		return;
 	}
@@ -140,6 +104,7 @@ void module_install(const char *name)
 	elf_read_header(f,&h);
 	if (! elf_check_header(&h))
 	{
+		DEBUGPRINTLN_1("invalid elf header");
 		nuc_fclose(f);
 		return;
 	}
@@ -147,6 +112,7 @@ void module_install(const char *name)
 	struct elf_desc *elf = elf_load_file(f,stat.st_size);
 	if (elf == NULL)
 	{
+		DEBUGPRINTLN_1("couldn't load elf");
 		nuc_fclose(f);
 		return;
 	}
@@ -155,6 +121,7 @@ void module_install(const char *name)
 	elf_alloc_image(elf);
 	if (elf->image == NULL)
 	{
+		DEBUGPRINTLN_1("could alloc image");
 		elf_destroy(elf);
 		return;
 	}
@@ -164,12 +131,14 @@ void module_install(const char *name)
 	void* entry = elf_entry(elf);
 	if (entry == NULL)
 	{
+		DEBUGPRINTLN_1("couldn't get entry point");
 		elf_destroy(elf);
 		return;
 	}
 	struct module *newmod = kmalloc(sizeof(struct module));
 	if (newmod == NULL)
 	{
+		DEBUGPRINTLN_1("couldn't alloc module");
 		elf_destroy(elf);
 		return;
 	}
@@ -177,6 +146,7 @@ void module_install(const char *name)
 	char *name_copy = kmalloc(k_strlen(name,100)+2);
 	if (name_copy == NULL)
 	{
+		DEBUGPRINTLN_1("couldn't alloc name");
 		elf_destroy(elf);
 		return;
 	}
@@ -195,6 +165,7 @@ void module_install(const char *name)
 	newmod->module_end = module_entry(&module_search_function);
 	if (newmod->module_end == NULL)
 	{
+		DEBUGPRINTLN_1("couldn't get module end, uninstalling");
 		kfree_hint(newmod,sizeof(struct module));
 		kfree_hint(name_copy,k_strlen(name,100)+2);
 		elf_destroy(elf);
@@ -214,7 +185,7 @@ void module_install(const char *name)
 		modules = newmod;
 	}
 	
-	
+	DEBUGPRINTLN_1("module installed");
 	
 	elf_destroy_without_image(elf);
 }
@@ -252,10 +223,13 @@ void* module_search_function(const char *name)
 	}
 	return NULL;
 	*/
+	DEBUGPRINTLN_1("requested function: %s",name);
 	for (uint32_t i = 0;i<sizeof(modules_export)/4;i++)
 	{
+		DEBUGPRINTLN_1("index: %d, name: %s",i,modules_export_names[i]);
 		if (k_strlen(modules_export_names[i],100) == k_strlen(name,100) && k_strcmp(name,modules_export_names[i],100) == 0)
 		{
+			DEBUGPRINTLN_1("referenced found: 0x%x",modules_export[i]);
 			return modules_export[i];
 		}
 	}

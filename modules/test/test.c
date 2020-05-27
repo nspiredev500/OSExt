@@ -11,9 +11,11 @@ void* (*search)(char*) = NULL;
 void* module_start(void* search_func)
 {
 	search = (void* (*)(char*)) search_func;
-	
-	
-	
+	void (*uart_printf)(const char*,...) = search("uart_printf");
+	if (uart_printf != NULL)
+	{
+		uart_printf("\nHello from test module!\n\n");
+	}
 	
 	
 	

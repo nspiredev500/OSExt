@@ -327,7 +327,7 @@ void initialize()
 	*/
 	
 	
-	
+	module_install("test");
 	
 	
 	
