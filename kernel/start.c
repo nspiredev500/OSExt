@@ -255,6 +255,10 @@ void initialize()
 	
 	
 	
+	//debug_shell_println("text start: 0x%x",&_TEXT_START);
+	//debug_shell_println("exec start: 0x%x",&_EXEC_START);
+	//debug_shell_println("exec size: 0x%x",&_EXEC_SIZE-&_EXEC_START);
+	
 	
 	
 	//usb_print_id_registers();
@@ -307,9 +311,14 @@ void initialize()
 	
 	
 	
-	// doesn't yet work on hardware
+	
 	/*
-	nand_command(NAND_READ0,0);
+	// doesn't yet work on hardware
+	ut_disable_watchdog();
+	disableIRQ();
+	disableFIQ();
+	
+	nand_command(NAND_READ0,NAND_READSTART,0);
 	debug_shell_println("first nand word: 0x%x",nand_read_word());
 	while (true)
 	{

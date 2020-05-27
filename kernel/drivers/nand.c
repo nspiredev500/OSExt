@@ -69,7 +69,12 @@
 	remapped_nand_ctl[0x3ff] = primecell id 3
 	
 */
+
+/*
+
+
 const uint32_t NAND_READ0 = 0x0;
+const uint32_t NAND_READSTART = 0b110000; // OS uses this value, called READSTART in firebird
 
 static volatile uint32_t *remapped_nand_ctl = (uint32_t*)  (0xe95f1000);
 static volatile uint32_t *remapped_nand = (uint32_t*)  (0xe9600000);
@@ -77,7 +82,7 @@ static volatile uint32_t *remapped_nand = (uint32_t*)  (0xe9600000);
 
 // NAND controller stuff
 
-/*
+
 // 0x10101
 uint32_t nand_controller_peripheral_id()
 {
@@ -102,8 +107,18 @@ uint32_t nand_controller_prime_cell_id()
 }
 
 
-
-
+bool nand_controller_finished()
+{
+	if (((remapped_nand_ctl[0] >> 5) & 0b1) == 0b1)
+	{
+		remapped_nand_ctl[3] = 0b1 << 3; // clear the interrupt
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 
 
@@ -113,27 +128,31 @@ uint32_t nand_controller_prime_cell_id()
 // NAND stuff
 
 
-static const uint32_t read_offset = 0x280000;
-static const uint32_t command_offset = 0x118000;
+//static const uint32_t read_offset = 0x280000;
+static const uint32_t nand_read_clearCS = 0b1; // OS uses this value
+//static const uint32_t command_offset = 0x118000;
+//static const uint32_t read_end_command = 0b110000;
 // address is the address bytes of the transfer
-void nand_command(uint32_t command,uint32_t address)
+void nand_command(uint32_t command,uint32_t end_command,uint32_t address)
 {
-	uint32_t *write_address = (uint32_t*) (((uint32_t) remapped_nand + command_offset + (command << 3)) | (4 << 21)); // can be converted directly uint32_t*, because the << 3 takes care of the alignment
+	uint32_t *write_address = (uint32_t*) (((uint32_t) remapped_nand | (0b1 << 20) | ((end_command & 0xff) << 11) | ((command & 0xff) << 3)) | (4 << 21));
+	// nand base + requires end command + end command + command + address cycles
+	// can be converted directly uint32_t*, because the << 3 takes care of the alignment
 	*write_address = address;
+	//while (!nand_controller_finished()) {}; // busy wait for now
 }
 
 
 uint32_t nand_read_word()
 {
-	// 0x280000 seems to be the offset the OS uses for reading
-	return remapped_nand[read_offset/4];
+	uint32_t *read_address = (uint32_t*) ((uint32_t) remapped_nand | (1 << 19) | (nand_read_clearCS << 21));
+	return *read_address;
 }
 
 uint8_t nand_read_byte()
 {
-	// 0x280000 seems to be the offset the OS uses for reading
-	uint8_t *nand_bytes = (uint8_t*) remapped_nand;
-	return nand_bytes[read_offset];
+	uint8_t *read_address = (uint8_t*) ((uint32_t) remapped_nand | (1 << 19) | (nand_read_clearCS << 21));
+	return *read_address;
 }
 */
 
