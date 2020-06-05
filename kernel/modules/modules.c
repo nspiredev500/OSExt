@@ -26,15 +26,10 @@
 
 static const char* modules_path = "/documents/";
 
-#define EXPORTED_NUM 18
+#define EXPORTED_NUM 37
 static void* modules_export[EXPORTED_NUM];
 static const char* modules_export_names[EXPORTED_NUM];
 
-
-//static char* osext_strtab = NULL;
-//static void* osext_symtab = NULL;
-//static uint32_t strtab_pages = 0;
-//static uint32_t symtab_pages = 0;
 
 struct module *modules = NULL;
 
@@ -59,6 +54,25 @@ void module_system_init()
 	modules_export[15] = framebuffer_write10pdigit;
 	modules_export[16] = framebuffer_write10pstring_ascii;
 	modules_export[17] = panic;
+	modules_export[18] = systime_unix;
+	modules_export[19] = systime_unix_milis;
+	modules_export[20] = systime_timestamp_to_unix;
+	modules_export[21] = systime_unix_to_timestamp;
+	modules_export[22] = debug_shell_println;
+	modules_export[23] = debug_shell_println_rgb;
+	modules_export[24] = isKeyPressed;
+	modules_export[25] = keypad_press_release_barrier;
+	modules_export[26] = touchpad_get_report;
+	modules_export[27] = touchpad_is_arrow;
+	modules_export[28] = get_back_framebuffer_address;
+	modules_export[29] = blitLCDBuffer;
+	modules_export[30] = k_memset;
+	modules_export[31] = k_memcpy;
+	modules_export[32] = k_strlen;
+	modules_export[33] = k_strcmp;
+	modules_export[34] = sprintf_safe;
+	modules_export[35] = msleep;
+	modules_export[36] = systime_set_unix;
 	
 	
 	
@@ -82,6 +96,29 @@ void module_system_init()
 	modules_export_names[15] = "framebuffer_write10pdigit";
 	modules_export_names[16] = "framebuffer_write10pstring_ascii";
 	modules_export_names[17] = "panic";
+	modules_export_names[18] = "systime_unix";
+	modules_export_names[19] = "systime_unix_milis";
+	modules_export_names[20] = "systime_timestamp_to_unix";
+	modules_export_names[21] = "systime_unix_to_timestamp";
+	modules_export_names[22] = "debug_shell_println";
+	modules_export_names[23] = "debug_shell_println_rgb";
+	modules_export_names[24] = "isKeyPressed";
+	modules_export_names[25] = "keypad_press_release_barrier";
+	modules_export_names[26] = "touchpad_get_report";
+	modules_export_names[27] = "touchpad_is_arrow";
+	modules_export_names[28] = "get_back_framebuffer_address";
+	modules_export_names[29] = "blitLCDBuffer";
+	modules_export_names[30] = "k_memset";
+	modules_export_names[31] = "k_memcpy";
+	modules_export_names[32] = "k_strlen";
+	modules_export_names[33] = "k_strcmp";
+	modules_export_names[34] = "sprintf_safe";
+	modules_export_names[35] = "msleep";
+	modules_export_names[36] = "systime_set_unix";
+	
+	
+	
+	
 	
 	
 }
@@ -234,43 +271,43 @@ void module_install(const char *name)
 }
 
 
-
-void* module_search_function(const char *name)
+void module_load_all()
 {
-	/*
-	if (osext_strtab == NULL || osext_symtab == NULL)
+	NUC_DIR* dir = nuc_opendir(modules_path);
+	DEBUGPRINTLN_1("opening directory")
+	if (dir != NULL)
 	{
-		return NULL;
-	}
-	struct elf_symtab_entry sym;
-	// (index+1)*sizeof(struct elf_symtab_entry), because +sizeof(struct elf_symtab_entry) because we will access the structure at that point
-	for (uint32_t index = 0;(index+1)*sizeof(struct elf_symtab_entry) < symtab_pages*SMALL_PAGE_SIZE;index++)
-	{
-		k_memcpy(&sym,osext_symtab+index*sizeof(struct elf_symtab_entry),sizeof(struct elf_symtab_entry));
-		if ((sym.info & 0xf) == 2 && (sym.info >> 4) == 1) // function and global
+		struct nuc_dirent* dirent;
+		while ((dirent = nuc_readdir(dir)) != NULL)
 		{
-			if (sym.name <= strtab_pages*SMALL_PAGE_SIZE)
+			DEBUGPRINTLN_1("entry: %s",dirent->d_name)
+			if (k_strlen(dirent->d_name,100) > 8)
 			{
-				uint32_t maxlen = strtab_pages*SMALL_PAGE_SIZE - sym.name;
-				if (k_strlen(osext_strtab+sym.name,maxlen) == k_strlen(name,100) && k_strcmp(osext_strtab+sym.name,name,100) == 0) // is the name right?
+				uint32_t pathlen = k_strlen(dirent->d_name,100);
+				if (k_strcmp(dirent->d_name+(pathlen-8),".elf.tns",100) == 0)
 				{
-					uint32_t kernel_size = (uint32_t) (&_EXEC_SIZE-&_EXEC_START);
-					if (sym.value > kernel_size)
-					{
-						return NULL;
-					}
-					return (&_TEXT_START)+sym.value;
+					DEBUGPRINTLN_1("elf file extension",dirent->d_name)
+					char buffer[105];
+					k_memset(buffer,'\0',103);
+					k_memcpy(buffer,dirent->d_name,pathlen);
+					buffer[pathlen-8] = '\0'; // cut the .elf.tns off for module_install
+					module_install(buffer);
 				}
 			}
 		}
+		nuc_closedir(dir);
 	}
-	return NULL;
-	*/
+}
+
+
+
+void* module_search_function(const char *name)
+{
 	DEBUGPRINTLN_1("requested function: %s",name);
 	for (uint32_t i = 0;i<sizeof(modules_export)/4;i++)
 	{
-		DEBUGPRINTLN_1("index: %d, name: %s",i,modules_export_names[i]);
-		if (k_strlen(modules_export_names[i],100) == k_strlen(name,100) && k_strcmp(name,modules_export_names[i],100) == 0)
+		//DEBUGPRINTLN_1("index: %d, name: %s",i,modules_export_names[i]);
+		if (k_streq(name,modules_export_names[i],100))
 		{
 			DEBUGPRINTLN_1("referenced found: 0x%x",modules_export[i]);
 			return modules_export[i];
@@ -278,35 +315,6 @@ void* module_search_function(const char *name)
 	}
 	return NULL;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

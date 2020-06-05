@@ -1,14 +1,80 @@
-#include "../kernel.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <limits.h>
+#include <float.h>
 
-#if _CLOCK == true
+#include "time-dialog.h"
 
 
 
+// define the keycodes
+enum keycode {KEY_RET = 0, KEY_ENTER, KEY_MATH_MINUS, KEY_SPACE, KEY_Z, KEY_Y, KEY_ZERO, KEY_QUESTION, KEY_ON,
+			  KEY_X, KEY_W, KEY_V, KEY_THREE, KEY_U, KEY_T, KEY_S, KEY_ONE, KEY_PI, KEY_TRIG, KEY_TEN_POW,
+			  KEY_R, KEY_Q, KEY_P, KEY_SIX, KEY_O, KEY_N, KEY_M, KEY_4, KEY_EE, KEY_SQUARED,
+			  KEY_L, KEY_K, KEY_J, KEY_NINE, KEY_I, KEY_H, KEY_G, KEY_SEVEN, KEY_SLASH, KEY_E_POW,
+			  KEY_F, KEY_E, KEY_D, KEY_C, KEY_B, KEY_A, KEY_EQUALS, KEY_STAR, KEY_CIRCUMFLEX,
+			  KEY_VAR, KEY_MINUS, KEY_CLOSING_BRACKET, KEY_DOT, KEY_OPENING_BRACKET, KEY_FIVE, KEY_CAT, KEY_FRAC, KEY_DEL, KEY_SCRATCH,
+			  KEY_FLAG, KEY_PLUS, KEY_DOC, KEY_TWO, KEY_MENU, KEY_EIGHT, KEY_ESCAPE, KEY_TAB,
+			  KEY_SHIFT, KEY_CTRL, KEY_COMMA};
+//
+enum touchpad_arrow {ARROW_UP = 0, ARROW_RIGHT, ARROW_DOWN, ARROW_LEFT};
+struct touchpad_report {
+	bool contact;
+	uint8_t proximity;
+	uint16_t x;
+	uint16_t y;
+	uint8_t xrel;
+	uint8_t yrel;
+	bool pressed;
+	//uint8_t status;
+};
+
+
+
+
+
+
+int64_t (*systime_unix)();
+void (*systime_unix_to_timestamp)(uint64_t,uint32_t*,uint32_t*,uint32_t*,uint32_t*,uint32_t*,uint32_t*);
+void (*keypad_press_release_barrier)();
+void (*systime_set_unix)(int64_t);
+int64_t (*systime_timestamp_to_unix)(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t);
+void (*msleep)(uint32_t);
+
+
+bool (*isKeyPressed)();
+void* (*get_back_framebuffer_address)();
+void (*blitLCDBuffer)();
+void (*touchpad_get_report)(struct touchpad_report*);
+bool (*touchpad_is_arrow)(enum touchpad_arrow,struct touchpad_report*);
+
+
+
+void (*framebuffer_fillrect)(void*,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t);
+void (*framebuffer_drawrect)(void*,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,uint32_t);
+void (*framebuffer_write10pstring_ascii)(char* string,void *buff,int xx,int yy,uint32_t r, uint32_t g,uint32_t b);
+
+void (*k_memset)(void *str,int c, size_t n);
+void (*sprintf_safe)(char *result,char *str,uint32_t length,...);
+uint32_t (*k_strlen)(const char *string,uint32_t max);
+
+
+
+bool (*register_draw_function)(void*);
+bool (*unregister_draw_function)(void*);
+bool (*register_file_function)(void*);
+bool (*unregister_file_function)(void*);
+void (*debug_println_rgb)(const char*,uint32_t,uint32_t,uint32_t,...);
+void* (*search)(char*);
+void (*panic)(const char*);
+
+void (*uart_printf)(const char*,...);
 void set_time_dialog()
 {
 	
 	uint32_t selected = 0;
-	//int year = 2020, month = 4,day = 10,hour = 0,minute = 0,second = 0;
 	int numbers[6];
 	numbers[0] = 2020;
 	numbers[1] = 1;
@@ -80,11 +146,11 @@ void set_time_dialog()
 			if (selected < 5)
 				selected++;
 		}
+		
 		char buffer[100];
 		k_memset(buffer,'\0',90);
 		sprintf_safe(buffer,"y: %d mon: %d d: %d",80,numbers[0],numbers[1],numbers[2]);
 		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-k_strlen(buffer,80)*5,240/2-5,0,0,0);
-		
 		
 		k_memset(buffer,'\0',90);
 		sprintf_safe(buffer,"h: %d min: %d s: %d",80,numbers[3],numbers[4],numbers[5]);
@@ -112,22 +178,10 @@ void set_time_dialog()
 			framebuffer_write10pstring_ascii("s",framebuffer,320/2,0,0,200,0);
 			break;
 		}
-		
-		/*
-		k_memset(buffer,'\0',35);
-		sprintf_safe(buffer,"x: %d, y: %d",30,(uint32_t) rep.x,(uint32_t) rep.y);
-		framebuffer_write10pstring_ascii(buffer,framebuffer,0,10,255,0,0,ascii10p);
-		*/
-		
-		
-		
-		
-		
 		blitLCDBuffer();
 		msleep(70);
 	}
 	
-	//setRTCValue(date2timestamp(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
 	systime_set_unix(systime_timestamp_to_unix(numbers[0],numbers[1],numbers[2],numbers[3],numbers[4],numbers[5]));
 	keypad_press_release_barrier();
 }
@@ -135,5 +189,3 @@ void set_time_dialog()
 
 
 
-
-#endif

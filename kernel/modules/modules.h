@@ -18,6 +18,7 @@ void module_system_init();
 // only works in kernel space
 void module_uninstall(const char *name);
 void module_install(const char *name);
+void module_load_all();
 
 
 

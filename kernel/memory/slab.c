@@ -701,10 +701,10 @@ void* kmalloc(uint32_t size)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
-		DEBUGPRINTLN_1("kmalloc: current cache size: %d",ccache->obj_size)
+		//DEBUGPRINTLN_1("kmalloc: current cache size: %d",ccache->obj_size)
 		if ((ccache->flags & 0b1) != 0b1) // no_kmalloc flag not set
 		{
-			DEBUGPRINTLN_1("kmalloc: current cache can be used for malloc")
+			//DEBUGPRINTLN_1("kmalloc: current cache can be used for malloc")
 			if (ccache->obj_size == size)
 			{
 				DEBUGPRINTLN_1("kmalloc: current cache is best fit")
@@ -756,7 +756,7 @@ void kfree(void* obj)
 	struct cache_t *ccache = caches;
 	while (ccache != NULL)
 	{
-		DEBUGPRINTLN_1("kfree: current cache size: %d",ccache->obj_size)
+		//DEBUGPRINTLN_1("kfree: current cache size: %d",ccache->obj_size)
 		 // no_kmalloc flag not set, because objects from that can't be allocated anyways
 		if ((ccache->flags & 0b1) != 0b1)
 		{

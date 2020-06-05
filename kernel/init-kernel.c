@@ -146,7 +146,7 @@ bool init_kernel()
 	
 	debug_shell_println("initializing module system");
 	module_system_init();
-	
+	module_load_all();
 	
 	return true;
 }

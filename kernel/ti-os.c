@@ -184,7 +184,7 @@ int32_t nuc_rmdir(const char *path)
 
 NUC_DIR* nuc_opendir(const char *path)
 {
-	return (NUC_DIR*) wa_syscall1(e_unlink, (int) path);
+	return (NUC_DIR*) wa_syscall1(e_opendir, (int) path);
 }
 struct nuc_dirent* nuc_readdir(NUC_DIR *d)
 {

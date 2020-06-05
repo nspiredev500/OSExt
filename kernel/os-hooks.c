@@ -5,7 +5,7 @@
 
 
 #include "hook.h"
-#include "gui/nclockfragments.h"
+//#include "gui/nclockfragments.h"
 
 // have to change clear_cache to clear_caches
 #undef HOOK_INSTALL
@@ -274,12 +274,14 @@ void file_hookfunc()
 		return;
 	}
 	
+	/*
 	#if _CLOCK == true
 		if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
 		{
 			set_time_dialog();
 		}
 	#endif
+	*/
 	
 	
 	#if _BACKGROUND_IMAGES == true
@@ -289,6 +291,8 @@ void file_hookfunc()
 		}
 	#endif
 	
+	
+	/*
 	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
 	{
 		if (draw_clock)
@@ -301,6 +305,8 @@ void file_hookfunc()
 		}
 		lastchanged = rtc_get_value();
 	}
+	*/
+	
 	
 	for (uint32_t i = 0;i<filefunctions_num;i++)
 	{
@@ -352,6 +358,7 @@ void draw_hookfunc()
 		background_draw_image(old_framebuffer,old_framebuffer);
 	#endif
 	
+	/*
 	#if _CLOCK == true
 		if (draw_clock)
 		{
@@ -383,6 +390,7 @@ void draw_hookfunc()
 			framebuffer_write10pdigit(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10);
 		}
 	#endif
+	*/
 	
 	for (uint32_t i = 0;i<drawfunctions_num;i++)
 	{

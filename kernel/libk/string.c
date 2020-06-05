@@ -32,6 +32,28 @@ int32_t k_strcmp(const char *s1, const char *s2, uint32_t max)
 }
 
 
+bool k_streq(const char *s1, const char *s2, uint32_t max)
+{
+	int32_t count = 0;
+	if (k_strlen(s1,max) != k_strlen(s2,max))
+	{
+		return false;
+	}
+	for (uint32_t i = 0;i<max;i++)
+	{
+		if (s1[i] == '\0' || s2[i] == '\0')
+		{
+			return true;
+		}
+		if (s1[i] != s2[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+
 
 void sprintf_safe(char *result,char *str,uint32_t length,...)
 {

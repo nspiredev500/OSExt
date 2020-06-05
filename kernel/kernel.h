@@ -41,7 +41,7 @@
 
 #include "gui/img565.h"
 #include "gui/nspire_menus.h"
-#include "gui/time-dialog.h"
+//#include "gui/time-dialog.h"
 #include "gui/bmp.h"
 #include "gui/background.h"
 #include "gui/debug_shell.h"
