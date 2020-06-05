@@ -6,8 +6,16 @@
 	
 	
 	The entry point of modules is a module_init function.
-	The argument they take is a pointer to the search function.
+	The arguments they take is a pointer to the search function, a uint32_t that describes the version of OSExt that tries to run the module
+	and a boolean that tells the module whether the OSExt runs in standalone or normal mode.
 	This enables modules to find all other function in the kernel.
+	
+	The version uint32_t decodes like this:
+	The first byte is the mayor version, a module should reject an OSExt that isn't the same mayor version as itself.
+	The second byte is the minor version. A bigger minor version than the compiled module should be fine, but a smaller one may not.
+	The third byte is the patch version. Another patch version should always be compatible.
+	
+	Due to the project not being finished yet, the mayor version isn't the first number in the github releases, but the second one: 0.mayor.minor.patch
 	
 	
 	modules also have to provide a module_end function, that is called when the kernel uninstalls this module.
@@ -15,11 +23,10 @@
 	
 */
 
-//static const char* symtab_path = "/documents/symtab.tns";
-//static const char* strtab_path = "/documents/strtab.tns";
+
 static const char* modules_path = "/documents/";
 
-#define EXPORTED_NUM 3
+#define EXPORTED_NUM 18
 static void* modules_export[EXPORTED_NUM];
 static const char* modules_export_names[EXPORTED_NUM];
 
@@ -37,10 +44,46 @@ void module_system_init()
 	modules_export[0] = kmalloc;
 	modules_export[1] = kfree;
 	modules_export[2] = uart_printf;
+	modules_export[3] = useConsecutivePages;
+	modules_export[4] = freeConsecutivePages;
+	modules_export[5] = register_draw_function;
+	modules_export[6] = unregister_draw_function;
+	modules_export[7] = register_file_function;
+	modules_export[8] = unregister_file_function;
+	modules_export[9] = framebuffer_setpixel565;
+	modules_export[10] = framebuffer_draw_img565;
+	modules_export[11] = framebuffer_setpixel;
+	modules_export[12] = framebuffer_fillrect;
+	modules_export[13] = framebuffer_drawrect;
+	modules_export[14] = framebuffer_write10pchar;
+	modules_export[15] = framebuffer_write10pdigit;
+	modules_export[16] = framebuffer_write10pstring_ascii;
+	modules_export[17] = panic;
+	
+	
+	
+	
 	
 	modules_export_names[0] = "kmalloc";
 	modules_export_names[1] = "kfree";
 	modules_export_names[2] = "uart_printf";
+	modules_export_names[3] = "useConsecutivePages";
+	modules_export_names[4] = "freeConsecutivePages";
+	modules_export_names[5] = "register_draw_function";
+	modules_export_names[6] = "unregister_draw_function";
+	modules_export_names[7] = "register_file_function";
+	modules_export_names[8] = "unregister_file_function";
+	modules_export_names[9] = "framebuffer_setpixel565";
+	modules_export_names[10] = "framebuffer_draw_img565";
+	modules_export_names[11] = "framebuffer_setpixel";
+	modules_export_names[12] = "framebuffer_fillrect";
+	modules_export_names[13] = "framebuffer_drawrect";
+	modules_export_names[14] = "framebuffer_write10pchar";
+	modules_export_names[15] = "framebuffer_write10pdigit";
+	modules_export_names[16] = "framebuffer_write10pstring_ascii";
+	modules_export_names[17] = "panic";
+	
+	
 }
 
 // only works in kernel space

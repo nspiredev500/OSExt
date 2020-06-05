@@ -95,6 +95,10 @@
 
 
 
+#define OSEXT_VERSION 0x00000004
+
+
+
 
 extern char _EXEC_START;
 extern char _EXEC_SIZE;

@@ -123,6 +123,110 @@ uint32_t get_os_draw_address()
 static void file_hookfunc();
 static void draw_hookfunc();
 
+static void (*filehook_functions[100])();
+static void (*drawhook_functions[100])(void*); // draw functions get the buffer they should draw to as an argument
+static uint32_t filefunctions_num = 0;
+static uint32_t drawfunctions_num = 0;
+
+
+
+
+bool register_draw_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	if (drawfunctions_num < 99)
+	{
+		struct irq_state state;
+		irq_save_state(&state);
+		irq_disable();
+		drawhook_functions[drawfunctions_num] = function;
+		drawfunctions_num++;
+		irq_restore_state(&state);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool unregister_draw_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	struct irq_state state;
+	irq_save_state(&state);
+	irq_disable();
+	for (uint32_t i = 0;i<drawfunctions_num;i++)
+	{
+		if (drawhook_functions[i] == function)
+		{
+			for (uint32_t a = i;a<drawfunctions_num-1;a++)
+			{
+				drawhook_functions[a] = drawhook_functions[a+1];
+			}
+			drawhook_functions[drawfunctions_num-1] = NULL;
+			drawfunctions_num--;
+			irq_restore_state(&state);
+			return true;
+		}
+	}
+	irq_restore_state(&state);
+	return false;
+}
+bool register_file_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	if (filefunctions_num < 99)
+	{
+		struct irq_state state;
+		irq_save_state(&state);
+		irq_disable();
+		filehook_functions[filefunctions_num] = function;
+		filefunctions_num++;
+		irq_restore_state(&state);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool unregister_file_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	struct irq_state state;
+	irq_save_state(&state);
+	irq_disable();
+	for (uint32_t i = 0;i<filefunctions_num;i++)
+	{
+		if (filehook_functions[i] == function)
+		{
+			for (uint32_t a = i;a<filefunctions_num-1;a++)
+			{
+				filehook_functions[a] = filehook_functions[a+1];
+			}
+			filehook_functions[filefunctions_num-1] = NULL;
+			filefunctions_num--;
+			irq_restore_state(&state);
+			return true;
+		}
+	}
+	irq_restore_state(&state);
+	return false;
+}
+
+
 
 HOOK_DEFINE(filehook)
 {
@@ -198,6 +302,10 @@ void file_hookfunc()
 		lastchanged = rtc_get_value();
 	}
 	
+	for (uint32_t i = 0;i<filefunctions_num;i++)
+	{
+		filehook_functions[i]();
+	}
 	
 	lastrun = rtc_get_value();
 }
@@ -276,6 +384,10 @@ void draw_hookfunc()
 		}
 	#endif
 	
+	for (uint32_t i = 0;i<drawfunctions_num;i++)
+	{
+		drawhook_functions[i](old_framebuffer);
+	}
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);
 	

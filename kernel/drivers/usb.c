@@ -237,7 +237,7 @@ void usb_reset_init_host()
 
 struct usb_qTD* usb_create_transfer(uint8_t data_toggle,uint16_t total_bytes,uint8_t ioc,uint8_t pid, uint16_t first_offset, void* page0, void* page1, void* page2, void* page3, void* page4)
 {
-	volatile struct usb_qTD* transfer = kmalloc(32); // has to be 32 byte aligned anyways
+	struct usb_qTD* transfer = kmalloc(32); // has to be 32 byte aligned anyways
 	if (transfer == NULL)
 	{
 		return NULL;
@@ -245,12 +245,12 @@ struct usb_qTD* usb_create_transfer(uint8_t data_toggle,uint16_t total_bytes,uin
 	k_memset(transfer,0,32);
 	transfer->nextqTD = 1; // invalid pointer
 	transfer->altnextqTD = 1; // invalid pointer
-	transfer->qTD_token = (data_toggle << 31) || ((total_bytes && 0x7fff) << 16) || ((ioc & 0b1) << 15) || ((pid & 0b11) << 8) || (1 << 7);
-	buffers[0] = ((uint32_t) page0 & (~ 0xfff)) || (first_offset & 0xfff);
-	buffers[1] = ((uint32_t) page1 & (~ 0xfff))
-	buffers[2] = ((uint32_t) page2 & (~ 0xfff))
-	buffers[3] = ((uint32_t) page3 & (~ 0xfff))
-	buffers[4] = ((uint32_t) page4 & (~ 0xfff))
+	transfer->qTD_token = (data_toggle << 31) | ((total_bytes && 0x7fff) << 16) | ((ioc & 0b1) << 15) | ((pid & 0b11) << 8) | (1 << 7);
+	transfer->buffers[0] = ((uint32_t) page0 & (~ 0xfff)) | (first_offset & 0xfff);
+	transfer->buffers[1] = ((uint32_t) page1 & (~ 0xfff));
+	transfer->buffers[2] = ((uint32_t) page2 & (~ 0xfff));
+	transfer->buffers[3] = ((uint32_t) page3 & (~ 0xfff));
+	transfer->buffers[4] = ((uint32_t) page4 & (~ 0xfff));
 	return transfer;
 }
 
@@ -259,15 +259,15 @@ struct usb_qTD* usb_create_transfer(uint8_t data_toggle,uint16_t total_bytes,uin
 struct usb_QH* usb_create_queue_head(uint8_t nak_reload, uint8_t control_endpoint, uint16_t max_packet_size, uint8_t data_toggle_control, uint8_t endpoint_speed, uint8_t endpoint_number,
 									 uint8_t device_address,uint8_t mult, uint8_t port, uint8_t hub, uint8_t split_mask, uint8_t interrupt_mask)
 {
-	volatile struct usb_QH* queue_head = kmalloc(32);
+	struct usb_QH* queue_head = kmalloc(32);
 	if (queue_head == NULL)
 	{
 		return NULL;
 	}
 	k_memset(queue_head,0,32);
 	queue_head->horizontal_link = 0b1 << 1; // next thing is also a queue head
-	queue_head->endpt_cap1 = ((nak_reload & 0xf) << 28) || ((control_endpoint & 0b1) << 27) || ((max_packet_size & 0x7ff) << 16) || ((data_toggle_control & 0b1) << 14) || ((endpoint_speed & 0b11) << 12) || ((endpoint_number & 0xf) << 8) || (device_address & 0x7f);
-	queue_head->endpt_cap2 = ((mult & 0b11) << 30) || ((port & 0x7f) << 23) || ((hub & 0x7f) << 16) || (split_mask << 8) || interrupt_mask;
+	queue_head->endpt_cap1 = ((nak_reload & 0xf) << 28) | ((control_endpoint & 0b1) << 27) | ((max_packet_size & 0x7ff) << 16) | ((data_toggle_control & 0b1) << 14) | ((endpoint_speed & 0b11) << 12) | ((endpoint_number & 0xf) << 8) | (device_address & 0x7f);
+	queue_head->endpt_cap2 = ((mult & 0b11) << 30) | ((port & 0x7f) << 23) | ((hub & 0x7f) << 16) | (split_mask << 8) | interrupt_mask;
 	
 	queue_head->overlay.nextqTD = 1; // invalid pointer
 	queue_head->overlay.altnextqTD = 1; // invalid pointer
@@ -283,7 +283,7 @@ struct usb_QH* usb_create_queue_head(uint8_t nak_reload, uint8_t control_endpoin
 
 
 
-void usb_qh_add_transfer(struct *usb_QH,struct usb_qTD *transfer)
+void usb_qh_add_transfer(struct usb_QH* queue,struct usb_qTD *transfer)
 {
 	
 	
@@ -293,7 +293,7 @@ void usb_qh_add_transfer(struct *usb_QH,struct usb_qTD *transfer)
 
 
 // also frees it
-void usb_qh_remove_transfer(struct *usb_QH,struct usb_qTD *transfer)
+void usb_qh_remove_transfer(struct usb_QH* queue,struct usb_qTD *transfer)
 {
 	// only remove if active bit is 0 and the current transfer descriptor pointer of the queue head doesn't point to it
 	
@@ -303,7 +303,7 @@ void usb_qh_remove_transfer(struct *usb_QH,struct usb_qTD *transfer)
 }
 
 
-void usb_add_queue_head(struct *usb_QH)
+void usb_add_queue_head(struct usb_QH* queue)
 {
 	
 	
@@ -313,7 +313,7 @@ void usb_add_queue_head(struct *usb_QH)
 }
 
 // also frees it
-void usb_remove_queue_head(struct *usb_QH)
+void usb_remove_queue_head(struct usb_QH* queue)
 {
 	
 	

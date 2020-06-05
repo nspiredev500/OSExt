@@ -5,10 +5,13 @@
 #include <limits.h>
 #include <float.h>
 
+
+#define OSEXT_VERSION 0x00000004
+
 void module_end();
 
 void* (*search)(char*) = NULL;
-void* module_start(void* search_func)
+void* module_start(void* search_func, uint32_t osext_version, bool standalone)
 {
 	search = (void* (*)(char*)) search_func;
 	void (*uart_printf)(const char*,...) = search("uart_printf");

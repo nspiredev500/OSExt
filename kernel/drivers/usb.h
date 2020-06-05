@@ -6,7 +6,7 @@ static const uint32_t USB_HOST;
 static const uint32_t USB_DEVICE;
 
 // should be 32 byte aligned
-volatile struct usb_qTD {
+struct usb_qTD {
 	volatile uint32_t nextqTD; // also the terminate bit
 	volatile uint32_t altnextqTD; // alternate next pointer
 	volatile uint32_t qTD_token; // total bytes to transfer, data toggle, interrupt on complete, current page, error counter,
@@ -15,7 +15,7 @@ volatile struct usb_qTD {
 };
 
 // should be 32 byte aligned
-volatile struct usb_QH {
+struct usb_QH {
 	volatile uint32_t horizontal_link; // + type of item (always type QH in this case) + terminate bit
 	volatile uint32_t endpt_cap1;
 	volatile uint32_t endpt_cap2;
@@ -24,7 +24,7 @@ volatile struct usb_QH {
 };
 
 
-volatile struct usb_device_descriptor {
+struct usb_device_descriptor {
 	volatile uint8_t lenght; // 18 bytes
 	volatile uint8_t type; // 0x01 for device descriptor
 	volatile uint16_t bcd_usb; // usb version in binary coded decimal
@@ -44,7 +44,7 @@ volatile struct usb_device_descriptor {
 
 
 
-volatile struct usb_configuration_descriptor {
+struct usb_configuration_descriptor {
 	volatile uint8_t lenght;
 	volatile uint8_t type; // 0x02 for configuration descriptor
 	volatile uint16_t total_length;
@@ -88,7 +88,7 @@ struct usb_state {
 struct usb_device;
 struct usb_device {
 	struct usb_device *next;
-	volatile struct usb_device_descriptor;
+	volatile struct usb_device_descriptor desc;
 	
 };
 
@@ -130,13 +130,13 @@ struct usb_QH* usb_create_queue_head(uint8_t nak_reload, uint8_t control_endpoin
 
 
 
-void usb_qh_add_transfer(struct *usb_QH,struct usb_qTD *transfer);
+void usb_qh_add_transfer(struct usb_QH*,struct usb_qTD *transfer);
 
-void usb_qh_remove_transfer(struct *usb_QH,struct usb_qTD *transfer); // also frees it
+void usb_qh_remove_transfer(struct usb_QH*,struct usb_qTD *transfer); // also frees it
 
 
-void usb_add_queue_head(struct *usb_QH);
-void usb_remove_queue_head(struct *usb_QH); // also frees it
+void usb_add_queue_head(struct usb_QH*);
+void usb_remove_queue_head(struct usb_QH*); // also frees it
 
 
 void usb_control_transfer_blocking(uint8_t device_addr, uint8_t endpt_num,bool in,void* data, uint16_t size);
