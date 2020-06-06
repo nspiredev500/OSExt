@@ -26,7 +26,7 @@
 
 static const char* modules_path = "/documents/";
 
-#define EXPORTED_NUM 37
+#define EXPORTED_NUM 44
 static void* modules_export[EXPORTED_NUM];
 static const char* modules_export_names[EXPORTED_NUM];
 
@@ -73,7 +73,13 @@ void module_system_init()
 	modules_export[34] = sprintf_safe;
 	modules_export[35] = msleep;
 	modules_export[36] = systime_set_unix;
-	
+	modules_export[37] = rgbto565;
+	modules_export[38] = signedtounsigned32;
+	modules_export[39] = rtc_get_value;
+	modules_export[40] = nuc_fopen;
+	modules_export[41] = nuc_fclose;
+	modules_export[42] = nuc_fread;
+	modules_export[43] = nuc_fwrite;
 	
 	
 	
@@ -115,9 +121,13 @@ void module_system_init()
 	modules_export_names[34] = "sprintf_safe";
 	modules_export_names[35] = "msleep";
 	modules_export_names[36] = "systime_set_unix";
-	
-	
-	
+	modules_export_names[37] = "rgbto565";
+	modules_export_names[38] = "signedtounsigned32";
+	modules_export_names[39] = "rtc_get_value";
+	modules_export_names[40] = "nuc_fopen";
+	modules_export_names[41] = "nuc_fclose";
+	modules_export_names[42] = "nuc_fread";
+	modules_export_names[43] = "nuc_fwrite";
 	
 	
 	
@@ -240,9 +250,9 @@ void module_install(const char *name)
 	newmod->next = NULL;
 	
 	
-	void* (*module_entry)(void*) = entry;
+	void* (*module_entry)(void*,uint32_t,bool) = entry;
 	newmod->module_end = NULL;
-	newmod->module_end = module_entry(&module_search_function);
+	newmod->module_end = module_entry(&module_search_function,OSEXT_VERSION,false);
 	if (newmod->module_end == NULL)
 	{
 		DEBUGPRINTLN_1("couldn't get module end, uninstalling");

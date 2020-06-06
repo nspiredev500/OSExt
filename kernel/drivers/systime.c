@@ -187,9 +187,10 @@ static uint32_t days_in_year(uint32_t year)
 int64_t systime_timestamp_to_unix(uint32_t year,uint32_t month, uint32_t day,uint32_t hour, uint32_t minute, uint32_t second)
 {
 	int64_t unix = second;
-	unix += minute*second;
+	unix += minute*60;
 	unix += hour*60*60;
 	unix += day*24*60*60;
+	//DEBUGPRINTLN_1("timestamp to: y: %d, m: %d, d: %d, h: %d, min: %d, s: %d",year,month,day,hour,minute,second)
 	for (uint32_t m = month;m>0;m--)
 	{
 		unix += days_in_month(year,month)*24*60*60;
@@ -275,22 +276,23 @@ void systime_unix_to_timestamp(int64_t unix,uint32_t *year,uint32_t *month,uint3
 		*hour = h;
 	}
 	
-	m = 0;
+	uint32_t min = 0;
 	while (unix > 0)
 	{
 		unix -= 60;
-		m++;
+		min++;
 	}
-	m--;
+	min--;
 	unix += 60;
 	if (minute != NULL)
 	{
-		*minute = m;
+		*minute = min;
 	}
 	if (second != NULL)
 	{
 		*second = (uint32_t) unix;
 	}
+	//DEBUGPRINTLN_1("timestamp from unix: y: %d, m: %d, d: %d, h: %d, min: %d, s: %d",y,m,d,h,min,(uint32_t) unix)
 }
 
 

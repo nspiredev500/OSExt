@@ -297,9 +297,7 @@ void initialize()
 	}
 	*/
 	
-	#if _BACKGROUND_IMAGES == true
-		background_update();
-	#endif
+	
 	
 	/*
 	static volatile uint32_t *remapped_nand_ctl = (uint32_t*)  (0xe95f1000);

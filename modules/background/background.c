@@ -1,7 +1,24 @@
-#include "../kernel.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <limits.h>
+#include <float.h>
+
+#define OSEXT_VERSION 0x00000004
 
 
-#if _BACKGROUND_IMAGES == true
+
+#include "../module.h"
+#include "background_module.h"
+
+
+#include "bmp.h"
+#include "img565.h"
+#include "nspire_menus.h"
+
+
+
 static const uint32_t slideshow_time = 15; // the time an image is shown before the transition in seconds
 static const uint32_t slideshow_transition = 10;
 
@@ -147,139 +164,122 @@ uint32_t background_slideshow_length()
 void background_update()
 {
 	if (background_is_slideshow())
+	{
+		struct img565* show = background_get_slideshow();
+		for (uint32_t i = 0;i<background_slideshow_length();i++)
 		{
-			struct img565* show = background_get_slideshow();
-			for (uint32_t i = 0;i<background_slideshow_length();i++)
-			{
-				destroy_img565(&show[i]);
-			}
-			background_unset_slideshow();
-			kfree(show);
+			destroy_img565(&show[i]);
 		}
-		else
-		{
-			struct img565* img = background_get_image();
-			background_unset_image();
-			destroy_img565(img);
-		}
-		struct img565* img1 = NULL;
-		struct img565* img2 = NULL;
-		struct img565* img3 = NULL;
-		struct img565* img4 = NULL;
-		bool bk = false;
-		uint32_t length = 0;
-		
-		
-		
-		NUC_FILE* f = nuc_fopen("/documents/background.bmp.tns","rb");
-		if (f != NULL)
-		{
-			img1 = load_bmp_file(f);
-			nuc_fclose(f);
-			if (img1 == NULL)
-			{
-				bk = true;
-			}
-		}
-		else
+		background_unset_slideshow();
+		kfree(show);
+	}
+	else
+	{
+		struct img565* img = background_get_image();
+		background_unset_image();
+		destroy_img565(img);
+	}
+	struct img565* img1 = NULL;
+	struct img565* img2 = NULL;
+	struct img565* img3 = NULL;
+	struct img565* img4 = NULL;
+	bool bk = false;
+	uint32_t length = 0;
+	
+	
+	
+	NUC_FILE* f = nuc_fopen("/documents/background.bmp.tns","rb");
+	if (f != NULL)
+	{
+		img1 = load_bmp_file(f);
+		nuc_fclose(f);
+		if (img1 == NULL)
 		{
 			bk = true;
 		}
-		f = nuc_fopen("/documents/background2.bmp.tns","rb");
-		if (f != NULL && ! bk)
-		{
-			img2 = load_bmp_file(f);
-			nuc_fclose(f);
-			if (img2 == NULL)
-			{
-				bk = true;
-				length = 1;
-			}
-		}
-		else
-		{
-			if (! bk)
-				length = 1;
-			bk = true;
-		}
-		f = nuc_fopen("/documents/background3.bmp.tns","rb");
-		if (f != NULL && ! bk)
-		{
-			img3 = load_bmp_file(f);
-			nuc_fclose(f);
-			if (img3 == NULL)
-			{
-				bk = true;
-				length = 2;
-			}
-		}
-		else
-		{
-			if (! bk)
-				length = 2;
-			bk = true;
-		}
-		f = nuc_fopen("/documents/background4.bmp.tns","rb");
-		if (f != NULL && ! bk)
-		{
-			img4 = load_bmp_file(f);
-			nuc_fclose(f);
-			if (img4 == NULL)
-			{
-				bk = true;
-				length = 3;
-			}
-		}
-		else
-		{
-			if (! bk)
-				length = 3;
-			bk = true;
-		}
-		if (! bk)
-		{
-			length = 4;
-		}
-		DEBUGPRINTLN_1("length: %d",length)
+	}
+	else
+	{
+		bk = true;
+	}
+	f = nuc_fopen("/documents/background2.bmp.tns","rb");
+	if (f != NULL && ! bk)
+	{
+		img2 = load_bmp_file(f);
+		nuc_fclose(f);
 		if (img2 == NULL)
 		{
-			background_set_image(img1);
+			bk = true;
+			length = 1;
 		}
-		else
+	}
+	else
+	{
+		if (! bk)
+			length = 1;
+		bk = true;
+	}
+	f = nuc_fopen("/documents/background3.bmp.tns","rb");
+	if (f != NULL && ! bk)
+	{
+		img3 = load_bmp_file(f);
+		nuc_fclose(f);
+		if (img3 == NULL)
 		{
-			struct img565* array = kmalloc(sizeof(struct img565)*length);
-			switch (length)
-			{
-			case 4:
-				array[3] = *img4;
-			case 3:
-				array[2] = *img3;
-			case 2:
-				array[1] = *img2;
-			}
-			array[0] = *img1;
-			background_set_slideshow(array,length);
+			bk = true;
+			length = 2;
 		}
+	}
+	else
+	{
+		if (! bk)
+			length = 2;
+		bk = true;
+	}
+	f = nuc_fopen("/documents/background4.bmp.tns","rb");
+	if (f != NULL && ! bk)
+	{
+		img4 = load_bmp_file(f);
+		nuc_fclose(f);
+		if (img4 == NULL)
+		{
+			bk = true;
+			length = 3;
+		}
+	}
+	else
+	{
+		if (! bk)
+			length = 3;
+		bk = true;
+	}
+	if (! bk)
+	{
+		length = 4;
+	}
+	if (img2 == NULL)
+	{
+		background_set_image(img1);
+	}
+	else
+	{
+		struct img565* array = kmalloc(sizeof(struct img565)*length);
+		switch (length)
+		{
+		case 4:
+			array[3] = *img4;
+		case 3:
+			array[2] = *img3;
+		case 2:
+			array[1] = *img2;
+		}
+		array[0] = *img1;
+		background_set_slideshow(array,length);
+	}
 }
 
 
 
-void debug_clock()
-{
-	
-}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-#endif

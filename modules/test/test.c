@@ -9,12 +9,11 @@
 #define OSEXT_VERSION 0x00000004
 
 
-#define SEARCH_AND_TEST(function) \
-									function = search(#function); \
-									if (function == NULL) return NULL;
+#include "../module.h"
 
 
-void module_end();
+
+
 
 void* (*search)(char*) = NULL;
 void* module_start(void* search_func, uint32_t osext_version, bool standalone)

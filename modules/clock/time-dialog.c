@@ -75,7 +75,7 @@ void set_time_dialog()
 {
 	
 	uint32_t selected = 0;
-	int numbers[6];
+	uint32_t numbers[6];
 	numbers[0] = 2020;
 	numbers[1] = 1;
 	numbers[2] = 1;

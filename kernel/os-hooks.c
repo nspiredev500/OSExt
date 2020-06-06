@@ -284,12 +284,7 @@ void file_hookfunc()
 	*/
 	
 	
-	#if _BACKGROUND_IMAGES == true
-		if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_PI))
-		{
-			background_update();
-		}
-	#endif
+	
 	
 	
 	/*
@@ -354,9 +349,7 @@ void draw_hookfunc()
 	}
 	void* framebuffer = get_front_framebuffer_address();
 	
-	#if _BACKGROUND_IMAGES == true
-		background_draw_image(old_framebuffer,old_framebuffer);
-	#endif
+	
 	
 	/*
 	#if _CLOCK == true

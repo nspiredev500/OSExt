@@ -9,12 +9,10 @@
 
 
 
-#define SEARCH_AND_TEST(function) \
-									function = search(#function); \
-									if (function == NULL) return NULL;
-
-
 #define OSEXT_VERSION 0x00000004
+
+#include "../module.h"
+
 
 void module_end();
 
@@ -22,31 +20,6 @@ void filefunc();
 void drawfunc(void* buffer);
 
 bool draw_clock = true;
-
-
-
-
-// define the keycodes
-enum keycode {KEY_RET = 0, KEY_ENTER, KEY_MATH_MINUS, KEY_SPACE, KEY_Z, KEY_Y, KEY_ZERO, KEY_QUESTION, KEY_ON,
-			  KEY_X, KEY_W, KEY_V, KEY_THREE, KEY_U, KEY_T, KEY_S, KEY_ONE, KEY_PI, KEY_TRIG, KEY_TEN_POW,
-			  KEY_R, KEY_Q, KEY_P, KEY_SIX, KEY_O, KEY_N, KEY_M, KEY_4, KEY_EE, KEY_SQUARED,
-			  KEY_L, KEY_K, KEY_J, KEY_NINE, KEY_I, KEY_H, KEY_G, KEY_SEVEN, KEY_SLASH, KEY_E_POW,
-			  KEY_F, KEY_E, KEY_D, KEY_C, KEY_B, KEY_A, KEY_EQUALS, KEY_STAR, KEY_CIRCUMFLEX,
-			  KEY_VAR, KEY_MINUS, KEY_CLOSING_BRACKET, KEY_DOT, KEY_OPENING_BRACKET, KEY_FIVE, KEY_CAT, KEY_FRAC, KEY_DEL, KEY_SCRATCH,
-			  KEY_FLAG, KEY_PLUS, KEY_DOC, KEY_TWO, KEY_MENU, KEY_EIGHT, KEY_ESCAPE, KEY_TAB,
-			  KEY_SHIFT, KEY_CTRL, KEY_COMMA};
-//
-enum touchpad_arrow {ARROW_UP = 0, ARROW_RIGHT, ARROW_DOWN, ARROW_LEFT};
-struct touchpad_report {
-	bool contact;
-	uint8_t proximity;
-	uint16_t x;
-	uint16_t y;
-	uint8_t xrel;
-	uint8_t yrel;
-	bool pressed;
-	//uint8_t status;
-};
 
 
 
@@ -89,6 +62,11 @@ void (*panic)(const char*) = NULL;
 void (*uart_printf)(const char*,...) = NULL;
 void* module_start(void* search_func, uint32_t osext_version, bool standalone)
 {
+	
+	if (standalone)
+	{
+		return NULL;
+	}
 	search = (void* (*)(char*)) search_func;
 	if (search == NULL)
 	{
