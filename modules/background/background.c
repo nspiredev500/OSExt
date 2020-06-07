@@ -188,7 +188,7 @@ void background_update()
 	
 	
 	
-	NUC_FILE* f = nuc_fopen("/documents/background.bmp.tns","rb");
+	NUC_FILE* f = nuc_fopen("/documents/osext/background.bmp.tns","rb");
 	if (f != NULL)
 	{
 		img1 = load_bmp_file(f);
@@ -202,7 +202,7 @@ void background_update()
 	{
 		bk = true;
 	}
-	f = nuc_fopen("/documents/background2.bmp.tns","rb");
+	f = nuc_fopen("/documents/osext/background2.bmp.tns","rb");
 	if (f != NULL && ! bk)
 	{
 		img2 = load_bmp_file(f);
@@ -219,7 +219,7 @@ void background_update()
 			length = 1;
 		bk = true;
 	}
-	f = nuc_fopen("/documents/background3.bmp.tns","rb");
+	f = nuc_fopen("/documents/osext/background3.bmp.tns","rb");
 	if (f != NULL && ! bk)
 	{
 		img3 = load_bmp_file(f);
@@ -236,7 +236,7 @@ void background_update()
 			length = 2;
 		bk = true;
 	}
-	f = nuc_fopen("/documents/background4.bmp.tns","rb");
+	f = nuc_fopen("/documents/osext/background4.bmp.tns","rb");
 	if (f != NULL && ! bk)
 	{
 		img4 = load_bmp_file(f);
