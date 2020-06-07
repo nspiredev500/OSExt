@@ -25,13 +25,13 @@ uint8_t keymap_cas[] = {
 16,17,18,19,20,21,22,23,24,25,26,
 32,33,34,35,36,37,38,39,40,41,
 48,49,50,51,52,53,54,55,56,57,
-64,65,67,68,69,70,71,72,73,
+64,65,66,68,69,70,71,72,73,
 81,82,83,84,85,86,87,88,89,90,
 96,98,99,100,101,102,103,105,
 120,121,122};
 
 
-// doesn't return special characters like return ans the special calculator buttons
+// doesn't return special characters like return and the special calculator buttons
 char getAlphanumericKeyPressed()
 {
 	for (uint32_t i = 0;i<sizeof(keycode_ascii);i++)
@@ -56,7 +56,6 @@ bool isKeyPressed(enum keycode key)
 	//DEBUGPRINTLN_1("keycode: %d\nbit: %d",key,keymap_cas[key]);
 	uint32_t uint32 = bit / 16;
 	bit = bit % 16;
-	//DEBUGPRINTLN_1("uint32: %d",keymap_cas[key] / 16);
 	if (uint32 <= 0x1f)
 	{
 		if ((*(keypad_data+(uint32)) & (0b1 << bit)) != 0)
@@ -87,6 +86,17 @@ void keypad_press_release_barrier()
 	}
 	DEBUGPRINTLN_1("end scanning")
 }
+
+void keypad_no_key_pressed_barrier()
+{
+	DEBUGPRINTLN_1("starting scanning")
+	while (any_key_pressed())
+	{
+		
+	}
+	DEBUGPRINTLN_1("end scanning")
+}
+
 
 bool any_key_pressed()
 {

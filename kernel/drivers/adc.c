@@ -1,6 +1,9 @@
 #include "../kernel.h"
 
-
+const uint32_t CHANNEL_VBATT = 1;
+const uint32_t CHANNEL_VSYS = 2;
+const uint32_t CHANNEL_B12 = 4;
+const uint32_t CHANNEL_KEYPAD = 3;
 
 static volatile uint32_t *remapped_adc = (volatile uint32_t*) (0xe9400000);
 /*
@@ -38,7 +41,7 @@ double adc_read_channel(uint32_t channel)
 	
 	
 	*channel_command = 0b1;
-	msleep(500); // I don't know which are the right interrupt status bits, so do a sleep. 0.5 seconds should be enough, and this shouldn't be done often
+	msleep(200); // I don't know which are the right interrupt status bits, so do a sleep. 200 milliseconds should be enough, and this shouldn't be done often
 	
 	remapped_adc[1] = 0xffffffff;
 	uint32_t read = *channel_read;

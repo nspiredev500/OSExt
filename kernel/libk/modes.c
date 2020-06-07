@@ -2,12 +2,32 @@
 
 
 
-
-//static void* exec_start = NULL;
-void init_call_with_stack(void* start)
+void irq_save_state(struct irq_state *s)
 {
-	//exec_start = start;
+	s->irq = isIRQ();
+	s->fiq = isFIQ();
 }
+
+void irq_disable()
+{
+	disableFIQ();
+	disableIRQ();
+}
+
+
+void irq_restore_state(struct irq_state *s)
+{
+	if (s->irq)
+	{
+		enableIRQ();
+	}
+	if (s->fiq)
+	{
+		enableFIQ();
+	}
+}
+
+
 
 bool isIRQ()
 {

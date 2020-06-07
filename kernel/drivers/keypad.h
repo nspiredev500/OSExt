@@ -20,7 +20,7 @@ enum keycode {KEY_RET = 0, KEY_ENTER, KEY_MATH_MINUS, KEY_SPACE, KEY_Z, KEY_Y, K
 char getAlphanumericKeyPressed();
 bool isKeyPressed(enum keycode key);
 
-
+void keypad_no_key_pressed_barrier(); // waits until no key is pressed
 
 
 

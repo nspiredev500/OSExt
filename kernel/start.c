@@ -10,8 +10,8 @@ asm(
 "__init_lr: .word 0 \n"
 "__init_sp: .word 0 \n"
 "__entry: .global __entry\n"
-" str lr, __init_lr\n"
-" str sp, __init_sp\n"
+//" str lr, __init_lr\n"
+//" str sp, __init_sp\n"
 " b main"
 );
 
@@ -49,6 +49,30 @@ int main(int argsn,char **argc)
 {
 	// no need to make the kernel resident, allocated memory isn't freed by ndless, so we can just copy the kernel and it will stay
 	
+	DEBUGPRINTLN_1("virt base: 0x%x",virtual_base_address)
+	
+	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
+	
+	DEBUGPRINTLN_1("\ngot offset: 0x%x",got_offset)
+	DEBUGPRINTLN_1("start address: 0x%x",(&_EXEC_START))
+	DEBUGPRINTLN_1("got address: 0x%x\n",(&_GOT_START))
+	
+	
+	/*
+	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
+	uint32_t *got_entry = (uint32_t*) ((uint32_t)(&_EXEC_START)+(uint32_t)got_offset);
+	
+	while (*got_entry != 0xFFFFFFFF)
+	{
+		DEBUGPRINTLN_1("got entry: 0x%x, address: 0x%x",*got_entry,got_entry);
+		got_entry++;
+	}
+	*/
+	
+	if (argsn == 1 && ((unsigned int) argc) == 0x1234abcd) //test for running elf files
+	{
+		return 100;
+	}
 	
 	if (argsn == 1 && ((unsigned int) argc) == 0x53544c41) //STandaloneLAunch
 	{
@@ -130,273 +154,129 @@ void initialize()
 	ut_disable_watchdog();
 	
 	
-	void* framebuffer = (void*) *LCD_UPBASE;
-	framebuffer_fillrect(framebuffer,0,0,320,240,0,0,0);
-	setShellFramebuffer(framebuffer);
-	debug_shell_println("finished relocating");
-	debug_shell_println("initializing");
-	
-	
-	
-	debug_shell_println("malloc pointer: 0x%x",getKernelMallocedPointer());
-	
-	debug_shell_println("kernel_start: 0x%x",&_EXEC_START);
-	init_call_with_stack(&_EXEC_START);
-	
-	
-	debug_shell_println("performing physical memory manager self-test");
-	bool b = physical_mm_self_test();
-	if (! b)
+	if (! init_kernel())
 	{
-		debug_shell_println_rgb("error in physical memory manager self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
 		return;
 	}
-	
-	debug_shell_println("allocating memory");
-	allocPageblock(128);
-	allocPageblock(128);
-	allocPageblock(128);
-	allocPageblock(128); // allocate 2mb
-	debug_shell_println("done");
-	
-	
-	/*
-	register uint32_t domains asm("r0") = 0;
-	asm volatile("mrc p15, 0, r0, c3, c0, 0":"=r" (domains));
-	DEBUGPRINTF_3("domains: 0x%x\n",domains); // domain 0 is client, so we can use it for everything, because access permissions are checked
-	*/
-	
-	debug_shell_println("performing virtual memory manager self-test");
-	b = virtual_mm_self_test();
-	if (! b)
-	{
-		debug_shell_println_rgb("error in virtual memory manager self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
-		return;
-	}
-	debug_shell_println("performing slab allocator self-test");
-	b = slab_allocator_self_test_pre_initialization();
-	if (! b)
-	{
-		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		free_init_pds();
-		enableIRQ();
-		return;
-	}
-	
-	debug_shell_println("initializing kernel space");
-	
-	
-	initializeKernelSpace();
-	
-	free_init_pds();
-	
-	
-	debug_shell_println("done");
-	
-	
-	if (! install_exception_handlers())
-	{
-		debug_shell_println_rgb("no page for exception vectors         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return;
-	}
-	
-	
-	
-	
-	debug_shell_println("switching framebuffer, press any key");
-	keypad_press_release_barrier();
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	initLCDDriver();
-	claimLCD();
-	
-	
-	
-	debug_shell_reset();
-	setShellFramebuffer(get_front_framebuffer_address());
-	debug_shell_println("new framebuffer: 0x%x",*LCD_UPBASE);
-	//print_cacheinfo();
 	
 	debug_shell_println("running general self-test");
 	
 	
 	
-	// construct the pages for the remapped stack
-	void* page = usePage();
-	if (page == NULL)
-	{
-		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return;
-	}
-	addVirtualKernelPage(page,(void*) 0xe8000000);
-	page = usePage();
-	if (page == NULL)
-	{
-		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return;
-	}
-	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
-	
-	b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
-	
-	
-	
-	
-	
-	if (! b)
-	{
-		debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return;
-	}
-	
-	
-	
-	
-	debug_shell_println("installing hooks");
-	install_hooks();
-	
+	#ifndef RELEASE
+		bool b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
+		if (! b)
+		{
+			debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
+			keypad_press_release_barrier();
+			enableIRQ();
+			return;
+		}
+	#endif
 	
 	/*
-	debug_shell_println("testing timer interrupts");
-	disableIRQ();
-	
-	
-	debug_shell_println("testing fast timer 0 interrupt");
-	timer_enable(0,0);
-	wait_for_interrupt();
-	timer_disable(0,0);
-	debug_shell_println("testing fast timer 1 interrupt");
-	timer_enable(0,1);
-	wait_for_interrupt();
-	timer_disable(0,1);
-	
-	
-	debug_shell_println("testing first timer 0 interrupt");
-	timer_enable(1,0);
-	wait_for_interrupt();
-	timer_disable(1,0);
-	debug_shell_println("testing first timer 1 interrupt");
-	timer_enable(1,1);
-	wait_for_interrupt();
-	timer_disable(1,1);
-	
-	
-	
-	
-	debug_shell_println("testing second timer 0 interrupt");
-	timer_enable(2,0);
-	wait_for_interrupt();
-	timer_disable(2,0);
-	debug_shell_println("testing second timer 1 interrupt");
-	timer_enable(2,1);
-	wait_for_interrupt();
-	timer_disable(2,1);
-	*/
-	
-	
-	
-	
-	/*
-	debug_shell_println("installing watchdog fiq");
-	timer_disable(1,0);
-	timer_set_prescaler(1,0,1);
-	timer_set_mode(1,0,1);
-	timer_enable(1,0);
-	timer_set_load(1,0,2000);
-	*/
-	
-	
-	
-	/*
-	timer_disable(1,0);
-	timer_set_prescaler(1,0,1);
-	timer_set_mode(1,0,0);
-	timer_enable(1,0);
-	timer_set_load(1,0,0xffffffff);
-	msleep(1000);
-	timer_disable(1,0);
-	debug_shell_println("msleep(1000), timer ticks: %lld",0xffffffff-timer_value(1,0));
-	
-	
-	
-	
-	debug_shell_println("testing sleep, screen will flash with an intervall of 1 second");
-	keypad_press_release_barrier();
-	
-	void* flash_framebuffer = get_front_framebuffer_address();
-	
-	
-	
-	framebuffer_fillrect(flash_framebuffer,0,0,320,240,255,0,0);
-	msleep(1000);
-	
-	
-	
-	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,255,0);
-	msleep(1000);
-	
-	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,255);
-	msleep(1000);
-	
-	framebuffer_fillrect(flash_framebuffer,0,0,320,240,0,0,0);
-	debug_shell_reset();
-	*/
-	
-	/*
-	
-	
-	debug_shell_println("double:");
-	debug_shell_println("vbatt: %Lfv",adc_read_channel(1));
-	debug_shell_println("vsys: %Lfv",adc_read_channel(2));
-	debug_shell_println("b12: %Lfv",adc_read_channel(4));
-	
-	
-	
-	debug_shell_println("in uint32_t:");
-	debug_shell_println("vbatt: %dv",(uint32_t)adc_read_channel(1));
-	debug_shell_println("vsys: %dv",(uint32_t)adc_read_channel(2));
-	debug_shell_println("b12: %dv",(uint32_t)adc_read_channel(4));
-	*/
-	
-	/*
-	NUC_FILE *f = nuc_fopen("/documents/ndless/test2.bmp.tns","rb");
+	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","rb");
 	if (f != NULL)
 	{
-		struct img565* img = load_bmp_file(f);
-		nuc_fclose(f);
-		
-		
-		if (img != NULL)
+		struct elf_header h;
+		elf_read_header(f,&h);
+		if (elf_check_header(&h))
 		{
-			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
-			keypad_press_release_barrier();
-			destroy_img565(img);
+			debug_shell_println("valid ELF file!");
 		}
+		else
+		{
+			debug_shell_println("invalid ELF file!");
+		}
+		
+		
+		debug_shell_println("wordwidth: %d", (uint32_t) h.wordwidth);
+		debug_shell_println("endianness: %d", (uint32_t) h.endianness);
+		debug_shell_println("type: %d", (uint32_t) h.type);
+		debug_shell_println("entry: %x", (uint32_t) h.entry);
+		debug_shell_println("prog table: %d", (uint32_t) h.prog_table);
+		debug_shell_println("sect table: 0x%x", (uint32_t) h.sect_table);
+		debug_shell_println("header size: %d", (uint32_t) h.header_size);
+		debug_shell_println("prog size: %d", (uint32_t) h.prog_size);
+		debug_shell_println("prog count: %d", (uint32_t) h.prog_count);
+		debug_shell_println("sect size: %d", (uint32_t) h.sect_size);
+		debug_shell_println("sect count: %d", (uint32_t) h.sect_count);
+		debug_shell_println("strtab: %d", (uint32_t) h.sect_strtab);
+		
+		debug_shell_println("\n");
+		
+		
+		
+		struct nuc_stat stat;
+		if (nuc_stat("/documents/osext.elf.tns",&stat) == 0)
+		{
+			DEBUGPRINTLN_1("size: %d",stat.st_size)
+			struct elf_desc *elf = elf_load_file(f,stat.st_size);
+			if (elf == NULL)
+			{
+				DEBUGPRINTLN_1("loading failed");
+			}
+			
+			elf_alloc_image(elf);
+			
+			DEBUGPRINTLN_1("fixing GOT");
+			elf_fix_got(elf);
+			
+			DEBUGPRINTLN_1("assembling image");
+			elf_assemble_image(elf);
+			
+			DEBUGPRINTLN_1("running");
+			int (*entry)(int,char**) = elf_entry(elf);
+			if (entry != NULL)
+			{
+				DEBUGPRINTLN_1("image start: 0x%x",elf->image);
+				DEBUGPRINTLN_1("pointer:   0x%x",entry);
+				DEBUGPRINTLN_1("return value: %d",entry(1,(char**) 0x1234abcd));
+			}
+			else
+			{
+				DEBUGPRINTLN_1("no valid entry point!");
+			}
+			
+			elf_destroy(elf);
+		}
+		else
+		{
+			DEBUGPRINTLN_1("stat failed!");
+		}
+		
+		nuc_fclose(f);
+	}
+	else
+	{
+		debug_shell_println("osext.elf.tns not found!");
 	}
 	*/
 	
+	
+	
+	//debug_shell_println("text start: 0x%x",&_TEXT_START);
+	//debug_shell_println("exec start: 0x%x",&_EXEC_START);
+	//debug_shell_println("exec size: 0x%x",&_EXEC_SIZE-&_EXEC_START);
+	
+	
+	
+	//usb_print_id_registers();
+	// usb driver in-progress
+	/*
+	debug_shell_println("saving usb state");
+	struct usb_state state;
+	usb_save_state(&state);
+	
+	debug_shell_println("resetting usb controller");
+	usb_reset();
+	
+	
+	debug_shell_println("restoring usb state");
+	usb_restore_state(&state);
+	*/
+	
+	/*
 	debug_shell_println("searching background image...");
 	
 	NUC_FILE *f = nuc_fopen("/documents/background.bmp.tns","rb");
@@ -408,11 +288,6 @@ void initialize()
 		{
 			debug_shell_println_rgb("background image loaded",0,0,255);
 			background_set_image(img);
-			/*
-			keypad_press_release_barrier();
-			framebuffer_draw_img565(get_front_framebuffer_address(),img,0,0);
-			keypad_press_release_barrier();
-			*/
 		}
 		else
 		{
@@ -420,69 +295,58 @@ void initialize()
 		}
 		nuc_fclose(f);
 	}
-	background_update();
-	
-	/*
-	i2c_set_port(0xe4);
-	debug_shell_println("0xE4: %d",(uint32_t) i2c_read());
-	debug_shell_println("0xE5: %d",(uint32_t) i2c_read());
-	debug_shell_println("0xE6: %d",(uint32_t) i2c_read());
-	debug_shell_println("0xE7: %d",(uint32_t) i2c_read());
 	*/
-	//debug_shell_println("x: %d, y: %d, maxx: %d, maxy: %d",(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs(),(uint32_t) touchpad_max_x(),(uint32_t) touchpad_max_y());
+	
+	
 	
 	/*
+	static volatile uint32_t *remapped_nand_ctl = (uint32_t*)  (0xe95f1000);
+	debug_shell_println("nandctl status: 0x%x",remapped_nand_ctl[0]);
+	debug_shell_println("nandctl interface status: 0x%x",remapped_nand_ctl[1]);
+	debug_shell_println("NAND peripheral id: 0x%x",nand_controller_peripheral_id());
+	debug_shell_println("NAND primecell id: 0x%x",nand_controller_prime_cell_id());
+	*/
+	
+	
+	
+	
+	/*
+	// doesn't yet work on hardware
+	ut_disable_watchdog();
+	disableIRQ();
+	disableFIQ();
+	
+	nand_command(NAND_READ0,NAND_READSTART,0);
+	debug_shell_println("first nand word: 0x%x",nand_read_word());
 	while (true)
 	{
-		struct touchpad_report rep;
-		touchpad_get_report(&rep);
-		framebuffer_fillrect(get_back_framebuffer_address(),0,0,320,240,0,0,0);
-		char buff[40];
-		k_memset(buff,'\0',35);
-		DEBUGPRINTLN_1("x: %d,y: %d,p: %d",(uint32_t) rep.x,(uint32_t) rep.y,(uint32_t) rep.pressed)
-		sprintf_safe(buff,"x: %d,y: %d,p: %d",30,(uint32_t) rep.x,(uint32_t) rep.y,(uint32_t) rep.pressed);
-		framebuffer_write10pstring_ascii(buff,get_back_framebuffer_address(),10,100,255,0,0,ascii10p);
-		blitLCDBuffer();
-		msleep(5);
+		keypad_press_release_barrier();
 	}
 	*/
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
 	
-	//print_cacheinfo();
 	
 	
+	#ifndef RELEASE
+		// to be able to read the messages
+		keypad_press_release_barrier();
+	#endif
 	
-	
-	// to be able to read the messages
-	keypad_press_release_barrier();
-	
-	
-	
-	//freeLCD();
-	
-	
-	// unmap the lcd controller to test when the os modifies LCD_UPBASE
-	/*
-	register uint32_t tt_base asm("r0");
-	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
-	
-	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-	uint32_t *tt = (uint32_t*) tt_base;
-	
-	
-	tt[((uint32_t)LCD_UPBASE)>>20] = 0;
-	*/
 	
 	
 	
 	
 	enableIRQ();
-	
-	
-	
-	
 }
 
 

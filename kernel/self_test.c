@@ -1,3 +1,4 @@
+#ifndef RELEASE
 #include "kernel.h"
 
 
@@ -31,6 +32,19 @@ asm(
 
 bool run_self_test()
 {
+	// TODO write a new userspace self-test with the scheduler
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/*
 	struct address_space *space = createAddressSpace();
 	DEBUGPRINTLN_1("userspace tt: 0x%x",space->tt)
 	void *page = usePage();
@@ -82,7 +96,7 @@ bool run_self_test()
 	DEBUGPRINTLN_1("finished")
 	
 	
-	
+	*/
 	return true;
 }
 
@@ -93,3 +107,4 @@ bool run_self_test()
 
 
 
+#endif

@@ -2,6 +2,15 @@
 #define PROCESSOR_MODE_SWITCHES
 
 
+struct irq_state {
+	bool irq;
+	bool fiq;
+};
+
+
+void irq_disable(); // disables fiq and irq
+void irq_save_state(struct irq_state *s); // saves irq and fiq state
+void irq_restore_state(struct irq_state *s); // restores irq and fiq state
 
 
 void init_call_with_stack(void* start);

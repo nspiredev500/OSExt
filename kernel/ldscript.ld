@@ -6,7 +6,7 @@ ENTRY(__entry);
 SECTIONS
 {
 	.text 0x0 : {
-		_start = .;
+		/* _start = .; */
 		*(.text);
 		*(.text.*)
 	}
@@ -38,19 +38,16 @@ SECTIONS
 	
 	
 	.bss : {
-		PROVIDE(__bss_start = .);
+		/* PROVIDE(__bss_start = .); */
 		*(.bss);
-		PROVIDE(_end = .);
+		/* PROVIDE(_end = .); */
     }
-	
-	
-	
-	
 	
 	
 	_EXEC_START = ADDR(.text);
 	/* _EXEC_END doesn't take the GOT into account
 	*/
+	
 	_TEXT_START = ADDR(.text);
 	_DATA_START = ADDR(.data);
 	_BSS_START = ADDR(.bss);
@@ -61,7 +58,6 @@ SECTIONS
 	_GOT_START = ADDR (.got);
 	_GOT_SIZE = SIZEOF (.got);
 }
-
 
 
 

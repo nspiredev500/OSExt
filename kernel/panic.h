@@ -2,7 +2,7 @@
 #define PANIC_H
 
 
-void panic(char *msg);
+void panic(const char *msg);
 void setNotReturnable();
 void abort(void);
 
