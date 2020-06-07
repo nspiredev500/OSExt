@@ -1,6 +1,6 @@
 #include "../kernel.h"
 
-static const char* charset_path = "/documents/charset.tns";
+static const char* charset_path = "/documents/osext/charset.tns";
 
 
 static uint8_t charset_ascii[1600]; // (128*10*10)/8 bytes for the charset

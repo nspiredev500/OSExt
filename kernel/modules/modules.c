@@ -24,7 +24,7 @@
 */
 
 
-static const char* modules_path = "/documents/";
+static const char* modules_path = "/documents/modules";
 
 #define EXPORTED_NUM 45
 static void* modules_export[EXPORTED_NUM];
