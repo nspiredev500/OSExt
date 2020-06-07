@@ -56,7 +56,6 @@ bool (*register_draw_function)(void*) = NULL;
 bool (*unregister_draw_function)(void*) = NULL;
 bool (*register_file_function)(void*) = NULL;
 bool (*unregister_file_function)(void*) = NULL;
-void (*debug_shell_println_rgb)(const char*,uint32_t,uint32_t,uint32_t,...) = NULL;
 void* (*search)(char*) = NULL;
 void (*panic)(const char*) = NULL;
 void (*uart_printf)(const char*,...) = NULL;
@@ -102,12 +101,6 @@ void* module_start(void* search_func, uint32_t osext_version, bool standalone)
 	register_file_function(filefunc);
 	
 	
-	
-	debug_shell_println_rgb = search("debug_shell_println_rgb");
-	if (debug_shell_println_rgb != NULL)
-	{
-		debug_shell_println_rgb("clock module loaded!",0,255,0);
-	}
 	return &module_end;
 }
 

@@ -47,13 +47,32 @@ void module_manager_show()
 			}
 		}
 		
+		char key = getAlphanumericKeyPressed();
+		if (key != '\0' && selected == 0)
+		{
+			uint32_t len = k_strlen(buffer,100);
+			if (len < 30)
+			{
+				buffer[len] = key;
+			}
+			keypad_no_key_pressed_barrier();
+		}
+		
+		if (isKeyPressed(KEY_DEL) && selected == 0)
+		{
+			uint32_t len = k_strlen(buffer,100);
+			if (len > 0)
+			{
+				buffer[len-1] = '\0';
+			}
+			
+			while (isKeyPressed(KEY_DEL)) {}; // wait until the key has been released
+		}
+		
 		if (isKeyPressed(KEY_ENTER) && selected == 0)
 		{
-			
-			
-			
-			
-			
+			module_install(buffer);
+			k_memset(buffer,'\0',100);
 			while (isKeyPressed(KEY_ENTER)) {}; // wait until the key has been released
 		}
 		
@@ -81,11 +100,15 @@ void module_manager_show()
 		framebuffer_write10pstring_ascii("Used",framebuffer,10,20+yoffset,0,0,0);
 		framebuffer_write10pstring_ascii("Name",framebuffer,320/2-20,10+yoffset,0,0,0);
 		
+		
+		
+		
 		uint32_t width = k_strlen(buffer,100)*10;
 		if (width == 0)
 		{
 			width = 1;
 		}
+		framebuffer_write10pstring_ascii(buffer,framebuffer,320/2-width/2,30+yoffset,0,0,0);
 		if (selected == 0)
 		{
 			framebuffer_drawrect(framebuffer,320/2-width/2,30+yoffset,width,10,0,255,0);

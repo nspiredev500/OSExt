@@ -170,6 +170,18 @@ void module_uninstall(const char *name)
 // only works in kernel space
 void module_install(const char *name)
 {
+	{
+		struct module *mod = modules;
+		while (mod != NULL)
+		{
+			if (k_streq(name,mod->name,100))
+			{
+				return;
+			}
+			mod = mod->next;
+		}
+	}
+	
 	uint32_t pathlen = k_strlen(modules_path,100)+k_strlen(name,100)+4+k_strlen(".elf.tns",100);
 	char *path = kmalloc(pathlen);
 	k_memset(path,'\0',pathlen);

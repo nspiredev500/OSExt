@@ -55,7 +55,6 @@ bool (*register_draw_function)(void*) = NULL;
 bool (*unregister_draw_function)(void*) = NULL;
 bool (*register_file_function)(void*) = NULL;
 bool (*unregister_file_function)(void*) = NULL;
-void (*debug_shell_println_rgb)(const char*,uint32_t,uint32_t,uint32_t,...) = NULL;
 void (*panic)(const char*) = NULL;
 void (*uart_printf)(const char*,...) = NULL;
 
@@ -99,7 +98,6 @@ void* module_start(void* search_func, uint32_t osext_version, bool standalone)
 	SEARCH_AND_TEST(unregister_draw_function)
 	SEARCH_AND_TEST(register_file_function)
 	SEARCH_AND_TEST(unregister_file_function)
-	SEARCH_AND_TEST(debug_shell_println_rgb)
 	SEARCH_AND_TEST(panic)
 	SEARCH_AND_TEST(uart_printf)
 	SEARCH_AND_TEST(kmalloc)
@@ -113,8 +111,6 @@ void* module_start(void* search_func, uint32_t osext_version, bool standalone)
 	register_file_function(filefunc);
 	
 	background_update();
-	
-	debug_shell_println_rgb("background module installed!",0,255,0);
 	return &module_end;
 }
 

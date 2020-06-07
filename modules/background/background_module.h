@@ -37,7 +37,6 @@ bool (*register_draw_function)(void*);
 bool (*unregister_draw_function)(void*);
 bool (*register_file_function)(void*);
 bool (*unregister_file_function)(void*);
-void (*debug_shell_println_rgb)(const char*,uint32_t,uint32_t,uint32_t,...);
 void* (*search)(char*);
 void (*panic)(const char*);
 void (*uart_printf)(const char*,...);
