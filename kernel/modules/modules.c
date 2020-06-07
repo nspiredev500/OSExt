@@ -31,7 +31,13 @@ static void* modules_export[EXPORTED_NUM];
 static const char* modules_export_names[EXPORTED_NUM];
 
 
-struct module *modules = NULL;
+static struct module *modules = NULL;
+
+
+const struct module* module_get_modules()
+{
+	return modules;
+}
 
 
 void module_system_init()
@@ -140,7 +146,7 @@ void module_uninstall(const char *name)
 	struct module *mod = modules;
 	while (mod != NULL)
 	{
-		if (k_strlen(name,100) == k_strlen(mod->name,100) && k_strcmp(name,mod->name,100) == 0)
+		if (k_streq(name,mod->name,100))
 		{
 			mod->module_end();
 			freeConsecutivePages(mod->start,mod->pages);

@@ -21,6 +21,8 @@ void module_install(const char *name);
 void module_load_all();
 
 
+const struct module* module_get_modules();
+
 
 void* module_search_function(const char *name);
 

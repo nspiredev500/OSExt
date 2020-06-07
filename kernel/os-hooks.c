@@ -236,6 +236,7 @@ HOOK_DEFINE(filehook)
 	
 	
 	disableIRQ();
+	ut_disable_watchdog();
 	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),file_hookfunc);
 	// syscalls do not work with a relocated stack, so it has to be changed before changing the address space
 	file_hookfunc();
@@ -250,6 +251,7 @@ HOOK_DEFINE(drawhook)
 	int intmask = TCT_Local_Control_Interrupts(-1);
 	
 	disableIRQ();
+	ut_disable_watchdog();
 	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
 	draw_hookfunc();
 	enableIRQ();
@@ -274,34 +276,10 @@ void file_hookfunc()
 		return;
 	}
 	
-	/*
-	#if _CLOCK == true
-		if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
-		{
-			set_time_dialog();
-		}
-	#endif
-	*/
-	
-	
-	
-	
-	
-	/*
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_FLAG))
 	{
-		if (draw_clock)
-		{
-			draw_clock = false;
-		}
-		else
-		{
-			draw_clock = true;
-		}
-		lastchanged = rtc_get_value();
+		module_manager_show();
 	}
-	*/
-	
 	
 	for (uint32_t i = 0;i<filefunctions_num;i++)
 	{

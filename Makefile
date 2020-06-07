@@ -5,7 +5,7 @@ bin_dir ?= ../bin
 
 
 
-all: installer kernel uninstaller loader modules
+all: installer kernel uninstaller loader modules bin/installer/boot/osext.tns
 
 
 
@@ -47,15 +47,16 @@ clean_charset:
 	$(MAKE) -C pngtoascii clean
 
 
+bin/installer/boot/osext.tns: bin/osext.tns
+	cp bin/osext.tns bin/installer/boot/osext.tns
+
 
 release:  installer uninstaller loader
 	$(MAKE) -C kernel release
-	cp bin/osext.tns bin/installer/boot/osext.tns
 
 
 kernel: config.h
 	$(MAKE) -C kernel
-	cp bin/osext.tns bin/installer/boot/osext.tns
 
 
 

@@ -13,15 +13,6 @@ _DISABLE_TEXT_OUTPUT:
 	disables the status output at the start, and the clock if enabled
 
 
-_CLOCK:
-	enables the miniclock
-
-_BACKGROUND_IMAGES:
-	enables replacing the black of the nspire homescreen with a 320x240 bmp file(s) named background.bmp to background3.bmp.
-	Cycles through them if more than background.bmp are there (if they are in continuously numbered).
-
-
-
 
 
 
