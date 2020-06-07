@@ -8,7 +8,10 @@ void uninstall_hooks();
 uint32_t get_os_draw_address();
 void set_drawhook(bool enable);
 
-
+bool register_draw_function(void* function);
+bool unregister_draw_function(void* function);
+bool register_file_function(void* function);
+bool unregister_file_function(void* function);
 
 int maxDayInMonth(unsigned month, int leap);
 int isLeapYear(unsigned year);

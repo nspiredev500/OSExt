@@ -42,8 +42,8 @@
 
 build/*
 
-
-
+config/config
+config.h
 
 # Debug files
 *.dSYM/

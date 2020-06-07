@@ -27,6 +27,10 @@ void timer_disable(uint32_t timermodule,uint32_t timer);
 
 uint32_t timer_value(uint32_t timermodule,uint32_t timer);
 void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load);
+void timer_set_bg_load(uint32_t timermodule,uint32_t timer,uint32_t bgload);
+
+
+
 
 
 void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale);
@@ -41,8 +45,8 @@ void timer_irq_clear(uint32_t timermodule,uint32_t timer);
 bool timer_irq_enabled(uint32_t timermodule,uint32_t timer);
 void timer_set_irq_enabled(uint32_t timermodule,uint32_t timer,bool irq);
 
-
-
+void timer_set_oneshot(uint32_t timermodule,uint32_t timer,bool oneshot);
+bool timer_is_oneshot(uint32_t timermodule,uint32_t timer);
 
 
 

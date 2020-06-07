@@ -1,0 +1,8 @@
+stdint.h
+iso686.h
+stdarg.h
+stdbool.h
+stddef.h
+float.h
+are provided by GCC
+

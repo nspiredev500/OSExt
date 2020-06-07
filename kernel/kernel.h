@@ -1,6 +1,10 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
+#include "../config.h"
+
+
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,25 +15,38 @@
 #include <syscall-list.h>
 
 
-#include "img565.h"
-#include "nspire_menus.h"
+
 
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
 
 
+#include "scheduling/deferred_action.h"
+#include "scheduling/process.h"
+#include "scheduling/thread.h"
+#include "scheduling/scheduler.h"
+
 #include "ti-os.h"
-#include "process.h"
-#include "thread.h"
 #include "LinkedList.h"
-#include "charset/chars.h"
-#include "charset/digits.h"
-#include "charset/ascii.h"
+#include "charset/charset.h"
 #include "osversion.h"
 #include "libk/math.h"
 #include "libk/string.h"
 #include "libk/wait.h"
+
+
+#include "elf/elf.h"
+#include "modules/modules.h"
+#include "modules/module_manager.h"
+
+#include "gui/img565.h"
+//#include "gui/nspire_menus.h"
+//#include "gui/time-dialog.h"
+//#include "gui/bmp.h"
+//#include "gui/background.h"
+#include "gui/debug_shell.h"
+
 
 
 #include "drivers/power.h"
@@ -45,6 +62,10 @@
 #include "drivers/usb.h"
 #include "drivers/adc.h"
 #include "drivers/nand.h"
+#include "drivers/systime.h"
+#include "drivers/vfs.h"
+#include "drivers/init_drivers.h"
+
 
 #include "exceptions/syscalls.h"
 #include "exceptions/data_abort.h"
@@ -55,28 +76,32 @@
 #include "exceptions/aborts.h"
 
 
+#include "syscalls/svc/uninstall.h"
 
-#include "time-dialog.h"
-#include "bmp.h"
-#include "background.h"
-#include "nspire_menus.h"
-#include "uninstall.h"
-#include "scheduler.h"
-#include "virtual_MM.h"
-#include "physical_MM.h"
+#include "memory/physical_MM.h"
+#include "memory/virtual_MM.h"
+#include "memory/slab.h"
+
+
+
 #include "panic.h"
 #include "reloc.h"
 #include "start.h"
-#include "slab.h"
-#include "self_test.h"
-#include "debug_shell.h"
+#ifndef RELEASE
+	#include "self_test.h"
+#endif
 #include "os-hooks.h"
+#include "init-kernel.h"
+
+
+
+
+#define OSEXT_VERSION 0x00000004
+
 
 
 
 extern char _EXEC_START;
-// _EXEC_END doesn't take the GOT into account
-//extern char _EXEC_END;
 extern char _EXEC_SIZE;
 
 
@@ -104,7 +129,7 @@ const uint32_t SECTION_SIZE;
 
 
 #define DEBUGLEVEL 3
-#define DEBUG_BREAKPOINTS 0
+#define DEBUG_BREAKPOINTS 1
 
 #ifdef RELEASE
 	#undef DEBUGLEVEL

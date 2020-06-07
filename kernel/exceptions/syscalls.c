@@ -1,4 +1,5 @@
 #include "../kernel.h"
+#include "../syscalls/usr/syscalls.h"
 
 bool syscall_tracker = false;
 extern uint32_t syscall_mask;
@@ -106,7 +107,7 @@ asm(
 "msr spsr, r1 \n"
 "pop {r1} \n"
 "pop {r0} \n"
-"msr cpsr {r0} \n"
+"msr cpsr, r0 \n"
 "pop {r0} \n"
 "movs pc, lr \n"
 " \n"
@@ -136,6 +137,11 @@ void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 /*
 	User Mode System Calls:
 	0: exit
+	1: mmap
+	
+	
+	newlib:
+	0: exit
 	1: open
 	2: close
 	3: read
@@ -153,6 +159,9 @@ void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 	15: unlink
 	16: wait
 	17: gettimeofday
+	
+	
+	
 	
 	
 */

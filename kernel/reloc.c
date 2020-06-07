@@ -144,6 +144,7 @@ void relocate_self(void)
 	
 	while (*got_entry != 0xFFFFFFFF)
 	{
+		DEBUGPRINTLN_1("old GOT entry: 0x%x, new: 0x%x",*got_entry,*got_entry + (uint32_t) (-(uint32_t)(&_EXEC_START)+(uint32_t)virtual_base_address))
 		*got_entry = *got_entry + (uint32_t) (-(uint32_t)(&_EXEC_START)+(uint32_t)virtual_base_address);
 		got_entry++;
 	}

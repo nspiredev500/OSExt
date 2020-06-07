@@ -5,7 +5,7 @@
 
 
 #include "hook.h"
-#include "nclockfragments.h"
+//#include "gui/nclockfragments.h"
 
 // have to change clear_cache to clear_caches
 #undef HOOK_INSTALL
@@ -123,6 +123,110 @@ uint32_t get_os_draw_address()
 static void file_hookfunc();
 static void draw_hookfunc();
 
+static void (*filehook_functions[100])();
+static void (*drawhook_functions[100])(void*); // draw functions get the buffer they should draw to as an argument
+static uint32_t filefunctions_num = 0;
+static uint32_t drawfunctions_num = 0;
+
+
+
+
+bool register_draw_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	if (drawfunctions_num < 99)
+	{
+		struct irq_state state;
+		irq_save_state(&state);
+		irq_disable();
+		drawhook_functions[drawfunctions_num] = function;
+		drawfunctions_num++;
+		irq_restore_state(&state);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool unregister_draw_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	struct irq_state state;
+	irq_save_state(&state);
+	irq_disable();
+	for (uint32_t i = 0;i<drawfunctions_num;i++)
+	{
+		if (drawhook_functions[i] == function)
+		{
+			for (uint32_t a = i;a<drawfunctions_num-1;a++)
+			{
+				drawhook_functions[a] = drawhook_functions[a+1];
+			}
+			drawhook_functions[drawfunctions_num-1] = NULL;
+			drawfunctions_num--;
+			irq_restore_state(&state);
+			return true;
+		}
+	}
+	irq_restore_state(&state);
+	return false;
+}
+bool register_file_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	if (filefunctions_num < 99)
+	{
+		struct irq_state state;
+		irq_save_state(&state);
+		irq_disable();
+		filehook_functions[filefunctions_num] = function;
+		filefunctions_num++;
+		irq_restore_state(&state);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool unregister_file_function(void* function)
+{
+	if (function == NULL)
+	{
+		return false;
+	}
+	struct irq_state state;
+	irq_save_state(&state);
+	irq_disable();
+	for (uint32_t i = 0;i<filefunctions_num;i++)
+	{
+		if (filehook_functions[i] == function)
+		{
+			for (uint32_t a = i;a<filefunctions_num-1;a++)
+			{
+				filehook_functions[a] = filehook_functions[a+1];
+			}
+			filehook_functions[filefunctions_num-1] = NULL;
+			filefunctions_num--;
+			irq_restore_state(&state);
+			return true;
+		}
+	}
+	irq_restore_state(&state);
+	return false;
+}
+
+
 
 HOOK_DEFINE(filehook)
 {
@@ -132,8 +236,9 @@ HOOK_DEFINE(filehook)
 	
 	
 	disableIRQ();
+	ut_disable_watchdog();
 	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),file_hookfunc);
-	// some syscalls might not work with a relocated stack, so it has to be changed before changing the address space
+	// syscalls do not work with a relocated stack, so it has to be changed before changing the address space
 	file_hookfunc();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);
@@ -146,7 +251,9 @@ HOOK_DEFINE(drawhook)
 	int intmask = TCT_Local_Control_Interrupts(-1);
 	
 	disableIRQ();
-	call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
+	ut_disable_watchdog();
+	//call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),draw_hookfunc);
+	draw_hookfunc();
 	enableIRQ();
 	TCT_Local_Control_Interrupts(intmask);
 	HOOK_RESTORE_RETURN(drawhook);
@@ -164,37 +271,23 @@ static uint32_t lastrun = 0;
 void file_hookfunc()
 {
 	
-	if (getRTCValue()-lastrun == 0)
+	if (rtc_get_value()-lastrun == 0)
 	{
 		return;
 	}
 	
-	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE) && isKeyPressed(KEY_G))
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_COMMA))
 	{
-		set_time_dialog();
+		keypad_no_key_pressed_barrier();
+		module_manager_show();
 	}
 	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_PI))
+	for (uint32_t i = 0;i<filefunctions_num;i++)
 	{
-		background_update();
+		filehook_functions[i]();
 	}
 	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_EE))
-	{
-		if (draw_clock)
-		{
-			draw_clock = false;
-		}
-		else
-		{
-			draw_clock = true;
-		}
-		lastchanged = getRTCValue();
-	}
-	
-	
-	lastrun = getRTCValue();
+	lastrun = rtc_get_value();
 }
 
 
@@ -235,51 +328,46 @@ void draw_hookfunc()
 	}
 	void* framebuffer = get_front_framebuffer_address();
 	
-	background_draw_image(old_framebuffer,old_framebuffer);
 	
-	if (draw_clock)
+	
+	/*
+	#if _CLOCK == true
+		if (draw_clock)
+		{
+			uint32_t clockx = 180;
+			uint32_t clocky = 1;
+			framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
+			framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
+			
+			uint32_t hr = 0,min = 0,sec = 0;
+			
+			systime_unix_to_timestamp(systime_unix(),NULL,NULL,NULL,&hr,&min,&sec);
+			
+			framebuffer_write10pdigit(old_framebuffer,clockx+60,clocky,255,0,0,sec%10);
+			framebuffer_write10pdigit(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10);
+			
+			framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
+			framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
+			
+			
+			framebuffer_write10pdigit(old_framebuffer,clockx+35,clocky,255,0,0,min%10);
+			framebuffer_write10pdigit(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10);
+			
+			
+			framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
+			framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
+			
+			
+			framebuffer_write10pdigit(old_framebuffer,clockx+10,clocky,255,0,0,hr%10);
+			framebuffer_write10pdigit(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10);
+		}
+	#endif
+	*/
+	
+	for (uint32_t i = 0;i<drawfunctions_num;i++)
 	{
-		uint32_t clockx = 180;
-		uint32_t clocky = 1;
-		framebuffer_fillrect(old_framebuffer,180,1,70,10,0,0,0);
-		framebuffer_drawrect(old_framebuffer,179,0,72,12,255,255,255);
-		
-		int hr = 0,min = 0,sec = 0;
-		timestamp2time(getRTCValue(),&hr,&min,&sec);
-		
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+60,clocky,255,0,0,sec%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx+50,clocky,255,0,0,(sec/10)%10,digits10p);
-		
-		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+3,255,0,0);
-		framebuffer_setpixel(old_framebuffer,clockx+47,clocky+7,255,0,0);
-		
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+35,clocky,255,0,0,min%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx+25,clocky,255,0,0,(min/10)%10,digits10p);
-		
-		
-		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+3,255,0,0);
-		framebuffer_setpixel(old_framebuffer,clockx+23,clocky+7,255,0,0);
-		
-		
-		framebuffer_write10pchar(old_framebuffer,clockx+10,clocky,255,0,0,hr%10,digits10p);
-		framebuffer_write10pchar(old_framebuffer,clockx,clocky,255,0,0,(hr/10)%10,digits10p);
-		
-		
-		/*
-		char buff[40];
-		k_memset(buff,'\0',35);
-		sprintf_safe(buff,"x: %d, y: %d",30,(uint32_t) touchpad_x_abs(),(uint32_t) touchpad_y_abs());
-		framebuffer_write10pstring_ascii(buff,old_framebuffer,100,100,255,0,0,ascii10p);
-		*/
-		
-		
-		
+		drawhook_functions[i](old_framebuffer);
 	}
-	
-	
-	
 	
 	k_memcpy(framebuffer,old_framebuffer,320*240*2);
 	

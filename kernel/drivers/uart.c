@@ -15,11 +15,11 @@ void remappUART(void *new_mapping)
 //TODO check for full FIFO buffer
 
 
-void uart_printf(char *str,...)
+void uart_printf(const char *str,...)
 {
 	va_list va;
 	va_start(va,str);
-	char *c = str;
+	const char *c = str;
 	while (true)
 	{
 		if (*c == '\0')
@@ -64,9 +64,9 @@ void uart_printf(char *str,...)
 	va_end(va);
 }
 
-void uart_printf_va(char *str,va_list va)
+void uart_printf_va(const char *str,va_list va)
 {
-	char *c = str;
+	const char *c = str;
 	while (true)
 	{
 		if (*c == '\0')
@@ -111,7 +111,7 @@ void uart_printf_va(char *str,va_list va)
 }
 
 
-void uart_println(char *str,...)
+void uart_println(const char *str,...)
 {
 	va_list va;
 	va_start(va,str);
@@ -120,7 +120,7 @@ void uart_println(char *str,...)
 	uart_send('\n');
 }
 
-void uart_println_va(char *str,va_list va)
+void uart_println_va(const char *str,va_list va)
 {
 	uart_printf_va(str,va);
 	uart_send('\n');
@@ -211,9 +211,9 @@ void uart_send_uint32(uint32_t a)
 
 
 
-void uart_send_string(char *string)
+void uart_send_string(const char *string)
 {
-	char *c = string;
+	const char *c = string;
 	while (true)
 	{
 		if (*c == '\0')
@@ -223,7 +223,7 @@ void uart_send_string(char *string)
 	}
 }
 
-void uart_send_string_length(char *string,int length)
+void uart_send_string_length(const char *string,int length)
 {
 	for (int i = 0;i<length;i++)
 	{

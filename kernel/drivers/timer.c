@@ -41,6 +41,13 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 	first timer = 1
 	second timer = 2
 */
+/*
+	first timer doesn't seem to be used by the OS, so we can use it for out system time
+	
+	
+*/
+
+
 
 
 void timer_save_state(uint32_t timermodule,uint32_t timer,struct timer_state *state)
@@ -124,7 +131,6 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	
 	vic_set_fiq(17+timermodule);
 	vic_enable(17+timermodule);
-	//remapped_misc[5+timermodule*2] |= 0b1; // timer masks can't be set in misc in firebird cx emulation, maybe the normal masks are used?
 	remapped_timer[2+timer*8] |= 0b10100010;
 }
 
@@ -146,7 +152,6 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 	
 	vic_disable(17+timermodule);
 	vic_set_irq(17+timermodule);
-	//remapped_misc[5+timermodule*2] &= ~0b1;
 	remapped_timer[2+timer*8] &= ~0b10100000;
 }
 
@@ -186,6 +191,27 @@ void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load)
 	
 	remapped_timer[timer*8] = load;
 }
+
+void timer_set_bg_load(uint32_t timermodule,uint32_t timer,uint32_t bgload)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	remapped_timer[timer*8+6] = bgload;
+}
+
+
 
 void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 {
@@ -331,7 +357,62 @@ void timer_set_irq_enabled(uint32_t timermodule,uint32_t timer,bool irq)
 
 
 
+void timer_set_oneshot(uint32_t timermodule,uint32_t timer,bool oneshot)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
+	if (enabled)
+		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
+	
+	remapped_timer[2+timer*8] &= ~ 0b1;
+	if (oneshot)
+	{
+		remapped_timer[2+timer*8] |= 0b1;
+	}
+	
+	if (enabled)
+		remapped_timer[2+timer*8] |= 0b10000000;
+}
 
+bool timer_is_oneshot(uint32_t timermodule,uint32_t timer)
+{
+	if (timer > 1)
+		return false;
+	if (timermodule > 2)
+		return false;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	
+	if ((remapped_timer[2+timer*8] & 0b1) == 0b1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 
 
