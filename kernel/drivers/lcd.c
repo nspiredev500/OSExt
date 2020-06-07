@@ -244,12 +244,12 @@ void framebuffer_drawrect(void *buff,uint32_t xs,uint32_t ys, uint32_t w, uint32
 	for (uint32_t x = xs;x<xs+w;x++)
 	{
 		framebuffer_setpixel(buff,x,ys,r,g,b);
-		framebuffer_setpixel(buff,x,ys+h,r,g,b);
+		framebuffer_setpixel(buff,x,ys+h-1,r,g,b);
 	}
 	for (uint32_t y = ys;y<ys+h;y++)
 	{
 		framebuffer_setpixel(buff,xs,y,r,g,b);
-		framebuffer_setpixel(buff,xs+w,y,r,g,b);
+		framebuffer_setpixel(buff,xs+w-1,y,r,g,b);
 	}
 }
 

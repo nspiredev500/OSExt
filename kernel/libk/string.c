@@ -69,6 +69,15 @@ void sprintf_safe(char *result,char *str,uint32_t length,...)
 			break;
 		if (*c == '%' && *(c+1) != '\0')
 		{
+			if (*(c+1) == '%')
+			{
+				if (! (index+1 >= length-1))
+				{
+					result[index] = '%';
+					c += 2;
+					index++;
+				}
+			}
 			if (*(c+1) == 's')
 			{
 				va_arg(va,char*);

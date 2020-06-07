@@ -276,8 +276,9 @@ void file_hookfunc()
 		return;
 	}
 	
-	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_FLAG))
+	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_COMMA))
 	{
+		keypad_no_key_pressed_barrier();
 		module_manager_show();
 	}
 	

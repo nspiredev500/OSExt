@@ -26,7 +26,7 @@
 
 static const char* modules_path = "/documents/";
 
-#define EXPORTED_NUM 44
+#define EXPORTED_NUM 45
 static void* modules_export[EXPORTED_NUM];
 static const char* modules_export_names[EXPORTED_NUM];
 
@@ -86,7 +86,7 @@ void module_system_init()
 	modules_export[41] = nuc_fclose;
 	modules_export[42] = nuc_fread;
 	modules_export[43] = nuc_fwrite;
-	
+	modules_export[44] = adc_read_channel;
 	
 	
 	
@@ -134,7 +134,7 @@ void module_system_init()
 	modules_export_names[41] = "nuc_fclose";
 	modules_export_names[42] = "nuc_fread";
 	modules_export_names[43] = "nuc_fwrite";
-	
+	modules_export_names[44] = "adc_read_channel";
 	
 	
 }
