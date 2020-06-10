@@ -7,7 +7,10 @@ const uint32_t CHANNEL_KEYPAD = 3;
 
 static volatile uint32_t *remapped_adc = (volatile uint32_t*) (0xe9400000);
 /*
+	remapped_adc[0] = masked interrupt status
 	remapped_adc[1] = interrupt status/acknowledge
+	remapped_adc[2] = interrupt enable register
+	
 	
 	remapped_adc+0x100+0x20*channel_number = command register
 	remapped_adc+0x100+0x20*channel_number+0x10 = read register
@@ -23,6 +26,7 @@ double adc_read_channel(uint32_t channel)
 	}
 	
 	bool powered = power_device_powered(4);
+	//TODO: in firebird the adc seems to be device 4 of power2
 	
 	if (! powered)
 	{
@@ -38,16 +42,27 @@ double adc_read_channel(uint32_t channel)
 		disableIRQ();
 	}
 	
-	
+	uint32_t prev_cmd = *channel_command;
 	
 	*channel_command = 0b1;
-	msleep(200); // I don't know which are the right interrupt status bits, so do a sleep. 200 milliseconds should be enough, and this shouldn't be done often
+	msleep(50); // I don't know which are the right interrupt status bits, so do a sleep. 50 milliseconds should be enough, and this shouldn't be done often
 	
-	remapped_adc[1] = 0xffffffff;
+	// the interrupt bits don't seem to work on hardware
+	/*
+	while (((remapped_adc[1] >> (4*channel)) & 0b11) != 0b11)
+	{
+		msleep(1);
+	}
+	*/
+	//debug_shell_println("ADC interrupt bits: 0x%x",remapped_adc[1]);
+	//debug_shell_println("ADC masked interrupt bits: 0x%x",remapped_adc[0]);
 	uint32_t read = *channel_read;
-	DEBUGPRINTLN_1("adc channel read: %d   %d units  commannd: 0x%x   read: 0x%x powered: %d irq: %d",channel,read,channel_command,channel_read,(uint32_t) powered,(uint32_t) irq)
+	//DEBUGPRINTLN_1("adc channel read: %d   %d units  commannd: 0x%x   read: 0x%x powered: %d irq: %d",channel,read,channel_command,channel_read,(uint32_t) powered,(uint32_t) irq)
 	
 	
+	*channel_command = prev_cmd;
+	msleep(50);
+	remapped_adc[1] = 0xffffffff;
 	if (irq)
 	{
 		enableIRQ();
