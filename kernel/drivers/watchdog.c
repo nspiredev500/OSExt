@@ -177,6 +177,10 @@ void watchdog_irq_clear()
 	remapped_watchdog[0x300] = 0x1ACCE551;
 	remapped_watchdog[3] = 0xffffffff;
 	remapped_watchdog[0x300] = 0;
+	if (watchdog_oneshot)
+	{
+		watchdog_disable();
+	}
 }
 
 

@@ -21,7 +21,7 @@
 #include "libk/mutex.h"
 #include "libk/modes.h"
 
-
+#include "scheduling/lock.h"
 #include "scheduling/deferred_action.h"
 #include "scheduling/process.h"
 #include "scheduling/thread.h"

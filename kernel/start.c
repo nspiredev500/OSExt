@@ -247,7 +247,7 @@ void initialize()
 	//debug_shell_println("VSYS: %Lf",adc_read_channel(CHANNEL_VSYS));
 	
 	
-	
+	/*
 	int64_t milis = systime_unix_milis(), micro = systime_unix_micro();
 	uint32_t ticks = 0xffffffff - timer_value(SYSTIME_TIMER);
 	
@@ -260,6 +260,72 @@ void initialize()
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
+	*/
+	
+	
+	
+	
+	// to test remade msleep and the new microsleep
+	/*
+	debug_shell_println("testing msleep");
+	
+	
+	void* backbuffer = get_back_framebuffer_address();
+	void* frontbuffer = get_front_framebuffer_address();
+	k_memcpy(backbuffer,frontbuffer,320*240*2);
+	keypad_press_release_barrier();
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,255,0,0);
+	clear_caches();
+	msleep(1000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,255,0);
+	clear_caches();
+	msleep(1000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,0,255);
+	clear_caches();
+	msleep(1000);
+	
+	k_memcpy(frontbuffer,backbuffer,320*240*2);
+	
+	
+	
+	
+	debug_shell_println("testing microsleep");
+	k_memcpy(backbuffer,frontbuffer,320*240*2);
+	keypad_press_release_barrier();
+	
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,255,0,0);
+	clear_caches();
+	microsleep(1000000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,255,0);
+	clear_caches();
+	microsleep(1000000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,0,255);
+	clear_caches();
+	microsleep(1000000);
+	
+	
+	k_memcpy(frontbuffer,backbuffer,320*240*2);
+	*/
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	debug_shell_println_rgb("osext installed",0,255,0);
+	debug_shell_println_rgb("press any key to exit",0,255,0);
+	
 	
 	
 	
