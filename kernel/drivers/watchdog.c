@@ -155,6 +155,14 @@ void watchdog_set_period(uint32_t milis)
 	remapped_watchdog[0x300] = 0;
 }
 
+void watchdog_set_period_micro(uint32_t micro)
+{
+	power_enable_device(13);
+	remapped_watchdog[0x300] = 0x1ACCE551;
+	remapped_watchdog[0] = 33*micro; // if at 33MHz
+	remapped_watchdog[0x300] = 0;
+}
+
 bool watchdog_irq_status()
 {
 	power_enable_device(13);
