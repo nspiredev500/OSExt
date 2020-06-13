@@ -1,7 +1,7 @@
 #include "../kernel.h"
 
 
-void* const virtual_base_address = (void* const) 0xe0000000;
+void* const virtual_base_address = (void* const) 0xe0100000;
 const void* remapped_RAM = (const void*) 0xec000000;
 const void* old_RAM = (const void*) 0x10000000;
 const void* remapped_stack_end = (const void*) 0xe8000000;

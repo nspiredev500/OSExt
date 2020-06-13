@@ -6,16 +6,33 @@ static volatile uint32_t *fiq_address = (volatile uint32_t*) 0x30;
 
 
 asm(
+".global relay_watchdog_fiq_to_ndless \n"
+"relay_watchdog_fiq_to_ndless: .long 0 \n"
 ".global fiq_wrapper \n"
 "fiq_wrapper: \n" // don't push all registers, because the fiq mode has private r8-r14 registers
-"push {r0-r8,r14} \n" // also push r8 to make the stack 8-byte-aligned
+"push {r0-r7,r14} \n"
+"mrs r0, cpsr \n"
+"push {r0} \n" // push the cpsr
 "mrs r0, spsr \n"
 "sub r1, lr, #4 \n"
 "mov r2, sp \n"
 "bl fiq_handler \n"
-"pop {r0-r8,r14} \n"
-"subs pc, lr, #4 \n");
+"ldr r0, relay_watchdog_fiq_to_ndless \n"
+"cmp r0, #1 \n"
+"beq _relay_watchdog_ndless \n"
+"pop {r0} \n" // pop the cpsr
+"msr cpsr, r0 \n"
+"pop {r0-r7,r14} \n" // pop the rest of the registers
+"subs pc, lr, #4 \n"
+"_relay_watchdog_ndless: \n"
+"mov r0, #0 \n"
+"str r0, relay_watchdog_fiq_to_ndless \n"
+"pop {r0} \n" // pop the cpsr
+"msr cpsr, r0 \n"
+"pop {r0-r7,r14} \n" // pop the rest of the registers
+"mov pc, #0x1c \n");
 
+extern uint32_t relay_watchdog_fiq_to_ndless;
 
 static void __attribute__ ((noreturn)) reset(void) {
 	*(volatile unsigned*)0x900A0008 = 2;
@@ -70,7 +87,10 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	{
 		if (watchdog_function() == WATCHDOG_INVALID)
 		{
-			panic("watchdog fiq in invalid watchdog mode!\n");
+			//panic("watchdog fiq in invalid watchdog mode!\n");
+			// if an fiq occurs in invalid watchdog mode, assume it's Ndless lcd compatibility feature and relay it
+			relay_watchdog_fiq_to_ndless = 1;
+			return;
 		}
 		watchdog_irq_clear();
 	}
