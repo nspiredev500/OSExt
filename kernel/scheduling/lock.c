@@ -15,6 +15,7 @@ struct lock* lock_create()
 	}
 	lock->lock_count = 0;
 	lock->ref_count = 1;
+	return lock;
 }
 
 struct lock* lock_reference(struct lock* lock)

@@ -1,11 +1,6 @@
 #include "../kernel.h"
 
 
-const uint32_t SMALL_PAGE_SIZE = 1024*4;
-const uint32_t LARGE_PAGE_SIZE = 1024*64;
-const uint32_t SECTION_SIZE = 1024*1024;
-
-
 struct pageblock {
 	void* unaligned;
 	void* start; // first page

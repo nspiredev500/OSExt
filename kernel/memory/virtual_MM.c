@@ -4,6 +4,10 @@
 void* const virtual_base_address = (void* const) 0xe0000000;
 const void* remapped_RAM = (const void*) 0xec000000;
 const void* old_RAM = (const void*) 0x10000000;
+const void* remapped_stack_end = (const void*) 0xe8000000;
+const void* remapped_stack = (const void*) (0xe8000000+SMALL_PAGE_SIZE*REMAPPED_STACK_SIZE-8);
+static void* stackpages = NULL;
+
 
 static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
@@ -20,11 +24,11 @@ struct address_space* getKernelSpacePointer()
 {
 	return &kernel_space;
 }
-void initializeKernelSpace()
+bool initializeKernelSpace()
 {
 	if (kernel_space_initialized)
 	{
-		return;
+		return true;
 	}
 	
 	register uint32_t tt_base asm("r0");
@@ -48,7 +52,10 @@ void initializeKernelSpace()
 	invalidate_TLB();
 	
 	
-	initSlabAllocator();
+	if (initSlabAllocator() == false)
+	{
+		return false;
+	}
 	
 	bool b = slab_allocator_self_test_post_initialization();
 	if (! b)
@@ -56,7 +63,7 @@ void initializeKernelSpace()
 		debug_shell_println_rgb("error in slab allocator self-test         aborting",255,0,0);
 		keypad_press_release_barrier();
 		free_init_pds();
-		return;
+		return false;
 	}
 	
 	
@@ -74,7 +81,8 @@ void initializeKernelSpace()
 	null_page = usePage();
 	if (null_page == NULL)
 	{
-		panic("no page for the null-page!\n");
+		debug_shell_println_rgb("no page for the null page!         aborting",255,0,0);
+		return false;
 	}
 	k_memset(null_page,0,SMALL_PAGE_SIZE);
 	
@@ -132,8 +140,20 @@ void initializeKernelSpace()
 	}
 	*/
 	
+	// allocate the relocated stack
+	stackpages = useConsecutivePages(REMAPPED_STACK_SIZE,0);
+	if (stackpages == NULL)
+	{
+		debug_shell_println_rgb("not enough pages for the stack!         aborting",255,0,0);
+		return false;
+	}
+	k_memset(stackpages,0,REMAPPED_STACK_SIZE*SMALL_PAGE_SIZE);
 	
-	
+	// map the stack
+	for (uint32_t i = 0;i<REMAPPED_STACK_SIZE;i++)
+	{
+		addVirtualKernelPage(stackpages+i*SMALL_PAGE_SIZE,(void*)(remapped_stack_end+i*SMALL_PAGE_SIZE));
+	}
 	
 	
 	
@@ -144,6 +164,7 @@ void initializeKernelSpace()
 	asm volatile("mcr p15, 0, r1, c3, c0, 0"::"r" (domain_register):);
 	
 	kernel_space_initialized = true;
+	return true;
 }
 
 
@@ -255,6 +276,8 @@ struct address_space* createAddressSpace()
 		tt[(0xe9000000+(6+i)*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x81000000+(i*SECTION_SIZE));
 	}
 	*/
+	
+	
 	
 	
 	
@@ -372,7 +395,7 @@ uint32_t* getKernelCPT(void* address)
 
 
 
-void addVirtualKernelPage(void* page, void* virtual_address)
+void addVirtualKernelPage(const void* page, const void* virtual_address)
 {
 	//DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
 	
@@ -432,11 +455,69 @@ void addVirtualKernelPage(void* page, void* virtual_address)
 	invalidate_TLB();
 }
 
+void addVirtualKernelPage_noncached(const void* page, const void* virtual_address)
+{
+	//DEBUGPRINTF_3("mapping 0x%x to 0x%x\n",page,virtual_address)
+	
+	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);
+	uint32_t index = 0;
+	LinkedList *sec = searchLinkedListEntry(&kernel_space.cptds,(void*) section,&index);
+	if (sec == NULL)
+	{
+		//DEBUGPRINTF_3("adding coarse page table descriptor for section 0x%x\n",section)
+		
+		ensureCPTCapacity();
+		ensureLinkedListCapacity();
+		
+		LinkedList *cptd = requestLinkedListEntry();
+		cptd->data = (void*) section;
+		
+		LinkedList *cpt = requestLinkedListEntry();
+		cpt->data = requestCPT();
+		k_memset(cpt->data,0,1024);
+		addLinkedListEntry(&kernel_space.cpts,cpt);
+		addLinkedListEntry(&kernel_space.cptds,cptd);
+		
+		
+		kernel_space.tt[section >> 20] = newCPTD(0,(uint32_t) getPhysicalAddress(&kernel_space,cpt->data));
+		
+		uint32_t table_index = (uint32_t) (virtual_address-section);
+		table_index = table_index / SMALL_PAGE_SIZE;
+		uint32_t *table = cpt->data;
+		table[table_index] = newSPD(0,0,0b01010101,(uint32_t) page);
+		
+		// adding the page table to all address spaces
+		LinkedList *next = address_spaces;
+		while (next != NULL)
+		{
+			struct address_space *space = (struct address_space*) next->data;
+			space->tt[section >> 20] = kernel_space.tt[section >> 20];
+			next = next->next;
+		}
+		
+		
+		
+	}
+	else
+	{
+		LinkedList *cpt = getLinkedListEntry(&kernel_space.cpts,index);
+		if (cpt == NULL)
+		{
+			DEBUGPRINTF_3("index: %d\n",index)
+			panic("no corresponding coarse page table for descriptor!\n");
+		}
+		uint32_t *table = cpt->data;
+		uint32_t table_index = ((uint32_t) (virtual_address-section));
+		table_index = table_index / SMALL_PAGE_SIZE;
+		table[table_index] = newSPD(0,0,0b01010101,(uint32_t) page);
+	}
+	clear_caches();
+	invalidate_TLB();
+}
 
 
 
-
-void addVirtualPage(struct address_space *space,void* page, void* virtual_address)
+void addVirtualPage(struct address_space *space,const void* page, const void* virtual_address)
 {
 	DEBUGPRINTF_3("mapping 0x%x to 0x%x in userspace\n",page,virtual_address)
 	uint32_t section = ((uint32_t) virtual_address) & (~ 0xfffff);

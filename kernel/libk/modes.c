@@ -80,15 +80,9 @@ void disableFIQ()
 
 // WARNING: NOT REENTRANT!
 // function does not support arguments
-uint32_t call_with_stack(void* stack,void* function)
+uint32_t call_with_stack(const void* stack,void* function)
 {
-	/*
-	if (exec_start == NULL)
-	{
-		panic("call_with_stack not initialized!\n");
-	}
-	*/
-	register void* sp_var asm("r0") = stack;
+	register void* sp_var asm("r0") = (void*) stack;
 	register void* func_var asm("r1") = function;
 	asm volatile(
 	" b continue \n"

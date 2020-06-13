@@ -167,6 +167,18 @@ static void ut_disable_watchdog(void)
 }
 
 
+
+static void testfunc()
+{
+	NUC_FILE* f = nuc_fopen("/documents/osext.tns","rb");
+	if (f != NULL)
+	{
+		nuc_fclose(f);
+	}
+	debug_shell_println("syscall successfull!");
+}
+
+
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
@@ -184,7 +196,7 @@ void initialize()
 	
 	
 	#ifndef RELEASE
-		bool b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
+		bool b = (bool) call_with_stack((void*)(remapped_stack),run_self_test);
 		if (! b)
 		{
 			debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
@@ -316,7 +328,20 @@ void initialize()
 	
 	
 	
-	
+	// testing if using a relocated stack is possible,
+	// it seems it just has to be big enough for syscalls to not smash the thing under the stack
+	// 20 pages left should be safe
+	// if using relocated stacks, make sure to add a check for enough stack space left before using syscalls
+	/*
+	debug_shell_println("allocating buffer");
+	uint32_t testbuff_int = (uint32_t) ti_malloc(SMALL_PAGE_SIZE*15);
+	void* testbuff = (void*) ((testbuff_int & (~ 0b111))+0b1000); // forces alignment to 8 bytes
+	debug_shell_println("under testbuff: 0x%x",*((uint8_t*)testbuff_int-1));
+	call_with_stack(testbuff+SMALL_PAGE_SIZE*14,testfunc);
+	debug_shell_println("under testbuff: 0x%x",*((uint8_t*)testbuff_int-1));
+	debug_shell_println("freeing buffer");
+	ti_free((void*)testbuff_int);
+	*/
 	
 	
 	

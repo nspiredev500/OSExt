@@ -23,7 +23,7 @@ struct cache_t {
 		bit 0: no_kmalloc
 		bit 1: no_shrink
 		bit 2: no_autogrow
-		
+		bit 3: no_cache			pages are mapped as non-cached and non-buffered
 		
 		
 		bit 14: poison: initialize objects with a pattern and check it before allocation
@@ -43,7 +43,7 @@ void setKernelHeapNextPage(void* next);
 void addKernelHeapPage(void* page);
 
 
-void initSlabAllocator();
+bool initSlabAllocator();
 
 void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size);
 bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj);

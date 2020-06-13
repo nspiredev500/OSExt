@@ -72,7 +72,13 @@ bool init_kernel()
 	debug_shell_println("initializing kernel space");
 	
 	
-	initializeKernelSpace();
+	if (initializeKernelSpace() == false)
+	{
+		keypad_press_release_barrier();
+		free_init_pds();
+		enableIRQ();
+		return false;
+	}
 	
 	init_drivers_remapped_io();
 	init_drivers();
@@ -119,25 +125,7 @@ bool init_kernel()
 	
 		
 	
-	// construct the pages for the remapped stack
-	void* page = usePage();
-	if (page == NULL)
-	{
-		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return false;
-	}
-	addVirtualKernelPage(page,(void*) 0xe8000000);
-	page = usePage();
-	if (page == NULL)
-	{
-		debug_shell_println_rgb("no page for general self test         aborting",255,0,0);
-		keypad_press_release_barrier();
-		enableIRQ();
-		return false;
-	}
-	addVirtualKernelPage(page,(void*) (0xe8000000+SMALL_PAGE_SIZE));
+	
 	
 	
 	debug_shell_println("installing hooks");

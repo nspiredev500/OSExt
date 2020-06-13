@@ -3,6 +3,13 @@
 
 #include "../LinkedList.h"
 
+void* const virtual_base_address;
+const void* remapped_RAM;
+const void* old_RAM;
+const void* remapped_stack_end;
+#define REMAPPED_STACK_SIZE 64
+const void* remapped_stack;
+
 
 
 struct address_space {
@@ -11,14 +18,16 @@ struct address_space {
 	LinkedList *cptds; // store the corresponding addresses for the coarse page tables (address to pass to newCPTD)
 };
 
-void initializeKernelSpace();
+bool initializeKernelSpace();
 
 struct address_space* getKernelSpacePointer();
 
-void addVirtualKernelPage(void* page, void* virtual_address);
+void addVirtualKernelPage(const void* page, const void* virtual_address);
+void addVirtualKernelPage_noncached(const void* page, const void* virtual_address);
+
 void migrateKernelCPT(uint32_t section,uint32_t *cpt,uint32_t pages);
 
-void addVirtualPage(struct address_space *space,void* page, void* virtual_address);
+void addVirtualPage(struct address_space *space,const void* page, const void* virtual_address);
 
 struct address_space* createAddressSpace();
 // you should switch out of the address space before destroying it
