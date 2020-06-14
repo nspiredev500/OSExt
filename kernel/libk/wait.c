@@ -29,7 +29,7 @@ void msleep(uint32_t milis)
 	overflows = overflows / 0xffffffff;
 	
 	
-	DEBUGPRINTLN_1("msleep first: %d, overflows: %d",first,overflows)
+	//DEBUGPRINTLN_1("msleep first: %d, overflows: %d",first,overflows)
 	watchdog_set_load(first);
 	watchdog_enable();
 	while (watchdog_enabled())
@@ -46,13 +46,7 @@ void msleep(uint32_t milis)
 	
 	watchdog_set_function(function);
 	watchdog_set_load(load);
-	/*
-	if (reset)
-	{
-		watchdog_set_reset(true);
-	}
-	*/
-	if (enabled)
+	if (enabled && vic_is_fiq(3)) // so it gets restarted for the Ndless lcdcompat feature
 	{
 		watchdog_enable();
 	}
@@ -76,7 +70,7 @@ void microsleep(uint32_t micro)
 	overflows = overflows / 0xffffffff;
 	
 	
-	DEBUGPRINTLN_1("microsleep first: %d, overflows: %d",first,overflows)
+	//DEBUGPRINTLN_1("microsleep first: %d, overflows: %d",first,overflows)
 	watchdog_set_load(first);
 	watchdog_enable();
 	while (watchdog_enabled())
@@ -93,13 +87,7 @@ void microsleep(uint32_t micro)
 	
 	watchdog_set_function(function);
 	watchdog_set_load(load);
-	/*
-	if (reset)
-	{
-		watchdog_set_reset(true);
-	}
-	*/
-	if (enabled)
+	if (enabled && vic_is_fiq(3)) // so it gets restarted for the Ndless lcdcompat feature
 	{
 		watchdog_enable();
 	}

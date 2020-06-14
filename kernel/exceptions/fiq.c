@@ -87,8 +87,8 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	{
 		if (watchdog_function() == WATCHDOG_INVALID)
 		{
-			//panic("watchdog fiq in invalid watchdog mode!\n");
 			// if an fiq occurs in invalid watchdog mode, assume it's Ndless lcd compatibility feature and relay it
+			/// TODO do not relay in standalone mode
 			relay_watchdog_fiq_to_ndless = 1;
 			return;
 		}

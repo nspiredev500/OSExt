@@ -32,7 +32,6 @@ asm(
 "pop {r0-r12,r14} \n"
 "mov pc, #0x10 \n");
 
-// TODO: make the data abort handler compatible with the lcdcompat feature of ndless, by relaying the data aborts in the lcd controller range to the original abort handler
 
 extern uint32_t relay_data_abort_to_ndless;
 
@@ -43,7 +42,6 @@ uint32_t* lcd_undef_adr = NULL;
 uint32_t lcd_undef_section = 0;
 */
 
-//TODO: do not relay in standalone mode
 uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, regs[1] is a dummy value, the rest are the registers
 {
 	uint32_t thumb = (spsr >> 5) & 0b1;
@@ -52,6 +50,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 	
 	if (((spsr & 0b11111) == 0b10011 || (spsr & 0b11111) == 0b11111) && abort_address >> 28 == 0xC) // privileged mode and tried to access LCD controller
 	{
+		/// TODO: do not relay in standalone mode
 		relay_data_abort_to_ndless = 1;
 		return 0;
 	}
@@ -67,7 +66,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 		// we have to assume the worst about the integrity of the code and data
 		// unlock the recovery kernel and jump to it
 		
-		// TODO the recovery kernel
+		/// TODO the recovery kernel
 		
 		panic("Data abort in privileged mode!");
 		
