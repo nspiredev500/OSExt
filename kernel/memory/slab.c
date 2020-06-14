@@ -131,6 +131,66 @@ static void addUnlistedKernelPage(void* page, void* virtual_address,uint32_t** c
 }
 
 
+static void addUnlistedKernelPage_noncached(void* page, void* virtual_address,uint32_t** cpt,uint32_t** cpt_unaligned)
+{
+	register uint32_t tt_base asm("r0");
+	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+	
+	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+	uint32_t *tt = (uint32_t*) tt_base;
+	
+	
+	
+	
+	
+	uint32_t* kernel_cpt = getKernelCPT(virtual_address);
+	
+	uint32_t section = (uint32_t) virtual_address & (~ 0xfffff);
+	if (kernel_cpt != NULL)
+	{
+		kernel_cpt[((uint32_t) virtual_address - section)/SMALL_PAGE_SIZE] = newSPD(0,0,0b01010101,(uint32_t) page);
+	}
+	else
+	{
+		
+		
+		register uint32_t tt_base asm("r0");
+		asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
+		
+		tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+		uint32_t *tt = (uint32_t*) (tt_base+ (uint32_t) remapped_RAM);
+		
+		if ((tt[section] & 0b11) == 0b01) // already an coarse page table
+		{
+			uint32_t *cpt_base = (uint32_t*) ((tt[section] & (~ 0b1111111111)) + remapped_RAM);
+			
+			cpt_base[(uint32_t) ((uint32_t) virtual_address-section)/SMALL_PAGE_SIZE] = newSPD(0,0,0b01010101,(uint32_t) page);
+			
+			return;
+		}
+		intoKernelSpaceSaveAddressSpace();
+		uint32_t *tmp_pds_unaligned = ti_malloc(256*4+1024*2);
+		if (tmp_pds_unaligned == NULL)
+		{
+			panic("no memory for tmp_pds!\n");
+		}
+		uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
+		k_memset(tmp_pds,0,1024);
+		*cpt = tmp_pds;
+		*cpt_unaligned = tmp_pds_unaligned;
+		tt[section] = newCPTD(0,(uint32_t) tmp_pds);
+		
+		tmp_pds[(uint32_t) ((uint32_t) virtual_address-section)/SMALL_PAGE_SIZE] = newSPD(0,0,0b01010101,(uint32_t) page);
+		
+		
+		restoreAddressSpace();
+	}
+	
+	
+	
+	
+}
+
 
 
 
@@ -198,12 +258,13 @@ void growCache(struct cache_t* cache)
 			irq_restore_state(&irq_s);
 			panic("no page for a growing cache found!");
 		}
-		// TODO addVirtualKernelPage uses the slab allocator and if the cpt or linkedlist caches need to grow,
-		// it would result in an endless loop
-		//addVirtualKernelPage();
+		
 		uint32_t* cpt = NULL;
 		uint32_t* cpt_unaligned = NULL;
-		addUnlistedKernelPage(page,kernel_heap_next_page,&cpt,&cpt_unaligned);
+		if (((cache->flags >> 3) & 0b1) == 1) // check if cached or noncached
+			addUnlistedKernelPage_noncached(page,kernel_heap_next_page,&cpt,&cpt_unaligned);
+		else
+			addUnlistedKernelPage(page,kernel_heap_next_page,&cpt,&cpt_unaligned);
 		void *virtpage = kernel_heap_next_page;
 		k_memset(virtpage,0,SMALL_PAGE_SIZE);
 		kernel_heap_next_page += SMALL_PAGE_SIZE;
@@ -247,7 +308,10 @@ void growCache(struct cache_t* cache)
 		}
 		else
 		{
-			addVirtualKernelPage(page,virtpage);
+			if (((cache->flags >> 3) & 0b1) == 1) // check if cached or noncached
+				addVirtualKernelPage_noncached(page,virtpage);
+			else
+				addVirtualKernelPage(page,virtpage);
 		}
 		
 		
@@ -285,7 +349,10 @@ void growCache(struct cache_t* cache)
 		
 		for (uint32_t i = 0;i<size;i++)
 		{
-			addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]),&(cpts_unaligned[i]));
+			if (((cache->flags >> 3) & 0b1) == 1) // check if cached or noncached
+				addUnlistedKernelPage_noncached(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]),&(cpts_unaligned[i]));
+			else
+				addUnlistedKernelPage(page+SMALL_PAGE_SIZE*i,virtpage+SMALL_PAGE_SIZE*i,&(cpts[i]),&(cpts_unaligned[i]));
 		}
 		k_memset(virtpage,0,SMALL_PAGE_SIZE*size);
 		
@@ -324,7 +391,10 @@ void growCache(struct cache_t* cache)
 			}
 			else
 			{
-				addVirtualKernelPage(page,virtpage);
+				if (((cache->flags >> 3) & 0b1) == 1) // check if cached or noncached
+					addVirtualKernelPage_noncached(page,virtpage);
+				else
+					addVirtualKernelPage(page,virtpage);
 			}
 		}
 	}
@@ -829,13 +899,13 @@ struct cache_t* createCache(uint32_t obj_size,uint16_t alignment,uint16_t flags,
 	return cache;
 }
 
-void initSlabAllocator()
+bool initSlabAllocator()
 {
 	void* page = usePage();
 	if (page == NULL)
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
-		return;
+		return false;
 	}
 	k_memset(page,0,SMALL_PAGE_SIZE);
 	
@@ -843,7 +913,7 @@ void initSlabAllocator()
 	if (tmp_pds_unaligned == NULL)
 	{
 		DEBUGPRINTF_1("no memory for tmp_pds!\n");
-		return;
+		return false;
 	}
 	uint32_t *tmp_pds = make1KAligned(tmp_pds_unaligned);
 	k_memset(tmp_pds,0,1024);
@@ -864,7 +934,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	tmp_pds[1] = newSPD(1,1,0b01010101,(uint32_t) page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
@@ -874,7 +944,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	tmp_pds[2] = newSPD(1,1,0b01010101,(uint32_t) page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
@@ -883,7 +953,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no page available for the slab allocator!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	tmp_pds[3] = newSPD(1,1,0b01010101,(uint32_t) page);
 	k_memset(page,0,SMALL_PAGE_SIZE);
@@ -906,7 +976,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	cache_cache->full = NULL;
@@ -933,7 +1003,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	slab_cache->full = NULL;
@@ -959,7 +1029,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	linkedlist_cache->full = NULL;
@@ -978,7 +1048,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	cpt_slab->size = 1;
@@ -993,7 +1063,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	
@@ -1005,7 +1075,7 @@ void initSlabAllocator()
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
 		ti_free(tmp_pds_unaligned);
-		return;
+		return false;
 	}
 	
 	cpt_cache->full = NULL;
@@ -1055,7 +1125,7 @@ void initSlabAllocator()
 	
 	
 	
-	
+	return true;
 }
 
 

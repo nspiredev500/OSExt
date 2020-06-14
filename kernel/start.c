@@ -83,6 +83,26 @@ int main(int argsn,char **argc)
 	else
 	{
 		
+		// detecting OSExt:
+		/*
+		register uint32_t control_reg asm("r0");
+		asm volatile("mrc p15, 0, r0, c1, c0, 0":"=r" (control_reg)::); // reading co-processor register 1
+		if ((control_reg & (1 << 13)) == (1 << 13)) // if bit 13 is a 1, interrupt vector are mapped high. I don't think anything other than OSExt does this
+		{
+			register uint32_t tt_base asm("r0");
+			asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base)); // get the translation table base register
+			
+			tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
+			uint32_t *tt = (uint32_t*) tt_base;
+			if (tt[(0xe0000000) >> 20] != 0) // if there is something mapped at virtual address 0xe0000000 it should be OSExt, I haven't seen any other program map memory like that
+			{
+				// OSExt is installed
+			}
+		}
+		*/
+		
+		
+		
 		register uint32_t control_reg asm("r0");
 		asm volatile("mrc p15, 0, r0, c1, c0, 0":"=r" (control_reg)::);
 		if ((control_reg & (1 << 13)) == (1 << 13))
@@ -147,6 +167,22 @@ static void ut_disable_watchdog(void)
 }
 
 
+
+static void testfunc()
+{
+	NUC_FILE* f = nuc_fopen("/documents/osext.tns","rb");
+	char buffer[11];
+	k_memset(buffer,'\0',11);
+	if (f != NULL)
+	{
+		nuc_fread(buffer,10,1,f);
+		debug_shell_println("buffer: %s",buffer);
+		nuc_fclose(f);
+	}
+	debug_shell_println("syscall successfull!");
+}
+
+
 // because we return with main after this, every error here is still recoverable without a kernel panic
 void initialize()
 {
@@ -164,7 +200,7 @@ void initialize()
 	
 	
 	#ifndef RELEASE
-		bool b = (bool) call_with_stack((void*)(0xe8000000+SMALL_PAGE_SIZE-8),run_self_test);
+		bool b = (bool) call_with_stack((void*)(remapped_stack),run_self_test);
 		if (! b)
 		{
 			debug_shell_println_rgb("error in general self-test         aborting",255,0,0);
@@ -174,90 +210,9 @@ void initialize()
 		}
 	#endif
 	
-	/*
-	NUC_FILE *f = nuc_fopen("/documents/osext.elf.tns","rb");
-	if (f != NULL)
-	{
-		struct elf_header h;
-		elf_read_header(f,&h);
-		if (elf_check_header(&h))
-		{
-			debug_shell_println("valid ELF file!");
-		}
-		else
-		{
-			debug_shell_println("invalid ELF file!");
-		}
-		
-		
-		debug_shell_println("wordwidth: %d", (uint32_t) h.wordwidth);
-		debug_shell_println("endianness: %d", (uint32_t) h.endianness);
-		debug_shell_println("type: %d", (uint32_t) h.type);
-		debug_shell_println("entry: %x", (uint32_t) h.entry);
-		debug_shell_println("prog table: %d", (uint32_t) h.prog_table);
-		debug_shell_println("sect table: 0x%x", (uint32_t) h.sect_table);
-		debug_shell_println("header size: %d", (uint32_t) h.header_size);
-		debug_shell_println("prog size: %d", (uint32_t) h.prog_size);
-		debug_shell_println("prog count: %d", (uint32_t) h.prog_count);
-		debug_shell_println("sect size: %d", (uint32_t) h.sect_size);
-		debug_shell_println("sect count: %d", (uint32_t) h.sect_count);
-		debug_shell_println("strtab: %d", (uint32_t) h.sect_strtab);
-		
-		debug_shell_println("\n");
-		
-		
-		
-		struct nuc_stat stat;
-		if (nuc_stat("/documents/osext.elf.tns",&stat) == 0)
-		{
-			DEBUGPRINTLN_1("size: %d",stat.st_size)
-			struct elf_desc *elf = elf_load_file(f,stat.st_size);
-			if (elf == NULL)
-			{
-				DEBUGPRINTLN_1("loading failed");
-			}
-			
-			elf_alloc_image(elf);
-			
-			DEBUGPRINTLN_1("fixing GOT");
-			elf_fix_got(elf);
-			
-			DEBUGPRINTLN_1("assembling image");
-			elf_assemble_image(elf);
-			
-			DEBUGPRINTLN_1("running");
-			int (*entry)(int,char**) = elf_entry(elf);
-			if (entry != NULL)
-			{
-				DEBUGPRINTLN_1("image start: 0x%x",elf->image);
-				DEBUGPRINTLN_1("pointer:   0x%x",entry);
-				DEBUGPRINTLN_1("return value: %d",entry(1,(char**) 0x1234abcd));
-			}
-			else
-			{
-				DEBUGPRINTLN_1("no valid entry point!");
-			}
-			
-			elf_destroy(elf);
-		}
-		else
-		{
-			DEBUGPRINTLN_1("stat failed!");
-		}
-		
-		nuc_fclose(f);
-	}
-	else
-	{
-		debug_shell_println("osext.elf.tns not found!");
-	}
-	*/
 	
 	
 	
-	//debug_shell_println("text start: 0x%x",&_TEXT_START);
-	//debug_shell_println("exec start: 0x%x",&_EXEC_START);
-	//debug_shell_println("exec size: 0x%x",&_EXEC_SIZE-&_EXEC_START);
 	
 	
 	
@@ -277,55 +232,121 @@ void initialize()
 	*/
 	
 	/*
-	debug_shell_println("searching background image...");
-	
-	NUC_FILE *f = nuc_fopen("/documents/background.bmp.tns","rb");
-	if (f != NULL)
+	NUC_DIR* dir = nuc_opendir("/documents/");
+	debug_shell_println("iterating over documents");
+	if (dir != NULL)
 	{
-		debug_shell_println("background image found");
-		struct img565 *img = load_bmp_file(f);
-		if (img != NULL)
+		struct nuc_dirent* dirent;
+		while ((dirent = nuc_readdir(dir)) != NULL)
 		{
-			debug_shell_println_rgb("background image loaded",0,0,255);
-			background_set_image(img);
+			struct nuc_stat stat;
+			if (k_streq(dirent->d_name,".",1) || k_streq(dirent->d_name,"..",2))
+			{
+				continue;
+			}
+			debug_shell_println("entry: %s",dirent->d_name);
+			char buffer[100];
+			k_memset(buffer,'\0',100);
+			k_memcpy(buffer,"/documents/",k_strlen("/documents/",100));
+			uint32_t index = k_strlen("/documents/",100);
+			k_memcpy(buffer+index,dirent->d_name,k_strlen(dirent->d_name,50));
+			if (nuc_stat(buffer,&stat) == 0)
+			{
+				debug_shell_println("size: %d",stat.st_size);
+			}
 		}
-		else
-		{
-			debug_shell_println_rgb("background image could not be loaded",255,0,0);
-		}
-		nuc_fclose(f);
+		nuc_closedir(dir);
 	}
+	debug_shell_println("done iterating over documents");
 	*/
 	
+	//debug_shell_println("VSYS: %Lf",adc_read_channel(CHANNEL_VSYS));
 	
 	
 	/*
-	static volatile uint32_t *remapped_nand_ctl = (uint32_t*)  (0xe95f1000);
-	debug_shell_println("nandctl status: 0x%x",remapped_nand_ctl[0]);
-	debug_shell_println("nandctl interface status: 0x%x",remapped_nand_ctl[1]);
-	debug_shell_println("NAND peripheral id: 0x%x",nand_controller_peripheral_id());
-	debug_shell_println("NAND primecell id: 0x%x",nand_controller_prime_cell_id());
+	int64_t milis = systime_unix_milis(), micro = systime_unix_micro();
+	uint32_t ticks = 0xffffffff - timer_value(SYSTIME_TIMER);
+	
+	debug_shell_println("unix milliseconds: %lld",milis);
+	debug_shell_println("unix microseconds: %lld",micro);
+	debug_shell_println("ticks: %d",ticks);
+	
+	
+	
+	
+	debug_shell_println_rgb("osext installed",0,255,0);
+	debug_shell_println_rgb("press any key to exit",0,255,0);
 	*/
 	
 	
 	
 	
+	// to test remade msleep and the new microsleep
 	/*
-	// doesn't yet work on hardware
-	ut_disable_watchdog();
-	disableIRQ();
-	disableFIQ();
+	debug_shell_println("testing msleep");
 	
-	nand_command(NAND_READ0,NAND_READSTART,0);
-	debug_shell_println("first nand word: 0x%x",nand_read_word());
-	while (true)
-	{
-		keypad_press_release_barrier();
-	}
+	
+	void* backbuffer = get_back_framebuffer_address();
+	void* frontbuffer = get_front_framebuffer_address();
+	k_memcpy(backbuffer,frontbuffer,320*240*2);
+	keypad_press_release_barrier();
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,255,0,0);
+	clear_caches();
+	msleep(1000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,255,0);
+	clear_caches();
+	msleep(1000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,0,255);
+	clear_caches();
+	msleep(1000);
+	
+	k_memcpy(frontbuffer,backbuffer,320*240*2);
+	
+	
+	
+	
+	debug_shell_println("testing microsleep");
+	k_memcpy(backbuffer,frontbuffer,320*240*2);
+	keypad_press_release_barrier();
+	
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,255,0,0);
+	clear_caches();
+	microsleep(1000000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,255,0);
+	clear_caches();
+	microsleep(1000000);
+	
+	framebuffer_fillrect(frontbuffer,0,0,320,240,0,0,255);
+	clear_caches();
+	microsleep(1000000);
+	
+	
+	k_memcpy(frontbuffer,backbuffer,320*240*2);
 	*/
 	
 	
 	
+	
+	/// Even file syscalls work in a relocated stack, even when using virtual memory buffers! 
+	// testing if using a relocated stack is possible,
+	// it seems it just has to be big enough for syscalls to not smash the thing under the stack
+	// 20 pages left should be safe
+	// if using relocated stacks, make sure to add a check for enough stack space left before using syscalls
+	/*
+	debug_shell_println("allocating buffer");
+	uint32_t testbuff_int = (uint32_t) ti_malloc(SMALL_PAGE_SIZE*20);
+	void* testbuff = (void*) ((testbuff_int & (~ 0b111))+0b1000); // forces alignment to 8 bytes
+	debug_shell_println("under testbuff: 0x%x",*((uint8_t*)testbuff_int-1));
+	call_with_stack(testbuff+SMALL_PAGE_SIZE*14,testfunc);
+	debug_shell_println("under testbuff: 0x%x",*((uint8_t*)testbuff_int-1));
+	debug_shell_println("freeing buffer");
+	ti_free((void*)testbuff_int);
+	*/
 	
 	
 	
@@ -334,6 +355,7 @@ void initialize()
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
+	
 	
 	
 	

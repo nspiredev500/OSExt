@@ -77,10 +77,19 @@ void sprintf_safe(char *result,char *str,uint32_t length,...)
 					c += 2;
 					index++;
 				}
+				continue;
 			}
 			if (*(c+1) == 's')
 			{
-				va_arg(va,char*);
+				char* string = va_arg(va,char*);
+				uint32_t len = k_strlen(string,100);
+				uint32_t copy = len;
+				if (copy >= index+length-1)
+				{
+					copy = index+length-1;
+				}
+				k_memcpy(result+index,string,copy);
+				index += copy;
 				c += 2;
 				continue;
 			}
@@ -98,13 +107,13 @@ void sprintf_safe(char *result,char *str,uint32_t length,...)
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'x')
 			{
-				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint32_t),16);
+				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint64_t),16);
 				c += 4;
 				continue;
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'd')
 			{
-				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint32_t),10);
+				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint64_t),10);
 				c += 4;
 				continue;
 			}
@@ -134,9 +143,27 @@ void sprintf_safe_va(char *result,char *str,uint32_t length,va_list va)
 			break;
 		if (*c == '%' && *(c+1) != '\0')
 		{
+			if (*(c+1) == '%')
+			{
+				if (! (index+1 >= length-1))
+				{
+					result[index] = '%';
+					c += 2;
+					index++;
+				}
+				continue;
+			}
 			if (*(c+1) == 's')
 			{
-				va_arg(va,char*);
+				char* string = va_arg(va,char*);
+				uint32_t len = k_strlen(string,100);
+				uint32_t copy = len;
+				if (copy >= index+length-1)
+				{
+					copy = index+length-1;
+				}
+				k_memcpy(result+index,string,copy);
+				index += copy;
 				c += 2;
 				continue;
 			}
@@ -154,13 +181,13 @@ void sprintf_safe_va(char *result,char *str,uint32_t length,va_list va)
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'x')
 			{
-				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint32_t),16);
+				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint64_t),16);
 				c += 4;
 				continue;
 			}
 			if (*(c+1) == 'l' && *(c+2) == 'l' && *(c+3) == 'd')
 			{
-				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint32_t),10);
+				index += sprint_uint64_base_safe(result+index,length-index,va_arg(va,uint64_t),10);
 				c += 4;
 				continue;
 			}

@@ -2,7 +2,10 @@
 
 static volatile uint32_t *remapped_power = (uint32_t*) 0xe90b0000;
 /*
-	remapped_power[6] = bus enable register
+	remapped_power[6] = bus enable register (2 bytes)
+	remapped_power[6] = bus enable register (2 bytes)
+	// maybe using it as a 4 byte register is bad?
+	
 */
 
 

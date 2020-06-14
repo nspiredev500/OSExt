@@ -4,16 +4,39 @@
 bool syscall_tracker = false;
 extern uint32_t syscall_mask;
 
+void syscall_log(uint32_t *instruction)
+{
+	uint32_t inst = *(instruction-1);
+	uint32_t swi = inst & 0xffffff;
+	if (swi != 14  && swi != 75 && swi != 8) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
+		DEBUGPRINTLN_1("Syscall: %d",swi);
+}
+
+
 asm(
+".extern syscall_log\n"
+".global __syscall_in_progress \n"
 ".global delegate_system_calls \n"
 ".global swi_wrapper \n"
 ".global syscall_mask \n"
+"__syscall_in_progress: .long 0 \n"
 "syscall_mask: .long 0xf80000 \n"
 "swi_address: .long 0x8 \n"
+
+
 "swi_wrapper: \n"
-
-
 "push {r0} \n"
+"mov r0, #0x1 \n"
+"str r0, __syscall_in_progress \n" // indicate that a syscall is in progress
+
+/*
+// for logging syscalls
+"push {r0-r12,r14} \n"
+"mov r0, lr \n"
+"bl syscall_log\n"
+"pop {r0-r12,r14} \n"
+*/
+
 "mrs r0, cpsr \n"
 "push {r0} \n"
 "mrs r0, spsr \n"
@@ -47,6 +70,8 @@ asm(
 "pop {r1} \n" // pop the unused r1 pushed earlier
 "pop {r0} \n"
 "msr cpsr, r0 \n" // restore the cpsr
+"mov r0, #0 \n"
+"str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n" // remove the saved r0 from the stack
 "movs pc, lr \n" // return from the swi
 " \n"
@@ -74,6 +99,8 @@ asm(
 "pop {r1} \n"
 "pop {r0} \n"
 "msr cpsr, r0 \n"
+"mov r0, #0 \n"
+"str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n"
 "movs pc, lr \n" // return from the swi
 " \n"
@@ -108,6 +135,8 @@ asm(
 "pop {r1} \n"
 "pop {r0} \n"
 "msr cpsr, r0 \n"
+"mov r0, #0 \n"
+"str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n"
 "movs pc, lr \n"
 " \n"
@@ -116,15 +145,53 @@ asm(
 " \n"
 " \n"
 "delegate: \n"
+
 "pop {r0} \n" // restore the cpsr
 "msr cpsr, r0 \n"
 "pop {r0} \n" // restore r0
 "ldr pc, swi_address \n"
-" \n"
-" \n"
+
+
+"pop {r0} \n" // not needed here, but get it off the stack
+"pop {r0} \n" // pop the original r0
+"push {lr} \n" // lr gets overwritten in the Ndless swi handler
+	"ldr lr, [lr, #-4] \n" // load the original instruction
+	"str lr, __SYSCALL_INST \n" // save the instruction where the Ndless syscall handler thinks the syscall originated from, to let it extract the swi number
+	"mrs lr, spsr \n"
+	"push {lr} \n" // push the original spsr
+		"mrs lr, cpsr \n"
+		"msr spsr, lr \n" // pretend our cpsr is the syscall cpsr
+		" \n" // now we have saved the lr and spsr registers, which get lost in the syscall handler and restored all old registers
+		//BREAKPOINT_ASM
+		"mov lr, pc \n" // set the return address
+		"add lr, #8 \n"
+		"mov pc, #0x8 \n" // now jump to the syscall vector
+		"__SYSCALL_INST: .long 0 \n" // place the original syscall instruction here, so the Ndless swi handler can correctly extract the swi number
+		//BREAKPOINT_ASM
+		"push {r0} \n" // return here, save r0
+			"mov r0, #0 \n"
+			"str r0, __syscall_in_progress \n" // indicate that the syscall ended
+		"pop {r0} \n" // restore r0
+	"pop {lr} \n"
+	"msr spsr, lr \n" // restore the original spsr
+"pop {lr} \n" // restore the lr
+"movs pc, lr \n" // return from the syscall
+
 " \n");
 
+extern volatile uint32_t __syscall_in_progress;
 
+bool syscall_in_progress()
+{
+	if (__syscall_in_progress == 1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 #define SYSCALL_SIZE 1
 void (*swi_table[SYSCALL_SIZE])(uint32_t* regs);
@@ -217,7 +284,7 @@ void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc
 	if (swi_number >= max_swi)
 	{
 		DEBUGPRINTF_1("unknown syscall: %d\n",swi_number)
-		panic("unknown syscall!");
+		//panic("unknown syscall!");
 	}
 	if (syscall_tracker)
 	{

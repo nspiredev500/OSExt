@@ -32,6 +32,8 @@ void watchdog_set_load(uint32_t load);
 
 
 void watchdog_set_period(uint32_t milis);
+void watchdog_set_period_micro(uint32_t micro);
+
 
 bool watchdog_is_oneshot();
 void watchdog_set_oneshot(bool oneshot);

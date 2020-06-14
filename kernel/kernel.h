@@ -21,7 +21,7 @@
 #include "libk/mutex.h"
 #include "libk/modes.h"
 
-
+#include "scheduling/lock.h"
 #include "scheduling/deferred_action.h"
 #include "scheduling/process.h"
 #include "scheduling/thread.h"
@@ -96,7 +96,7 @@
 
 
 
-#define OSEXT_VERSION 0x00000004
+#define OSEXT_VERSION 0x00010004
 
 
 
@@ -122,9 +122,16 @@ void* const kernel_heap_start;
 volatile void** LCD_UPBASE;
 
 
-const uint32_t SMALL_PAGE_SIZE;
-const uint32_t LARGE_PAGE_SIZE;
-const uint32_t SECTION_SIZE;
+
+// converted them to macros to use in initializers
+/*
+const uint32_t SMALL_PAGE_SIZE = 1024*4;
+const uint32_t LARGE_PAGE_SIZE = 1024*64;
+const uint32_t SECTION_SIZE = 1024*1024;
+*/
+#define SMALL_PAGE_SIZE (1024*4)
+#define LARGE_PAGE_SIZE (1024*64)
+#define SECTION_SIZE (1024*1024)
 
 
 
