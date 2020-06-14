@@ -33,7 +33,7 @@ asm(
 "mov pc, #0x10 \n");
 
 
-extern uint32_t relay_data_abort_to_ndless;
+extern volatile uint32_t relay_data_abort_to_ndless;
 
 /*
 bool lcd_undef_breakpoint = false;

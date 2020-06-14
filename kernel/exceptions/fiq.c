@@ -32,7 +32,7 @@ asm(
 "pop {r0-r7,r14} \n" // pop the rest of the registers
 "mov pc, #0x1c \n");
 
-extern uint32_t relay_watchdog_fiq_to_ndless;
+extern volatile uint32_t relay_watchdog_fiq_to_ndless;
 
 static void __attribute__ ((noreturn)) reset(void) {
 	*(volatile unsigned*)0x900A0008 = 2;

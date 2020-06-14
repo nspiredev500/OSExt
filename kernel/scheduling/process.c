@@ -22,8 +22,12 @@ struct process* createProcess(uint16_t pid,uint32_t uid, uint32_t gid)
 	p->uid = uid;
 	p->gid = gid;
 	p->threads = NULL;
+	p->mem = NULL;
 	return p;
 }
+
+
+
 void destroyProcess(struct process *p)
 {
 	destroyAddressSpace(p->space);
@@ -33,6 +37,14 @@ void destroyProcess(struct process *p)
 		struct thread *next = t->next;
 		destroyThread(t);
 		t = next;
+	}
+	struct mem_desc* mem = p->mem;
+	while (mem != NULL)
+	{
+		/// TODO destroy mem, and the data if the type uses the data field
+		
+		
+		mem = mem->next;
 	}
 	freeProcess(p);
 }

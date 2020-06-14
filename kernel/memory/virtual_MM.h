@@ -7,7 +7,7 @@ void* const virtual_base_address;
 const void* remapped_RAM;
 const void* old_RAM;
 const void* remapped_stack_end;
-#define REMAPPED_STACK_SIZE 64
+#define REMAPPED_STACK_SIZE 32
 const void* remapped_stack;
 
 
