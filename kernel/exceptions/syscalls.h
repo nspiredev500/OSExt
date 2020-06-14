@@ -5,7 +5,7 @@
 
 void init_syscall_table();
 
-
+bool syscall_in_progress();
 
 
 void syscall_set_reg(uint32_t *regs,uint32_t reg,uint32_t value);

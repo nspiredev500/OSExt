@@ -3,7 +3,10 @@
 
 
 asm(
+".global relay_data_abort_to_ndless \n"
+"relay_data_abort_to_ndless: .long 0\n"
 ".global data_wrapper \n"
+//BREAKPOINT_ASM
 "data_wrapper: \n"
 "push {r0-r12,r14} \n"
 "	mrs r0, cpsr \n"
@@ -14,13 +17,23 @@ asm(
 "	mrs r1, spsr \n"
 "	mov r2, sp \n"
 "	bl data_abort_handler \n"
-"	cmp r0, #1 \n"
+"   ldr r0, relay_data_abort_to_ndless \n"
+"   cmp r0, #1 \n"
+"   beq _relay_ndless \n"
 "	pop {r0,r1} \n"
 "	msr cpsr, r0 \n" // restore the cpsr
 "pop {r0-r12,r14} \n"
-"beq skip_instruction_data \n" // should be set if probing an address
 "subs pc, lr, #8 \n"
-"skip_instruction_data: subs pc, lr, #4 \n");
+"_relay_ndless: \n"
+"mov r0, #0 \n"
+"str r0, relay_data_abort_to_ndless \n"
+"pop {r0,r1} \n"
+"msr cpsr, r0 \n" // restore the cpsr
+"pop {r0-r12,r14} \n"
+"mov pc, #0x10 \n");
+
+
+extern volatile uint32_t relay_data_abort_to_ndless;
 
 /*
 bool lcd_undef_breakpoint = false;
@@ -28,42 +41,22 @@ uint32_t lcd_undef_inst = 0;
 uint32_t* lcd_undef_adr = NULL;
 uint32_t lcd_undef_section = 0;
 */
+
 uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // regs[0] is the old abort cpsr, regs[1] is a dummy value, the rest are the registers
 {
 	uint32_t thumb = (spsr >> 5) & 0b1;
 	register uint32_t abort_address asm("r1") = 0;
 	asm volatile("mrc p15, 0, r1, c6, c0, 0":"=r" (abort_address)::);
 	
+	if (((spsr & 0b11111) == 0b10011 || (spsr & 0b11111) == 0b11111) && abort_address >> 28 == 0xC) // privileged mode and tried to access LCD controller
+	{
+		/// TODO: do not relay in standalone mode
+		relay_data_abort_to_ndless = 1;
+		return 0;
+	}
 	if (((spsr & 0b11111) == 0b10011 || (spsr & 0b11111) == 0b11111) && ! probe_address)
 	{
-		/*
-		//DEBUGPRINTF_1("os lcd interaction: pc: 0x%x, address: 0x%x\n",address,abort_address)
-		if (abort_address >= 0xC0000000 && abort_address < 0xC0000000+SECTION_SIZE)
-		{
-			//DEBUGPRINTF_1("os lcd interaction: pc: 0x%x, address: 0x%x\n",((uint32_t)address)-8,abort_address)
-			if (abort_address == 0xC0000010)
-			{
-				DEBUGPRINTF_1("os lcd interaction: pc: 0x%x, address: 0x%x\n",((uint32_t)address)-8,abort_address)
-			}
-			
-			lcd_undef_inst = *(address-1);
-			lcd_undef_adr = (address-1);
-			*(address-1) = 0x7f000f0; // undef
-			lcd_undef_breakpoint = true;
-			
-			register uint32_t tt_base asm("r0");
-			asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
-			
-			tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-			uint32_t *tt = (uint32_t*) tt_base;
-			lcd_undef_section = tt[0xC0000000 >> 20];
-			tt[0xC0000000 >> 20] = 0;
-			clear_caches();
-			invalidate_TLB();
-			
-			return 0;
-		}
-		*/
+		
 		
 		if (thumb == 1)
 		{
@@ -73,7 +66,7 @@ uint32_t data_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) // r
 		// we have to assume the worst about the integrity of the code and data
 		// unlock the recovery kernel and jump to it
 		
-		// TODO the recovery kernel
+		/// TODO the recovery kernel
 		
 		panic("Data abort in privileged mode!");
 		

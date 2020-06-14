@@ -12,6 +12,8 @@ static volatile uint32_t *remapped_vic = (volatile uint32_t*) (0xe9300000);
 */
 
 
+
+
 uint32_t vic_irq_status()
 {
 	return remapped_vic[0];
@@ -63,7 +65,17 @@ void vic_set_irq(uint32_t irq)
 	remapped_vic[3] = select;
 }
 
-
+bool vic_is_fiq(uint32_t fiq)
+{
+	if (((remapped_vic[3] >> fiq) & 0b1) == 0b1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 
 

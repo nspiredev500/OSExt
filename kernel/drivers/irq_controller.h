@@ -16,7 +16,7 @@ void vic_enable_all();
 void vic_set_fiq(uint32_t irq);
 void vic_set_irq(uint32_t irq);
 
-
+bool vic_is_fiq(uint32_t fiq);
 
 
 

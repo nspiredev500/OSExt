@@ -11,31 +11,46 @@ const uint32_t MEMT_SHARED;
 const uint32_t MEMT_COW;
 const uint32_t MEMT_PRIVATE;
 
-struct shm_desc { // descriptor for shared memory
-	uint16_t count; //reference counter. only free if counter is 0
-	
-};
 
+struct mem_desc;
+
+
+// cow_desc is a list of what other virtual pages are mapped as the same page as copy-on-write
+// when a write occurs, the mapping changes to private and the mem_desc is removed from the list
+// if there are only 2 cow_desc in the list and a write occurs, both are changed to private and
+// the cow-mapping is completely removed
+/// TODO one of the 2 remaining processes can use the cow-page after a write, no need to copy to 2 pages and
+/// free the old one when the data is already there
 struct cow_desc;
 struct cow_desc {
-	struct cow_desc *other; // pointer to the other copy-on-write page in the other process, so it can be changed to normal after this one is copied
+	struct mem_desc* owner;
+	struct cow_desc* next;
 };
 
 
 
 
 
-struct mem_desc { // additional information for a memory page
-	void* address; // the virtual address the descriptor is for
-	void* data; // additional data
+struct mem_desc {
+	void* address; // virtual address
+	void* page; // physical address of the page
+	uint16_t type;
 	/*
-		0 = private memory, data = NULL
-		1 = cow, data = struct cow_desc*
-		2 = shared memory, data = struct shm_desc*
+		0 = private memory
+		1 = shared memory
+		2 = copy on write memory, data is cow_desc
 	*/
-	uint32_t type;
-	uint32_t flags; // bit 0 = read, bit 1 = write
+	void* data;
+	uint16_t permissions; // permissions are needed for when a page is swapped and unmapped from the page table, and needs to be put there again with the same permissions
+	// 0b1 = read permission
+	// 0b2 = write permission
+	
+	
+	
+	struct mem_desc* next;
 };
+
+
 
 
 

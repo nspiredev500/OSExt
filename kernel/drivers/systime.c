@@ -6,7 +6,7 @@
 /*
 	since the timers are all 32 bit, they can overflow
 	the rtc will overflow in the year ~2038
-	the milisecond timers after ~20 days_in_month
+	the milisecond timers after ~20 days
 	so just store the number of overflows to reconstruct the original number
 */
 static volatile uint32_t timer_milis_overflows = 0;
@@ -15,11 +15,12 @@ static volatile uint32_t timer_seconds_overflows = 0;
 
 void systime_init()
 {
-	timer_enable(SYSTIME_TIMER);
-	timer_set_prescaler(SYSTIME_TIMER,1);
+	//timer_set_prescaler(SYSTIME_TIMER,1);
 	timer_set_mode(SYSTIME_TIMER,0b1);
 	timer_set_oneshot(SYSTIME_TIMER,false);
 	timer_set_load(SYSTIME_TIMER,0xffffffff);
+	timer_enable(SYSTIME_TIMER);
+	
 	
 	rtc_claim();
 	rtc_set_alarm(0);
@@ -43,13 +44,16 @@ int64_t systime_unix()
 	return timer_seconds_overflows*0xffffffff+rtc_get_value();
 }
 
-
+int64_t systime_unix_micro()
+{
+	return (int64_t) ((double) (timer_milis_overflows*0xffffffff)*31.25 + (double) (0xffffffff-timer_value(SYSTIME_TIMER))*31.25);
+}
 
 
 // returns the current unix time with millisecond accuracy
 int64_t systime_unix_milis()
 {
-	return timer_milis_overflows*0xffffffff/2+(0xffffffff-timer_value(SYSTIME_TIMER))/2;
+	return timer_milis_overflows*0xffffffff/32+(0xffffffff-timer_value(SYSTIME_TIMER))/32;
 }
 
 
@@ -63,7 +67,7 @@ void systime_set_unix_milis(int64_t unix_time_milis)
 	int64_t seconds = unix_time_milis/1000;
 	int64_t milis_remaining = unix_time_milis-(seconds*1000);
 	
-	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining*2);
+	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining*32);
 	timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
 	
 	uint64_t unix_time = unix_time_milis/1000;
@@ -82,10 +86,10 @@ void systime_set_unix(int64_t unix_time)
 	timer_seconds_overflows = unix_time/0xffffffff;
 	rtc_set_value(unix_time%0xffffffff);
 	
-	timer_milis_overflows = (unix_time*1000)/(0xffffffff/2);
-	uint32_t milis_remaining = (unix_time*1000)%(0xffffffff/2);
+	timer_milis_overflows = (unix_time*1000)/(0xffffffff/32);
+	uint32_t milis_remaining = (unix_time*1000)%(0xffffffff/32);
 	
-	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining);
+	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining*32);
 	timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
 }
 
