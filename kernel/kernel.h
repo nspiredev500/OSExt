@@ -96,7 +96,7 @@
 
 
 
-#define OSEXT_VERSION 0x00000004
+#define OSEXT_VERSION 0x00010004
 
 
 
