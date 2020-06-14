@@ -4,7 +4,17 @@
 bool syscall_tracker = false;
 extern uint32_t syscall_mask;
 
+void syscall_log(uint32_t *instruction)
+{
+	uint32_t inst = *(instruction-1);
+	uint32_t swi = inst & 0xffffff;
+	if (swi != 14  && swi != 75 && swi != 8) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
+		DEBUGPRINTLN_1("Syscall: %d",swi);
+}
+
+
 asm(
+".extern syscall_log\n"
 ".global __syscall_in_progress \n"
 ".global delegate_system_calls \n"
 ".global swi_wrapper \n"
@@ -13,10 +23,20 @@ asm(
 "syscall_mask: .long 0xf80000 \n"
 "swi_address: .long 0x8 \n"
 
+
 "swi_wrapper: \n"
 "push {r0} \n"
 "mov r0, #0x1 \n"
 "str r0, __syscall_in_progress \n" // indicate that a syscall is in progress
+
+/*
+// for logging syscalls
+"push {r0-r12,r14} \n"
+"mov r0, lr \n"
+"bl syscall_log\n"
+"pop {r0-r12,r14} \n"
+*/
+
 "mrs r0, cpsr \n"
 "push {r0} \n"
 "mrs r0, spsr \n"
@@ -125,12 +145,12 @@ asm(
 " \n"
 " \n"
 "delegate: \n"
-/*
+
 "pop {r0} \n" // restore the cpsr
 "msr cpsr, r0 \n"
 "pop {r0} \n" // restore r0
 "ldr pc, swi_address \n"
-*/
+
 
 "pop {r0} \n" // not needed here, but get it off the stack
 "pop {r0} \n" // pop the original r0
@@ -156,6 +176,7 @@ asm(
 	"msr spsr, lr \n" // restore the original spsr
 "pop {lr} \n" // restore the lr
 "movs pc, lr \n" // return from the syscall
+
 " \n");
 
 extern volatile uint32_t __syscall_in_progress;
