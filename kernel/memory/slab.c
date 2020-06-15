@@ -46,6 +46,11 @@ static struct cache_t *thread_cache = NULL;
 static struct cache_t *framebuffer_cache = NULL;
 static struct cache_t *action_cache = NULL;
 
+static struct cache_t *file_cache = NULL;
+static struct cache_t *usb_qh_cache = NULL; // also for transfer descriptors, because they also need to be aligned to 32 bytes
+
+
+
 
 static LinkedList* big_objects = NULL; // list of big object allocated with kmalloc
 static LinkedList* big_objects_size = NULL; // list of big object allocated with kmalloc
@@ -270,7 +275,7 @@ void growCache(struct cache_t* cache)
 		kernel_heap_next_page += SMALL_PAGE_SIZE;
 		
 		struct slab_desc_t *slab;
-		if (cache->obj_size >= 128)
+		if (cache->obj_size >= 128 || (cache->flags & CACHE_SLAB_DESC_OFF_SLAB) != 0)
 		{
 			slab = requestSlabDesc();
 		}
@@ -283,7 +288,7 @@ void growCache(struct cache_t* cache)
 		slab->start = virtpage;
 		slab->next = NULL;
 		slab->used = NULL;
-		if (cache->obj_size >= 128)
+		if (cache->obj_size >= 128 || (cache->flags & CACHE_SLAB_DESC_OFF_SLAB) != 0)
 		{
 			slab->used = kmalloc(((SMALL_PAGE_SIZE/cache->obj_size)/8)+1);
 			if (slab->used == NULL)
@@ -415,7 +420,7 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 			struct slab_desc_t *prevslab = NULL;
 			while (cslab != NULL)
 			{
-				if (free_object_from_slab(cslab,cache->obj_size,obj))
+				if (free_object_from_slab(cslab,cache->obj_size,obj,cache))
 				{
 					if (prevslab == NULL)
 					{
@@ -440,7 +445,7 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 		struct slab_desc_t *prevslab = NULL;
 		while (cslab != NULL)
 		{
-			if (free_object_from_slab(cslab,cache->obj_size,obj))
+			if (free_object_from_slab(cslab,cache->obj_size,obj,cache))
 			{
 				if (prevslab == NULL)
 				{
@@ -461,9 +466,9 @@ bool free_object_from_cache(struct cache_t *cache,void* obj)
 		prevslab = NULL;
 		while (cslab != NULL)
 		{
-			if (free_object_from_slab(cslab,cache->obj_size,obj))
+			if (free_object_from_slab(cslab,cache->obj_size,obj,cache))
 			{
-				if (isSlabFree(cslab,cache->obj_size))
+				if (isSlabFree(cslab,cache->obj_size,cache))
 				{
 					if (prevslab == NULL)
 					{
@@ -504,7 +509,7 @@ void* alloc_object_from_cache(struct cache_t *cache)
 			struct slab_desc_t *partialslab = cache->partial;
 			freeslab->next = cache->partial;
 			cache->partial = freeslab;
-			void *obj = alloc_object_from_slab(freeslab,cache->obj_size);
+			void *obj = alloc_object_from_slab(freeslab,cache->obj_size,cache);
 			if (obj == NULL)
 			{
 				panic("could not get object from empty slab!\n");
@@ -518,7 +523,7 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		struct slab_desc_t *prevslab = NULL;
 		while (cslab != NULL)
 		{
-			void *object = alloc_object_from_slab(cslab,cache->obj_size);
+			void *object = alloc_object_from_slab(cslab,cache->obj_size,cache);
 			if (object != NULL)
 			{
 				return object;
@@ -548,7 +553,7 @@ void* alloc_object_from_cache(struct cache_t *cache)
 		cache->free = cslab->next;
 		cslab->next = cache->partial;
 		cache->partial = cslab;
-		void *obj = alloc_object_from_slab(cslab,cache->obj_size);
+		void *obj = alloc_object_from_slab(cslab,cache->obj_size,cache);
 		if (obj == NULL)
 		{
 			panic("could not get object from empty slab!\n");
@@ -557,9 +562,9 @@ void* alloc_object_from_cache(struct cache_t *cache)
 	}
 }
 // returns true if the object was on this slab and freed
-bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj)
+bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj, struct cache_t* cache)
 {
-	if (obj_size < 128)
+	if (obj_size < 128 && (cache->flags & CACHE_SLAB_DESC_OFF_SLAB) == 0)
 	{
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
 		void *objects_start = slab->start + sizeof(struct slab_desc_t) + objs_raw/8+1;
@@ -644,9 +649,9 @@ void print_cacheinfo()
 }
 
 
-void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
+void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size, struct cache_t* cache)
 {
-	if (obj_size < 128)
+	if (obj_size < 128 && (cache->flags & CACHE_SLAB_DESC_OFF_SLAB) == 0)
 	{
 		// slab descriptor on-slab
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
@@ -699,9 +704,9 @@ void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size)
 		return NULL;
 	}
 }
-bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size)
+bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size, struct cache_t* cache)
 {
-	if (obj_size < 128)
+	if (obj_size < 128 && (cache->flags & CACHE_SLAB_DESC_OFF_SLAB) == 0)
 	{
 		uint32_t objs_raw = (slab->size*SMALL_PAGE_SIZE) / obj_size;
 		void *objects_start = slab->start + sizeof(struct slab_desc_t) + objs_raw/8+1;
@@ -960,7 +965,8 @@ bool initSlabAllocator()
 	
 	invalidate_TLB();
 	
-	
+	struct cache_t dummy_cache; // just used to bootstrap the system, as alloc_object_from_slab wants to know the flags of the cache it's in
+	dummy_cache.flags = 0;
 	
 	struct slab_desc_t *cache_slab = kernel_heap_start;
 	kernel_heap_next_page += SMALL_PAGE_SIZE;
@@ -971,7 +977,7 @@ bool initSlabAllocator()
 	cache_slab->used = NULL;
 	
 	
-	cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	cache_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t),&dummy_cache);
 	if (cache_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -998,7 +1004,7 @@ bool initSlabAllocator()
 	slab_slab->next = NULL;
 	slab_slab->used = NULL;
 	
-	slab_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	slab_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t),&dummy_cache);
 	if (slab_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -1024,7 +1030,7 @@ bool initSlabAllocator()
 	linkedlist_slab->next = NULL;
 	linkedlist_slab->used = NULL;
 	
-	linkedlist_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	linkedlist_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t),&dummy_cache);
 	if (linkedlist_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -1043,7 +1049,7 @@ bool initSlabAllocator()
 	
 	
 	
-	struct slab_desc_t *cpt_slab = alloc_object_from_slab(slab_slab,sizeof(struct slab_desc_t));
+	struct slab_desc_t *cpt_slab = alloc_object_from_slab(slab_slab,sizeof(struct slab_desc_t),&dummy_cache);
 	if (cpt_slab == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -1058,7 +1064,7 @@ bool initSlabAllocator()
 	
 	// SMALL_PAGE_SIZE/1024 = 4, so only one byte needed, but the size caches aren't created jet,
 	// so just use the linkedlist cache, as it is the smallest (8 bytes)
-	cpt_slab->used = alloc_object_from_slab(linkedlist_slab,sizeof(LinkedList));
+	cpt_slab->used = alloc_object_from_slab(linkedlist_slab,sizeof(LinkedList),&dummy_cache);
 	if (cpt_slab->used == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -1070,7 +1076,7 @@ bool initSlabAllocator()
 	
 	
 	
-	cpt_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t));
+	cpt_cache = alloc_object_from_slab(cache_slab,sizeof(struct cache_t),&dummy_cache);
 	if (cpt_cache == NULL)
 	{
 		DEBUGPRINTF_1("no free entry in created cache!\n");
@@ -1107,6 +1113,8 @@ bool initSlabAllocator()
 	thread_cache = createCache(sizeof(struct thread),0,0,"thread_cache");
 	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,CACHE_NO_MALLOC | CACHE_NO_CACHE,"framebuffer_cache"); // 150 KiB
 	action_cache = createCache(sizeof(struct deferred_action),0,0,"action_cache");
+	file_cache = createCache(sizeof(struct osext_file),0,0,"file_cache");
+	usb_qh_cache = createCache(sizeof(struct usb_QH),32,CACHE_NO_MALLOC | CACHE_NO_CACHE | CACHE_SLAB_DESC_OFF_SLAB,"translation_table_cache");
 	
 	
 	createCache(1,0,0,"1_byte_cache");
@@ -1146,9 +1154,10 @@ bool slab_allocator_self_test_pre_initialization()
 	slab->next = NULL;
 	slab->used = NULL;
 	
+	struct cache_t dummy_cache; // just used to bootstrap the system, as alloc_object_from_slab wants to know the flags of the cache it's in
+	dummy_cache.flags = 0;
 	
-	
-	void *obj = alloc_object_from_slab(slab,8);
+	void *obj = alloc_object_from_slab(slab,8,&dummy_cache);
 	void *objs_start = make4ByteAligned((page+sizeof(struct slab_desc_t)+(SMALL_PAGE_SIZE/8)/8)+1);
 	if (obj != objs_start)
 	{
@@ -1160,7 +1169,7 @@ bool slab_allocator_self_test_pre_initialization()
 	
 	for (uint32_t i = 0;i<objs;i++)
 	{
-		void *obj = alloc_object_from_slab(slab,8);
+		void *obj = alloc_object_from_slab(slab,8,&dummy_cache);
 		if (obj == NULL)
 		{
 			DEBUGPRINTLN_1("could not allocate enough objects from slab!\n")
@@ -1168,30 +1177,22 @@ bool slab_allocator_self_test_pre_initialization()
 		}
 	}
 	
-	obj = alloc_object_from_slab(slab,8);
+	obj = alloc_object_from_slab(slab,8,&dummy_cache);
 	if (obj != NULL)
 	{
 		DEBUGPRINTLN_1("can allocate too many objects from slab!\n")
 		return false;
 	}
 	
-	free_object_from_slab(slab,8,obj_orig);
-	if (alloc_object_from_slab(slab,8) != obj_orig)
+	free_object_from_slab(slab,8,obj_orig,&dummy_cache);
+	if (alloc_object_from_slab(slab,8,&dummy_cache) != obj_orig)
 	{
 		DEBUGPRINTLN_1("deallocating and reallocating an object doesn't result in the same address!\n")
 		return false;
 	}
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	setPageUsedBit(page,false);
 	return true;
 }
 
@@ -1338,7 +1339,34 @@ void freeAction(struct deferred_action *a)
 
 
 
+struct osext_file* requestFile()
+{
+	return alloc_object_from_cache(file_cache);
+}
+void freeFile(struct osext_file* file)
+{
+	free_object_from_cache(file_cache,file);
+}
 
+
+struct usb_QH* requestQH()
+{
+	return alloc_object_from_cache(usb_qh_cache);
+}
+void freeQH(struct usb_QH* qh)
+{
+	free_object_from_cache(usb_qh_cache,qh);
+}
+
+
+struct usb_qTD* requestqTD()
+{
+	return alloc_object_from_cache(usb_qh_cache);
+}
+void freeqTD(struct usb_qTD* td)
+{
+	free_object_from_cache(usb_qh_cache,td);
+}
 
 
 
