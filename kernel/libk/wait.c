@@ -42,8 +42,10 @@ void msleep(uint32_t milis)
 		while (watchdog_enabled())
 			wait_for_interrupt();
 	}
-	
-	
+	if (! enabled)
+	{
+		watchdog_disable();
+	}
 	watchdog_set_function(function);
 	watchdog_set_load(load);
 	if (enabled && vic_is_fiq(3)) // so it gets restarted for the Ndless lcdcompat feature
@@ -84,7 +86,10 @@ void microsleep(uint32_t micro)
 			wait_for_interrupt();
 	}
 	
-	
+	if (! enabled)
+	{
+		watchdog_disable();
+	}
 	watchdog_set_function(function);
 	watchdog_set_load(load);
 	if (enabled && vic_is_fiq(3)) // so it gets restarted for the Ndless lcdcompat feature
