@@ -2,7 +2,7 @@
 
 
 void* const virtual_base_address = (void* const) 0xe0100000;
-const void* remapped_RAM = (const void*) 0xec000000;
+const volatile void* remapped_RAM = (const void*) 0xec000000;
 const void* old_RAM = (const void*) 0x10000000;
 const void* remapped_stack_end = (const void*) 0xe8000000;
 const void* remapped_stack = (const void*) (0xe8000000+SMALL_PAGE_SIZE*REMAPPED_STACK_SIZE-8);
@@ -11,7 +11,7 @@ static void* stackpages = NULL;
 
 static struct address_space kernel_space;
 static bool kernel_space_initialized = false;
-static void* physical_kernel_tt = NULL;
+static volatile void* physical_kernel_tt = NULL;
 
 uint32_t saved_tt = 0;
 
@@ -35,7 +35,7 @@ bool initializeKernelSpace()
 	asm volatile("mrc p15, 0, r0, c2, c0, 0":"=r" (tt_base));
 	
 	tt_base = tt_base & (~ 0x3ff); // discard the first 14 bits, because they don't matter
-	uint32_t *tt = (uint32_t*) tt_base;
+	volatile uint32_t *tt = (uint32_t*) tt_base;
 	
 	kernel_space.tt = tt;
 	physical_kernel_tt = tt;
@@ -46,7 +46,7 @@ bool initializeKernelSpace()
 	
 	for (int i = 0;i<64;i++)
 	{
-		tt[(((uint32_t) remapped_RAM)+i*SECTION_SIZE)>>20] = newSD(1,1,0,0b01,0x10000000+i*SECTION_SIZE);
+		tt[(((uint32_t) remapped_RAM)+i*SECTION_SIZE)>>20] = newSD(0,0,0,0b01,0x10000000+i*SECTION_SIZE);
 	}
 	clear_caches();
 	invalidate_TLB();
@@ -104,14 +104,14 @@ bool initializeKernelSpace()
 	
 	
 	// map the translation table in the kernel heap, so it can be accessed while out of kernel space
-	void* physical_tt = tt;
+	void* physical_tt = (void*) tt;
 	//debug_shell_println_rgb("kernel heap next3: 0x%x",255,0,0,getKernelHeapNextPage());
 	void* tt_page = getKernelHeapNextPage();
 	setKernelHeapNextPage(getKernelHeapNextPage() + SMALL_PAGE_SIZE*5);
-	addVirtualKernelPage(physical_tt,tt_page);
-	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE,tt_page+SMALL_PAGE_SIZE);
-	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*2,tt_page+SMALL_PAGE_SIZE*2);
-	addVirtualKernelPage(physical_tt+SMALL_PAGE_SIZE*3,tt_page+SMALL_PAGE_SIZE*3);
+	addVirtualKernelPage_noncached(physical_tt,tt_page);
+	addVirtualKernelPage_noncached(physical_tt+SMALL_PAGE_SIZE,tt_page+SMALL_PAGE_SIZE);
+	addVirtualKernelPage_noncached(physical_tt+SMALL_PAGE_SIZE*2,tt_page+SMALL_PAGE_SIZE*2);
+	addVirtualKernelPage_noncached(physical_tt+SMALL_PAGE_SIZE*3,tt_page+SMALL_PAGE_SIZE*3);
 	
 	
 	kernel_space.tt = tt_page;
@@ -170,7 +170,7 @@ bool initializeKernelSpace()
 
 void changeAddressSpace(struct address_space *space)
 {
-	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,space->tt);
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,(void*) space->tt);
 	
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
@@ -179,7 +179,7 @@ void changeAddressSpace(struct address_space *space)
 void intoKernelSpace()
 {
 	//register uint32_t tt asm("r0") = (uint32_t) kernel_space.tt;
-	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,kernel_space.tt);
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space, (void*)kernel_space.tt);
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -206,7 +206,7 @@ void intoKernelSpaceSaveAddressSpace()
 	
 	
 	
-	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,kernel_space.tt);
+	register uint32_t tt asm("r0") = (uint32_t) getPhysicalAddress(&kernel_space,(void*) kernel_space.tt);
 	asm volatile("mcr p15,0, r0, c2, c0, 0"::"r" (tt));
 	invalidate_TLB();
 }
@@ -233,12 +233,12 @@ struct address_space* createAddressSpace()
 	space->tt = requestTranslationTable();
 	DEBUGPRINTLN_1("new space: 0x%x",space)
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
-	DEBUGPRINTLN_1("new space tt physical address: 0x%x",getPhysicalAddress(&kernel_space,space->tt))
+	DEBUGPRINTLN_1("new space tt physical address: 0x%x",getPhysicalAddress(&kernel_space,(void*) space->tt))
 	space->cptds = NULL;
 	space->cpts = NULL;
 	
 	
-	uint32_t *tt = space->tt;
+	volatile  uint32_t *tt = space->tt;
 	DEBUGPRINTLN_1("new space tt: 0x%x",space->tt)
 	
 	
@@ -319,7 +319,7 @@ void destroyAddressSpace(struct address_space *space)
 	}
 	destroyLinkedList(&space->cpts);
 	destroyLinkedList(&space->cptds);
-	freeTranslationTable(space->tt);
+	freeTranslationTable((void*) space->tt);
 }
 
 
@@ -423,7 +423,7 @@ void addVirtualKernelPage(const void* page, const void* virtual_address)
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
 		
 		// adding the page table to all address spaces
@@ -446,7 +446,7 @@ void addVirtualKernelPage(const void* page, const void* virtual_address)
 			DEBUGPRINTF_3("index: %d\n",index)
 			panic("no corresponding coarse page table for descriptor!\n");
 		}
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		uint32_t table_index = ((uint32_t) (virtual_address-section));
 		table_index = table_index / SMALL_PAGE_SIZE;
 		table[table_index] = newSPD(1,1,0b01010101,(uint32_t) page);
@@ -483,7 +483,7 @@ void addVirtualKernelPage_noncached(const void* page, const void* virtual_addres
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		table[table_index] = newSPD(0,0,0b01010101,(uint32_t) page);
 		
 		// adding the page table to all address spaces
@@ -506,7 +506,7 @@ void addVirtualKernelPage_noncached(const void* page, const void* virtual_addres
 			DEBUGPRINTF_3("index: %d\n",index)
 			panic("no corresponding coarse page table for descriptor!\n");
 		}
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		uint32_t table_index = ((uint32_t) (virtual_address-section));
 		table_index = table_index / SMALL_PAGE_SIZE;
 		table[table_index] = newSPD(0,0,0b01010101,(uint32_t) page);
@@ -547,7 +547,7 @@ void addVirtualPage(struct address_space *space,const void* page, const void* vi
 		
 		uint32_t table_index = (uint32_t) (virtual_address-section);
 		table_index = table_index / SMALL_PAGE_SIZE;
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		table[table_index] = newSPD(1,1,0b11111111,(uint32_t) page);
 		
 		
@@ -560,7 +560,7 @@ void addVirtualPage(struct address_space *space,const void* page, const void* vi
 		{
 			panic("no corresponding coarse page table for descriptor!\n");
 		}
-		uint32_t *table = cpt->data;
+		volatile uint32_t *table = cpt->data;
 		uint32_t table_index = ((uint32_t) (virtual_address-section));
 		table_index = table_index / SMALL_PAGE_SIZE;
 		table[table_index] = newSPD(1,1,0b11111111,(uint32_t) page);
@@ -571,7 +571,7 @@ void addVirtualPage(struct address_space *space,const void* page, const void* vi
 
 
 
-uint32_t* getKernel_TT_Base()
+volatile uint32_t* getKernel_TT_Base()
 {
 	return kernel_space.tt;
 }

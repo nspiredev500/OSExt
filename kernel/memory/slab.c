@@ -1083,7 +1083,7 @@ bool initSlabAllocator()
 	cpt_cache->free = cpt_slab;
 	cpt_cache->obj_size = 1024;
 	cpt_cache->alignment = 0;
-	cpt_cache->flags = 0;
+	cpt_cache->flags = CACHE_NO_CACHE;
 	cpt_cache->name = "cpt_cache";
 	cpt_cache->next = NULL;
 	
@@ -1101,11 +1101,11 @@ bool initSlabAllocator()
 	migrateKernelCPT((uint32_t) kernel_heap_start,tmp_pds,4);
 	
 	
-	tt_cache = createCache(1024*16,1024*16,0,"translation_table_cache");
+	tt_cache = createCache(1024*16,1024*16,CACHE_NO_MALLOC | CACHE_NO_CACHE,"translation_table_cache");
 	address_space_cache = createCache(sizeof(struct address_space),0,0,"address_space_cache");
 	process_cache = createCache(sizeof(struct process),0,0,"process_cache");
 	thread_cache = createCache(sizeof(struct thread),0,0,"thread_cache");
-	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,0b1,"framebuffer_cache"); // 150 KiB
+	framebuffer_cache = createCache(SMALL_PAGE_SIZE*38,0,CACHE_NO_MALLOC | CACHE_NO_CACHE,"framebuffer_cache"); // 150 KiB
 	action_cache = createCache(sizeof(struct deferred_action),0,0,"action_cache");
 	
 	

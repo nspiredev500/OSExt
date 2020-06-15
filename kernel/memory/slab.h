@@ -12,6 +12,12 @@ struct slab_desc_t {
 	uint8_t *used;
 }; // sizeof(struct slab) = 16
 
+#define CACHE_NO_MALLOC 0b1
+#define CACHE_NO_SHRINK 0b10
+#define CACHE_NO_AUTOGROW 0b100
+#define CACHE_NO_CACHE 0b1000
+
+
 struct cache_t {
 	struct slab_desc_t *full;
 	struct slab_desc_t *partial;

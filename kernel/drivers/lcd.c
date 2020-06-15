@@ -8,8 +8,8 @@ volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;
 
 // gets locked if the kernel transfers control over the lcd framebuffer to itself
 static uint32_t *kernel_lcd_mutex = NULL;
-static void *framebuffer1 = NULL;
-static void *framebuffer2 = NULL;
+static volatile void *framebuffer1 = NULL;
+static volatile void *framebuffer2 = NULL;
 
 static void *old_framebuffer = NULL;
 
@@ -41,17 +41,17 @@ void remappLCD(void* address)
 
 void* get_old_framebuffer_address()
 {
-	return old_framebuffer;
+	return (void*) old_framebuffer;
 }
 
 void* get_back_framebuffer_address()
 {
-	return framebuffer2;
+	return (void*) framebuffer2;
 }
 
 void* get_front_framebuffer_address()
 {
-	return framebuffer1;
+	return (void*) framebuffer1;
 }
 
 void claimLCD()
@@ -68,7 +68,7 @@ void claimLCD()
 	
 	//framebuffer_fillrect(framebuffer1,0,0,320,240,0,0,255);
 	
-	*LCD_UPBASE = (volatile void*) getKernelPhysicalAddress(framebuffer1);
+	*LCD_UPBASE = (volatile void*) getKernelPhysicalAddress((void*) framebuffer1);
 	
 	
 	
@@ -116,7 +116,7 @@ void lcd_setpixel(uint32_t x,uint32_t y,uint32_t r, uint32_t g,uint32_t b)
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t *buff = framebuffer2;
+		volatile uint16_t *buff = framebuffer2;
 		buff[x*240+y] = colour565;
 		return;
 	}

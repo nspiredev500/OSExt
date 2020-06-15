@@ -11,7 +11,7 @@ void* align4Bytes(void* address)
 	return (void*) ((adr & (~ 0b11)) + 0b100);
 }
 
-void *k_memset(void *str,int c, size_t n)
+void *k_memset(volatile void *str,int c, size_t n)
 {
 	unsigned char cc = (unsigned char) c;
 	unsigned char *area = (unsigned char*) str;
@@ -20,11 +20,11 @@ void *k_memset(void *str,int c, size_t n)
 		*area = cc;
 		area++;
 	}
-	return str;
+	return (void*) str;
 }
 
 
-void *k_memcpy(void *str1,const void *str2, size_t n)
+void *k_memcpy(volatile void *str1,volatile const void *str2, size_t n)
 {
 	char *area1 = (char*) str1;
 	char *area2 = (char*) str2;
@@ -35,7 +35,7 @@ void *k_memcpy(void *str1,const void *str2, size_t n)
 		area1++;
 		area2++;
 	}
-	return str1;
+	return (void*) str1;
 }
 
 
@@ -59,8 +59,4 @@ int k_memcmp(const void *str1, const void *str2, size_t n)
 	return 0;
 }
 
-void* (*memset)(void* str,int c,size_t n) = k_memset;
-void* (*memcpy)(void* str,const void* str2,size_t n) = k_memcpy;
-void* (*memmove)(void* str,const void* str2,size_t n) = k_memcpy;
-int (*memcmp)(const void* str,const void* str2,size_t n) = k_memcmp;
 
