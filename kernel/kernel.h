@@ -21,6 +21,12 @@
 #include "libk/mutex.h"
 #include "libk/modes.h"
 
+#include "vfs/file.h"
+#include "vfs/vfs.h"
+#include "vfs/tty.h"
+
+
+
 #include "scheduling/lock.h"
 #include "scheduling/deferred_action.h"
 #include "scheduling/process.h"
@@ -49,6 +55,7 @@
 
 
 
+
 #include "drivers/power.h"
 #include "drivers/irq_controller.h"
 #include "drivers/i2c.h"
@@ -63,7 +70,6 @@
 #include "drivers/adc.h"
 #include "drivers/nand.h"
 #include "drivers/systime.h"
-#include "drivers/vfs.h"
 #include "drivers/init_drivers.h"
 
 

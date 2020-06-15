@@ -170,7 +170,8 @@ $(build_dir)/%.o: $(CURDIR)/modules/%.c $(HEADERS)
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
-
+$(build_dir)/%.o: $(CURDIR)/vfs/%.c $(HEADERS)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 
 

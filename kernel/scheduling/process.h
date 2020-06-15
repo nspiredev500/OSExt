@@ -17,6 +17,9 @@ struct mem_desc;
 
 
 
+struct file_buffer {
+	
+};
 
 
 struct mem_desc {
