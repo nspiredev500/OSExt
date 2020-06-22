@@ -212,6 +212,31 @@ void timer_set_bg_load(uint32_t timermodule,uint32_t timer,uint32_t bgload)
 }
 
 
+void timer_set_size(uint32_t timermodule,uint32_t timer,uint32_t size)
+{
+	if (timer > 1)
+		return;
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
+	if (enabled)
+		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
+	remapped_timer[2+timer*8] &= 0b1100;
+	remapped_timer[2+timer*8] |= (size & 0b1) << 1;
+	if (enabled)
+		remapped_timer[2+timer*8] |= 0b10000000;
+}
+
 
 void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 {

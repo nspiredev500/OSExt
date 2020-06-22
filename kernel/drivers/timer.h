@@ -29,8 +29,8 @@ uint32_t timer_value(uint32_t timermodule,uint32_t timer);
 void timer_set_load(uint32_t timermodule,uint32_t timer,uint32_t load);
 void timer_set_bg_load(uint32_t timermodule,uint32_t timer,uint32_t bgload);
 
-
-
+// 0 for 16 bit, 1 for 32 bit
+void timer_set_size(uint32_t timermodule,uint32_t timer,uint32_t size);
 
 
 void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale);

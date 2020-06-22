@@ -139,7 +139,14 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 		{
 			systime_timer_overflow();
 		}
+		if (timer_irq_status(SCHEDULER_TIMER) && ! syscall_in_progress())
+		{
+			/// TODO schedule another thread now
+			
+			
+		}
 		//DEBUGPRINTLN_1("fiq from first timer!")
+		//debug_shell_println("fiq from first timer!");
 		timer_irq_clear(1,0);
 		timer_irq_clear(1,1);
 	}

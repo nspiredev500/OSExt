@@ -54,8 +54,10 @@ void scheduler_enable_kernel_thread_scheduling();
 // because the OS doesn't work with irqs disabled and context switches in other nucleus threads could have fatal consequences
 void scheduler_disable_kernel_thread_scheduling();
 
+void schedule_kernel_thread();
 
-struct svc_thread* scheduler_add_kernel_thread();
+
+void scheduler_add_kernel_thread(struct svc_thread* t);
 void scheduler_remove_kernel_thread(struct svc_thread *t);
 
 

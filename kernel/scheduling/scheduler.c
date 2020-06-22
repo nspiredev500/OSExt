@@ -10,11 +10,11 @@ const uint32_t SCHEDULER_OTHER = 5;
 
 
 
-static volatile uint32_t timeslice_length = 5;
+static volatile uint32_t timeslice_length = 2;
 static volatile bool sched_stop = false;
 
 
-static struct svc_thread running_kernel_thread = NULL; // is set to the main thread when starting scheduling. Also acts as a linkedlist head for all other kernel threads. The threads are in a circular linked list
+static struct svc_thread *running_kernel_thread = NULL;// is set to the main thread when starting scheduling. Also acts as a linkedlist head for all other kernel threads. The threads are in a circular linked list
 
 
 
@@ -43,6 +43,7 @@ uint32_t scheduler_get_timeslice_length()
 
 
 
+
 // disables irqs and enables the timeslice timer fiq
 void scheduler_enable_kernel_thread_scheduling()
 {
@@ -56,8 +57,13 @@ void scheduler_enable_kernel_thread_scheduling()
 	t->next = t; // close the list
 	running_kernel_thread = t;
 	
-	
-	
+	timer_disable(SCHEDULER_TIMER);
+	timer_set_prescaler(SCHEDULER_TIMER,0);
+	timer_set_mode(SCHEDULER_TIMER,1);
+	timer_set_size(SCHEDULER_TIMER,1);
+	timer_set_load(SCHEDULER_TIMER,32000*timeslice_length);
+	timer_set_bg_load(SCHEDULER_TIMER,32000*timeslice_length);
+	timer_enable(SCHEDULER_TIMER);
 	
 	
 	
@@ -68,6 +74,7 @@ void scheduler_enable_kernel_thread_scheduling()
 void scheduler_disable_kernel_thread_scheduling()
 {
 	if (running_kernel_thread == NULL)
+	{
 		return;
 	}
 	if (running_kernel_thread->main == false) // you can only exit scheduling from the main thread
@@ -75,15 +82,42 @@ void scheduler_disable_kernel_thread_scheduling()
 		return;
 	}
 	
+	timer_disable(SCHEDULER_TIMER);
 	
-	
+	struct svc_thread *t = running_kernel_thread->next;
+	while (t != running_kernel_thread)
+	{
+		if (t->main)
+		{
+			t = t->next;
+			continue;
+		}
+		if (t->osext)
+		{
+			// don't deallocate the stack, because OSExt stacks will be managed differently
+			destroy_svc_thread(t);
+		}
+		else
+		{
+			ti_free(t->stack);
+			destroy_svc_thread(t);
+		}
+		t = t->next;
+	}
+	destroy_svc_thread(running_kernel_thread);
+	running_kernel_thread = NULL;
 	
 	
 	enableIRQ();
 }
 
+void schedule_kernel_thread()
+{
+	
+}
 
-struct svc_thread* scheduler_add_kernel_thread()
+
+void scheduler_add_kernel_thread(struct svc_thread* t)
 {
 	
 	

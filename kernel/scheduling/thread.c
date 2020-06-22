@@ -12,7 +12,7 @@ struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize
 	{
 		t->regs[i] = 0;
 	}
-	t->regs[13] = (((uint32_t) stack) & (~ 0b111))+0b1000; // align to 8 bytes
+	t->regs[13] = ((((uint32_t) stack) & (~ 0b111))-0b1000) + stacksize; // align to 8 bytes
 	t->regs[16] = 0b10010011; // set mode to svc, irq disabled and fiq enabled
 	t->regs[15] = (uint32_t) entry; // set the pc to the entry point
 	
@@ -94,17 +94,12 @@ void resume_svc_thread(struct svc_thread* thread)
 
 void __attribute__ ((noreturn)) return_from_svc_thread(struct svc_thread* thread)
 {
-	
-	
+	extern void* svc_thread_return_point;
+	register uint32_t return_pc asm("r0") = (uint32_t) svc_thread_return_point;
 	
 	asm(
-	"  \n"
-	"  \n"
-	"  \n");
-	
-	
-	
-	
+	" mov pc, r0 \n"
+	"  \n"::"r" (return_pc):);
 	__builtin_unreachable();
 }
 
