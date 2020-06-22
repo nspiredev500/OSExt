@@ -2,6 +2,123 @@
 
 
 
+
+
+
+struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize, void* entry)
+{
+	struct svc_thread* t = request_svc_thread();
+	for (uint32_t i = 0;i<18;i++)
+	{
+		t->regs[i] = 0;
+	}
+	t->regs[13] = (((uint32_t) stack) & (~ 0b111))+0b1000; // align to 8 bytes
+	t->regs[16] = 0b10010011; // set mode to svc, irq disabled and fiq enabled
+	t->regs[15] = (uint32_t) entry; // set the pc to the entry point
+	
+	t->main = false;
+	t->osext = osext;
+	t->stack = stack;
+	t->stacksize = stacksize;
+	t->status = 0;
+	t->waiting = 0;
+	t->next = NULL;
+	return t;
+}
+
+void destroy_svc_thread(struct svc_thread* thread)
+{
+	
+	
+	free_svc_thread(thread);
+}
+
+
+void resume_svc_thread(struct svc_thread* thread)
+{
+	register volatile uint32_t* regs asm("r0") = thread->regs;
+	
+	
+	
+	asm(
+	" .global svc_thread_return_point \n"
+	" b resume_svc_thread_actual_start \n" // we store variables here, it isn't code
+	" svc_saved_sp: .long 0 \n"
+	//" thread_saved_sp: .long 0 \n"
+	" resume_svc_thread_actual_start: \n"
+	" push {r0-r12,lr} \n"
+	" mrs r1, cpsr \n"
+	" push {r1} \n"
+	" mrs r1, spsr \n"
+	" push {r1} \n"
+	" str sp, svc_saved_sp \n" // all registers saved now
+	" ldr r2, [r0, #8] \n" // now load the registers
+	" ldr r3, [r0, #12] \n"
+	" ldr r4, [r0, #16] \n"
+	" ldr r5, [r0, #20] \n"
+	" ldr r6, [r0, #24] \n"
+	" ldr r7, [r0, #28] \n"
+	" ldr r8, [r0, #32] \n"
+	" ldr r9, [r0, #36] \n"
+	" ldr r10, [r0, #40] \n"
+	" ldr r11, [r0, #44] \n"
+	" ldr r12, [r0, #48] \n"
+	" ldr r14, [r0, #56] \n"
+	" ldr r1, [r0, #64] \n"
+	" msr cpsr, r1 \n"
+	" ldr r1, [r0, #68] \n"
+	" msr spsr, r1 \n"
+	//" ldr r1, [r0 + #52] \n"
+	//" str r1, thread_saved_sp \n"
+	" ldr sp, [r0, #52] \n" // change the stack to the threads stack
+	"  \n" // TODO store the address to jump to and the threads r0 and r1 temporarily on the thread's stack
+	"  \n" // then pop both to resume the thread
+	" ldr r1, [r0, #60] \n" // load the threads pc
+	" push {r1} \n" // push it, so we can jump via a pop after restoring r1 and r0
+	" ldr r1, [r0, #4] \n"
+	" ldr r0, [r0] \n"
+	" pop {pc} \n"
+	" svc_thread_return_point: \n"
+	" ldr sp, svc_saved_sp \n"
+	" pop {r1} \n"
+	" msr spsr, r1 \n"
+	" pop {r1} \n"
+	" msr cpsr, r1 \n"
+	" pop {r0-r12,lr} \n"
+	"  \n"::"r" (regs):"memory");
+	
+	
+	
+}
+
+
+void __attribute__ ((noreturn)) return_from_svc_thread(struct svc_thread* thread)
+{
+	
+	
+	
+	asm(
+	"  \n"
+	"  \n"
+	"  \n");
+	
+	
+	
+	
+	__builtin_unreachable();
+}
+
+
+
+
+
+
+
+
+
+
+
+
 struct thread* createThread(uint16_t tid,uint32_t pc)
 {
 	struct thread *t = requestThread();
@@ -28,7 +145,7 @@ void destroyThread(struct thread *t)
 uint32_t runThread(struct thread *t,struct thread_return_desc *ret)
 {
 	// assumes the context switch (virtual address space) is already done
-	register uint32_t *regs asm("r0") = t->regs;
+	register volatile uint32_t *regs asm("r0") = t->regs;
 	register uint32_t *svc_sp asm("r2") = &(ret->sp);
 	
 	

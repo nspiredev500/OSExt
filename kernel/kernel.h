@@ -14,7 +14,7 @@
 // from the ndless-sdk include directory
 #include <syscall-list.h>
 
-
+#include "ti-os.h"
 
 
 #include "libk/memory.h"
@@ -33,7 +33,6 @@
 #include "scheduling/thread.h"
 #include "scheduling/scheduler.h"
 
-#include "ti-os.h"
 #include "LinkedList.h"
 #include "charset/charset.h"
 #include "osversion.h"

@@ -1,6 +1,14 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+
+
+// if not specified, use the second timer of the first timer module for the timeslice timing
+#ifndef SCHEDULER_TIMER
+	#define SCHEDULER_TIMER 1,1
+#endif
+
+
 const uint32_t SCHEDULER_OK;
 const uint32_t SCHEDULER_DATA_ABORT;
 const uint32_t SCHEDULER_PREFETCH_ABORT;
@@ -35,6 +43,23 @@ void scheduler_add(struct process *p);
 // remove a process from the scheduler before deleting it
 void scheduler_remove_process(struct process *p);
 void scheduler_remove_thread(struct process *p,struct thread* t);
+
+
+
+
+// disables irqs and enables the timeslice timer fiq
+void scheduler_enable_kernel_thread_scheduling();
+
+// has to be called before returning to the OS after a program exited
+// because the OS doesn't work with irqs disabled and context switches in other nucleus threads could have fatal consequences
+void scheduler_disable_kernel_thread_scheduling();
+
+
+struct svc_thread* scheduler_add_kernel_thread();
+void scheduler_remove_kernel_thread(struct svc_thread *t);
+
+
+
 
 
 

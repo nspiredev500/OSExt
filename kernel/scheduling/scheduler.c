@@ -14,6 +14,12 @@ static volatile uint32_t timeslice_length = 5;
 static volatile bool sched_stop = false;
 
 
+static struct svc_thread running_kernel_thread = NULL; // is set to the main thread when starting scheduling. Also acts as a linkedlist head for all other kernel threads. The threads are in a circular linked list
+
+
+
+
+
 static struct thread* running_thread = NULL;
 static struct thread_return_desc return_thread;
 
@@ -34,6 +40,67 @@ uint32_t scheduler_get_timeslice_length()
 	return timeslice_length;
 }
 
+
+
+
+// disables irqs and enables the timeslice timer fiq
+void scheduler_enable_kernel_thread_scheduling()
+{
+	if (running_kernel_thread != NULL)
+	{
+		return;
+	}
+	disableIRQ();
+	struct svc_thread *t = create_svc_thread(false, NULL, 1024*128, NULL); // most of these values don't matter for the main thread
+	t->main = true;
+	t->next = t; // close the list
+	running_kernel_thread = t;
+	
+	
+	
+	
+	
+	
+}
+
+// has to be called before returning to the OS after a program exited,
+// because the OS doesn't work with irqs disabled and context switches in other nucleus threads could have fatal consequences
+void scheduler_disable_kernel_thread_scheduling()
+{
+	if (running_kernel_thread == NULL)
+		return;
+	}
+	if (running_kernel_thread->main == false) // you can only exit scheduling from the main thread
+	{
+		return;
+	}
+	
+	
+	
+	
+	
+	enableIRQ();
+}
+
+
+struct svc_thread* scheduler_add_kernel_thread()
+{
+	
+	
+	
+	
+	
+}
+
+
+void scheduler_remove_kernel_thread(struct svc_thread *t)
+{
+	
+	
+	
+	
+	
+}
 
 
 

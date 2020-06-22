@@ -137,7 +137,8 @@ struct usb_qTD* requestqTD();
 void freeqTD(struct usb_qTD* td);
 
 
-
+struct svc_thread* request_svc_thread();
+void free_svc_thread(void* thread);
 
 
 #endif

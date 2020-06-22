@@ -55,6 +55,11 @@ struct process {
 	uint32_t gid;
 	struct thread *threads;
 	struct mem_desc* mem;
+	// memory descriptors are added when a page is swapped out and as such the information in the page table is lost.
+	// The memory descriptor is there so we can reconstruct what type of memory it is.
+	// It is also used for copy-on-write mapping
+	
+	
 };
 
 

@@ -49,7 +49,7 @@ static struct cache_t *action_cache = NULL;
 static struct cache_t *file_cache = NULL;
 static struct cache_t *usb_qh_cache = NULL; // also for transfer descriptors, because they also need to be aligned to 32 bytes
 
-
+static struct cache_t *svc_thread_cache = NULL;
 
 
 static LinkedList* big_objects = NULL; // list of big object allocated with kmalloc
@@ -1115,6 +1115,8 @@ bool initSlabAllocator()
 	action_cache = createCache(sizeof(struct deferred_action),0,0,"action_cache");
 	file_cache = createCache(sizeof(struct osext_file),0,0,"file_cache");
 	usb_qh_cache = createCache(sizeof(struct usb_QH),32,CACHE_NO_MALLOC | CACHE_NO_CACHE | CACHE_SLAB_DESC_OFF_SLAB,"translation_table_cache");
+	svc_thread_cache = createCache(sizeof(struct svc_thread),0,0,"svc_thread_cache");
+	
 	
 	
 	createCache(1,0,0,"1_byte_cache");
@@ -1369,7 +1371,14 @@ void freeqTD(struct usb_qTD* td)
 }
 
 
-
+struct svc_thread* request_svc_thread()
+{
+	return alloc_object_from_cache(svc_thread_cache);
+}
+void free_svc_thread(void* thread)
+{
+	free_object_from_cache(svc_thread_cache,thread);
+}
 
 
 

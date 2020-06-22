@@ -80,7 +80,7 @@ uint32_t undefined_instruction_handler(uint32_t* address,uint32_t spsr,uint32_t 
 			{
 				running_thread->regs[i] = regs[i+2];
 			}
-			register uint32_t *t_regs asm("r0") = running_thread->regs;
+			register volatile uint32_t *t_regs asm("r0") = running_thread->regs;
 			asm volatile(
 			" mrs r1, cpsr\n"
 			" orr r1, r1, #31\n"

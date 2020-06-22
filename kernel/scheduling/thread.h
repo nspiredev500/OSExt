@@ -2,6 +2,35 @@
 #define THREAD_H
 
 
+struct svc_thread;
+struct svc_thread { // kernel-mode threads, these are also exposed via syscalls
+	volatile uint32_t regs[18]; // 16 registers + cpsr + spsr
+	bool osext; // if this is a thread of OSExt itself, or created via the syscall api for other programs
+	bool main; // if this is the original thread of the nucleus OS. Can't be killed.
+	void* stack; // if not an osext thread, the stack is deallocated with ti_free
+	uint32_t stacksize; // size in bytes
+	uint16_t status;
+	uint32_t waiting; // number of scheduler ticks to wait for, or 0 if not waiting
+	
+	/// TODO add new fields to the constructor
+	struct svc_thread *next;
+};
+
+struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize, void* entry);
+
+// make sure the thread isn't running
+void destroy_svc_thread(struct svc_thread* thread);
+
+/// WARNING: this function can not be used recursively without using return_from_svc_thread first!
+void resume_svc_thread(struct svc_thread* thread);
+
+void return_from_svc_thread(struct svc_thread* thread);
+
+
+
+
+
+
 struct thread_return_desc { // effectively a special longjmp to the thread return point
 	uint32_t sp; // saves the svc sp
 };
@@ -9,9 +38,12 @@ struct thread_return_desc { // effectively a special longjmp to the thread retur
 
 struct thread;
 struct thread {
-	uint32_t regs[17];
+	volatile uint32_t regs[17];
 	uint16_t tid;
 	uint16_t status;
+	uint32_t waiting; // number of scheduler ticks to wait for, or 0 if not waiting
+	
+	
 	struct thread *next;
 };
 
