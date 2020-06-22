@@ -40,6 +40,8 @@
 !ndless.cfg.tns
 *.class
 
+rust-test/*
+
 build/*
 
 config/config
