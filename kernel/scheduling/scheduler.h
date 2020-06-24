@@ -9,12 +9,12 @@
 #endif
 
 
-const uint32_t SCHEDULER_OK;
-const uint32_t SCHEDULER_DATA_ABORT;
-const uint32_t SCHEDULER_PREFETCH_ABORT;
-const uint32_t SCHEDULER_BREAKPOINT;
-const uint32_t SCHEDULER_UNDEFINED_INSTRUCTION;
-const uint32_t SCHEDULER_OTHER;
+extern const uint32_t SCHEDULER_OK;
+extern const uint32_t SCHEDULER_DATA_ABORT;
+extern const uint32_t SCHEDULER_PREFETCH_ABORT;
+extern const uint32_t SCHEDULER_BREAKPOINT;
+extern const uint32_t SCHEDULER_UNDEFINED_INSTRUCTION;
+extern const uint32_t SCHEDULER_OTHER;
 
 
 

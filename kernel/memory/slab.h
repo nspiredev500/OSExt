@@ -41,7 +41,7 @@ struct cache_t {
 	struct cache_t *next;
 }; // sizeof(struct cache) = 28
 
-void* const kernel_heap_start;
+extern void* const kernel_heap_start;
 
 void* getKernelHeapNextPage();
 void setKernelHeapNextPage(void* next);

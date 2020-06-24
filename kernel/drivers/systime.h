@@ -9,6 +9,9 @@
 #endif
 
 
+extern volatile uint32_t timer_milis_overflows;
+
+
 void systime_init();
 
 

@@ -122,9 +122,9 @@ extern char _GOT_SIZE;
 
 
 
-void* const virtual_base_address;
-void* const kernel_heap_start;
-volatile void** LCD_UPBASE;
+extern void* const virtual_base_address;
+extern void* const kernel_heap_start;
+extern volatile void** LCD_UPBASE;
 
 
 

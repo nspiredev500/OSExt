@@ -10,7 +10,13 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 // timers run at 32khz, fast timer runs at 22.5Mhz
 
 /*
-	
+	interrupt mask for the timers is in misc
+	remapped_misc[4] = fast timer interrupt status/acknowledge
+	remapped_misc[5] = fast timer interrupt mask
+	remapped_misc[6] = timer 1 interrupt status/acknowledge
+	remapped_misc[7] = timer 1 interrupt mask
+	remapped_misc[8] = timer 2 interrupt status/acknowledge
+	remapped_misc[9] = timer 2 interrupt mask
 	
 	
 	
@@ -36,7 +42,7 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 	second timer = 2
 */
 /*
-	first timer doesn't seem to be used by the OS, so we can use it for out system time
+	first timer doesn't seem to be used by the OS, so we can use it for our system time
 	
 	
 */
@@ -125,7 +131,7 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	
 	vic_set_fiq(17+timermodule);
 	vic_enable(17+timermodule);
-	remapped_timer[2+timer*8] |= 0b10100010;
+	remapped_timer[2+timer*8] |= 0b10100000;
 }
 
 void timer_disable(uint32_t timermodule,uint32_t timer)
@@ -157,19 +163,9 @@ uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 		return 0;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
 	if (timermodule == 1)
-	{
-		debug_shell_println("reading from first timer");
 		remapped_timer = remapped_first_timer;
-	}
 	if (timermodule == 2)
-	{
-		debug_shell_println("reading from second timer");
 		remapped_timer = remapped_second_timer;
-	}
-	if (timermodule == 0)
-	{
-		debug_shell_println("reading from fast timer");
-	}
 	
 	power_enable_device(11);
 	power_enable_device(12);
@@ -235,7 +231,7 @@ void timer_set_size(uint32_t timermodule,uint32_t timer,uint32_t size)
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
 		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
-	remapped_timer[2+timer*8] &= 0b10;
+	remapped_timer[2+timer*8] &= ~0b10;
 	remapped_timer[2+timer*8] |= (size & 0b1) << 1;
 	if (enabled)
 		remapped_timer[2+timer*8] |= 0b10000000;
@@ -261,7 +257,7 @@ void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
 		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
-	remapped_timer[2+timer*8] &= 0b1100;
+	remapped_timer[2+timer*8] &= ~0b1100;
 	remapped_timer[2+timer*8] |= (prescale & 0b11) << 2;
 	if (enabled)
 		remapped_timer[2+timer*8] |= 0b10000000;

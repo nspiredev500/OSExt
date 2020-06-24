@@ -5,11 +5,11 @@
 #include "../memory/virtual_mm.h"
 
 
-const uint32_t MEM_WRITE;
-const uint32_t MEM_READ;
-const uint32_t MEMT_SHARED;
-const uint32_t MEMT_COW;
-const uint32_t MEMT_PRIVATE;
+extern const uint32_t MEM_WRITE;
+extern const uint32_t MEM_READ;
+extern const uint32_t MEMT_SHARED;
+extern const uint32_t MEMT_COW;
+extern const uint32_t MEMT_PRIVATE;
 
 
 struct mem_desc;

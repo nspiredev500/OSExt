@@ -198,7 +198,7 @@ void (*swi_table[SYSCALL_SIZE])(uint32_t* regs);
 
 
 
-#define USER_SYSCALL_SIZE 0
+#define USER_SYSCALL_SIZE 1
 void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 
 /*
@@ -266,12 +266,13 @@ uint32_t syscall_get_reg(uint32_t *regs,uint32_t reg)
 	return 0;
 }
 
+static void dummy_syscall() {};
 
 
 void init_syscall_table()
 {
 	swi_table[0] = uninstall_osext;
-	
+	user_swi_table[0] = dummy_syscall;
 	
 	
 	

@@ -60,7 +60,7 @@ void scheduler_enable_kernel_thread_scheduling()
 	timer_disable(SCHEDULER_TIMER);
 	timer_set_prescaler(SCHEDULER_TIMER,0);
 	timer_set_mode(SCHEDULER_TIMER,1);
-	timer_set_size(SCHEDULER_TIMER,1);
+	//timer_set_size(SCHEDULER_TIMER,1);
 	timer_set_load(SCHEDULER_TIMER,32000*timeslice_length);
 	timer_set_bg_load(SCHEDULER_TIMER,32000*timeslice_length);
 	timer_enable(SCHEDULER_TIMER);

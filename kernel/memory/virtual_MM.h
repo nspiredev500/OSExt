@@ -3,12 +3,12 @@
 
 #include "../LinkedList.h"
 
-void* const virtual_base_address;
-const volatile void* remapped_RAM;
-const void* old_RAM;
-const void* remapped_stack_end;
+extern void* const virtual_base_address;
+extern const volatile void* remapped_RAM;
+extern const void* old_RAM;
+extern const void* remapped_stack_end;
 #define REMAPPED_STACK_SIZE 32
-const void* remapped_stack;
+extern const void* remapped_stack;
 
 
 
