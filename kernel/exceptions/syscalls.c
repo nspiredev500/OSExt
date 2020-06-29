@@ -54,8 +54,8 @@ asm(
 "push {r1} \n"
 "ldr r1, syscall_mask \n"
 "cmp r0, r1 \n" // check against the mask
-"popne {r1} \n"
-"bne delegate \n" // delegate if not right
+"poplo {r1} \n"
+"blo delegate \n" // delegate if not right
 " \n" // only osext syscalls here
 " \n"
 "bic r0, r0, r1\n"
@@ -344,10 +344,7 @@ void swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr,
 		DEBUGPRINTF_1("unknown syscall: %d\n",swi_number)
 		panic("unknown syscall!");
 	}
-	if (syscall_tracker)
-	{
-		DEBUGPRINTF_1("syscall: %d\n",swi_number)
-	}
+	DEBUGPRINTF_1("syscall: %d\n",swi_number)
 	swi_table[swi_number](regs);
 	
 	

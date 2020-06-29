@@ -102,7 +102,6 @@ bool install_exception_handlers()
 	extern void fiq_wrapper();
 	
 	
-	set_exception_vectors(true);
 	
 	void undef_jump();
 	void swi_jump();
@@ -167,7 +166,7 @@ bool install_exception_handlers()
 	*vector = (uint32_t) fiq_wrapper;
 	
 	
-	
+	set_exception_vectors(true);
 	
 	
 	// TODO put the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
