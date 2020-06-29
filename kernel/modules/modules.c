@@ -61,7 +61,7 @@ void module_system_init()
 	modules_export[16] = framebuffer_write10pstring_ascii;
 	modules_export[17] = panic;
 	modules_export[18] = systime_unix;
-	modules_export[19] = systime_unix_milis;
+	modules_export[19] = systime_unix_milli;
 	modules_export[20] = systime_timestamp_to_unix;
 	modules_export[21] = systime_unix_to_timestamp;
 	modules_export[22] = debug_shell_println;
@@ -109,7 +109,7 @@ void module_system_init()
 	modules_export_names[16] = "framebuffer_write10pstring_ascii";
 	modules_export_names[17] = "panic";
 	modules_export_names[18] = "systime_unix";
-	modules_export_names[19] = "systime_unix_milis";
+	modules_export_names[19] = "systime_unix_milli";
 	modules_export_names[20] = "systime_timestamp_to_unix";
 	modules_export_names[21] = "systime_unix_to_timestamp";
 	modules_export_names[22] = "debug_shell_println";

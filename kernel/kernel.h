@@ -82,6 +82,8 @@
 
 
 #include "syscalls/svc/uninstall.h"
+#include "syscalls/svc/time-syscalls.h"
+
 
 #include "memory/physical_MM.h"
 #include "memory/virtual_MM.h"

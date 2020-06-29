@@ -594,21 +594,35 @@ void initialize()
 	
 	
 	
-	
-	
+	/*
 	int64_t milis = systime_unix_milis(), micro = systime_unix_micro();
 	uint32_t ticks = 0xffffffff - timer_value(SYSTIME_TIMER);
 
 	debug_shell_println("unix milliseconds: %lld",milis);
 	debug_shell_println("unix microseconds: %lld",micro);
 	debug_shell_println("ticks: %d",ticks);
+	*/
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
-	
-	
-	
 	
 	#ifndef RELEASE
 		// to be able to read the messages

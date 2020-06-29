@@ -96,7 +96,7 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 4)) // RTC
 	{
-		debug_shell_println("rtc interrupt");
+		//debug_shell_println("rtc interrupt");
 		systime_rtc_overflow();
 		rtc_irq_clear();
 	}
@@ -137,7 +137,7 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	{
 		if (timer_irq_status(SYSTIME_TIMER))
 		{
-			debug_shell_println("milis timer overflow!");
+			//debug_shell_println("milis timer overflow!");
 			systime_timer_overflow();
 		}
 		if (timer_irq_status(SCHEDULER_TIMER) && ! syscall_in_progress())

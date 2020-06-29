@@ -275,6 +275,8 @@ void file_hookfunc()
 		return;
 	}
 	
+	//DEBUGPRINTLN_1("millis: %lld",systime_unix_milis())
+	
 	if (isKeyPressed(KEY_CTRL) && isKeyPressed(KEY_COMMA))
 	{
 		keypad_no_key_pressed_barrier();

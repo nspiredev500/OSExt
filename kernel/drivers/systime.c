@@ -57,14 +57,14 @@ int64_t systime_unix_micro()
 
 
 // returns the current unix time with millisecond accuracy
-int64_t systime_unix_milis()
+int64_t systime_unix_milli()
 {
 	return  (timer_milis_overflows*0x100000000)/32+(0xffffffff-timer_value(SYSTIME_TIMER))/32;
 }
 
 
 
-void systime_set_unix_milis(int64_t unix_time_milis)
+void systime_set_unix_milli(int64_t unix_time_milis)
 {
 	if (unix_time_milis <= 0) // we use the RTC as a second clock, and it can't deal with negative numbers
 	{
