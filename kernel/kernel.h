@@ -15,7 +15,7 @@
 #include <syscall-list.h>
 
 #include "ti-os.h"
-
+#include "hw-version.h"
 
 #include "libk/memory.h"
 #include "libk/mutex.h"

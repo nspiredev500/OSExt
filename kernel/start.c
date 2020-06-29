@@ -58,6 +58,7 @@ int main(int argsn,char **argc)
 	DEBUGPRINTLN_1("got address: 0x%x\n",(&_GOT_START))
 	
 	
+	
 	/*
 	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
 	uint32_t *got_entry = (uint32_t*) ((uint32_t)(&_EXEC_START)+(uint32_t)got_offset);
@@ -350,11 +351,11 @@ void initialize()
 	
 	
 	// test the systime interrupt
-	/*
+	
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
 	
-	
+	/*
 	debug_shell_println("testing systime interrupts");
 	
 	
@@ -386,150 +387,82 @@ void initialize()
 	msleep(200);
 	debug_shell_println("seconds: 0x%llx",systime_unix());
 	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	
 	
 	
 	debug_shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
 	*/
 	
 	
+	
+	
 	/*
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	debug_shell_println("testing milis systime interrupts");
-	
-	
-	timer_set_load(SYSTIME_TIMER,32000*100); // 100 milliseconds
-	//timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
-	timer_milis_overflows = 0; // timer_milis_overflows has to not be static for this test
-	
-	
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	msleep(50);
-	debug_shell_println("micro: %lld",systime_unix_micro());
-	timer_set_load(SYSTIME_TIMER,0xffffffff);
-	
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	debug_shell_println("testing milis systime interrupts");
-	
-	
-	timer_set_load(SYSTIME_TIMER,32000*100); // 100 milliseconds
-	timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
-	timer_milis_overflows = 0; // timer_milis_overflows has to not be static for this test
-	
-	
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	msleep(50);
-	debug_shell_println("milis: %lld",systime_unix_milis());
-	
-	timer_set_load(SYSTIME_TIMER,0xffffffff);
-	timer_milis_overflows = 0; // timer_milis_overflows has to not be static for this test
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	debug_shell_println("testing milis systime accuracy");
-	timer_set_load(SYSTIME_TIMER,0xffffffff);
-	
-	
-	volatile uint32_t t1,t2,t3,t4,t5;
-	t1 = 0xffffffff-timer_value(SYSTIME_TIMER);
-	msleep(1);
-	t2 = 0xffffffff-timer_value(SYSTIME_TIMER);
-	msleep(10);
-	t3 = 0xffffffff-timer_value(SYSTIME_TIMER);
+	#undef TESTTIMER
+	#define TESTTIMER 1,0
+
+	debug_shell_println("testing milisecond timer interrupt:");
+
+	timer_set_load(TESTTIMER,32*1000);
 	msleep(100);
-	t4 = 0xffffffff-timer_value(SYSTIME_TIMER);
-	msleep(1000);
-	t5 = 0xffffffff-timer_value(SYSTIME_TIMER);
-	
-	debug_shell_println("timer: %d",t1);
-	debug_shell_println("timer: %d",t2);
-	debug_shell_println("timer: %d",t3);
-	debug_shell_println("timer: %d",t4);
-	debug_shell_println("timer: %d",t5);
-	timer_set_load(SYSTIME_TIMER,0xffffffff);
-	*/
-	
-	/*
-			 
-			 33079873
-		0,0: 33016885 ticks per second
-		
-		
-			
-		1,0: 33017127‬ ticks per second
-		
-			 
-		2,0: 27790 ticks per second
-		
-		first timer timertest:
-			 14943 ticks per second
-		
-		
-		again:
-		fast timer, first module:     33079429 ticks per second		33 MHz
-		fast timer, second module:    33079650 ticks per second		33 MHz
-		first timer, first module:    33081272 ticks per second		33 MHz
-		first timer, second module:   33080916 ticks per second		33 MHz
-		second timer, first module:   27791 ticks per second		32 KHz
-		second timer, second module:  27789 ticks per second		32 KHz
-		
-		
-		
-	*/
+	int64_t t1 = systime_unix_milis();
+	debug_shell_println("unix milliseconds: %lld",t1);
+	msleep(2000);
+	int64_t t2 = systime_unix_milis();
+	debug_shell_println("unix milliseconds: %lld",t2);
+	debug_shell_println("delta: %lld",t2-t1);
 	
 	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
 	
-	debug_shell_println("msleep test:");
-	debug_shell_println("please use a stopwatch to time the interval between the flashes");
-	debug_shell_println_rgb("press any key to start the msleep test",0,255,0);
+	t1 = systime_unix_milis();
+	msleep(1000);
+	t2 = systime_unix_milis();
+	
+	debug_shell_println("unix milliseconds: %lld",t1);
+	debug_shell_println("unix milliseconds: %lld",systime_unix_milis()-t1);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
 	
+	t1 = systime_unix_micro();
+	msleep(1000);
+	t2 = systime_unix_micro();
+	debug_shell_println("unix microseconds: %lld",t1);
+	debug_shell_println("unix microseconds: %lld",systime_unix_micro()-t1);
+	*/
 	
+	/*
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+
+	debug_shell_println("msleep test:");
+	debug_shell_println("please use a stopwatch to time");
+	debug_shell_println("the interval between the flashes");
+	debug_shell_println_rgb("press any key to start the",0,255,0);
+	debug_shell_println_rgb("msleep test",0,255,0);
+	keypad_press_release_barrier();
+
+
 	for (uint32_t i = 0;i<10;i++)
 	{
 		uint32_t r,g,b;
@@ -559,51 +492,16 @@ void initialize()
 	}
 	
 	
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	debug_shell_println("timer test:");
-	debug_shell_println("please write down the values");
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
-	
-	
-	
-	#undef TESTTIMER
-	#define TESTTIMER 0,0
-	
-	debug_shell_println("fast timer:");
-	
-	timer_disable(TESTTIMER);
-	timer_set_irq_enabled(TESTTIMER,false);
-	timer_set_mode(TESTTIMER,0);
-	timer_set_oneshot(TESTTIMER,false);
-	timer_set_prescaler(TESTTIMER,0);
-	timer_set_size(TESTTIMER,1);
-	timer_set_load(TESTTIMER,0xffffffff);
-	timer_enable(TESTTIMER);
-	
-	msleep(1000);
-	{
-		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
-	}
-	
-	timer_disable(TESTTIMER);
-	
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
 	
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
+	
 	
 	#undef TESTTIMER
 	#define TESTTIMER 1,0
-	
+
 	debug_shell_println("first timer:");
+	debug_shell_println("initial clockselect: 0x%x",timer_get_clockselect(TESTTIMER));
 	
 	timer_disable(TESTTIMER);
 	timer_set_irq_enabled(TESTTIMER,false);
@@ -611,174 +509,100 @@ void initialize()
 	timer_set_oneshot(TESTTIMER,false);
 	timer_set_prescaler(TESTTIMER,0);
 	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0);
 	timer_set_load(TESTTIMER,0xffffffff);
 	timer_enable(TESTTIMER);
-	
+
 	msleep(1000);
 	{
 		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
+		debug_shell_println("value: %d",t);
 	}
-	
+
 	timer_disable(TESTTIMER);
-	
-	
+
+
 	debug_shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
-	
-	
+
+
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
+
+
+	debug_shell_println("first timer with clockselect=0xA");
 	
-	
-	#undef TESTTIMER
-	#define TESTTIMER 2,0
-	
-	debug_shell_println("second timer:");
-	
+
+
 	timer_disable(TESTTIMER);
 	timer_set_irq_enabled(TESTTIMER,false);
 	timer_set_mode(TESTTIMER,0);
 	timer_set_oneshot(TESTTIMER,false);
 	timer_set_prescaler(TESTTIMER,0);
 	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0xa);
 	timer_set_load(TESTTIMER,0xffffffff);
 	timer_enable(TESTTIMER);
-	
-	
+
 	msleep(1000);
 	{
 		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
+		debug_shell_println("value: %d",t);
 	}
-	
+
 	timer_disable(TESTTIMER);
 	
 	
 	debug_shell_println_rgb("press any key to continue",0,255,0);
 	keypad_press_release_barrier();
-	
+
+
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
-	
-	
-	
-	#undef TESTTIMER
-	#define TESTTIMER 0,1
-	
-	debug_shell_println("fast timer second module:");
-	
+
+
+	debug_shell_println("first timer with clockselect=0x9");
+
+
 	timer_disable(TESTTIMER);
 	timer_set_irq_enabled(TESTTIMER,false);
 	timer_set_mode(TESTTIMER,0);
 	timer_set_oneshot(TESTTIMER,false);
 	timer_set_prescaler(TESTTIMER,0);
 	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0x9);
 	timer_set_load(TESTTIMER,0xffffffff);
 	timer_enable(TESTTIMER);
-	
+
 	msleep(1000);
 	{
 		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
+		debug_shell_println("value: %d",t);
 	}
-	
+
 	timer_disable(TESTTIMER);
+	*/
 	
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
-	
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	#undef TESTTIMER
-	#define TESTTIMER 1,1
-	
-	debug_shell_println("first timer second module:");
-	
-	timer_disable(TESTTIMER);
-	timer_set_irq_enabled(TESTTIMER,false);
-	timer_set_mode(TESTTIMER,0);
-	timer_set_oneshot(TESTTIMER,false);
-	timer_set_prescaler(TESTTIMER,0);
-	timer_set_size(TESTTIMER,1);
-	timer_set_load(TESTTIMER,0xffffffff);
-	timer_enable(TESTTIMER);
-	
-	msleep(1000);
-	{
-		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
-	}
-	
-	timer_disable(TESTTIMER);
-	
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
-	
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	
-	#undef TESTTIMER
-	#define TESTTIMER 2,1
-	
-	debug_shell_println("second timer second module:");
-	
-	timer_disable(TESTTIMER);
-	timer_set_irq_enabled(TESTTIMER,false);
-	timer_set_mode(TESTTIMER,0);
-	timer_set_oneshot(TESTTIMER,false);
-	timer_set_prescaler(TESTTIMER,0);
-	timer_set_size(TESTTIMER,1);
-	timer_set_load(TESTTIMER,0xffffffff);
-	timer_enable(TESTTIMER);
-	
-	msleep(1000);
-	{
-		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
-		debug_shell_println("timer: %d",t);
-	}
-	
-	timer_disable(TESTTIMER);
-	
-	
-	debug_shell_println_rgb("press any key to continue",0,255,0);
-	keypad_press_release_barrier();
-	
-	
-	
-	
-	
-	k_memset(get_front_framebuffer_address(),0,320*240*2);
-	debug_shell_reset();
-	
-	
-	
-	
+	/*
 	debug_shell_println_rgb("please press the reset button",0,255,0);
 	while (true)
 	{
 		keypad_press_release_barrier();
 	}
+	*/
 	
 	
 	
 	
 	
 	
-	/*
 	int64_t milis = systime_unix_milis(), micro = systime_unix_micro();
 	uint32_t ticks = 0xffffffff - timer_value(SYSTIME_TIMER);
 
 	debug_shell_println("unix milliseconds: %lld",milis);
 	debug_shell_println("unix microseconds: %lld",micro);
 	debug_shell_println("ticks: %d",ticks);
-	*/
+	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);

@@ -24,7 +24,7 @@ void msleep(uint32_t milis)
 	
 	watchdog_set_function(WATCHDOG_WAIT);
 	
-	uint32_t overflows = (33000*milis);
+	uint32_t overflows = (uint32_t) (38038.473*(double)milis);
 	uint32_t first = overflows % 0xffffffff;
 	overflows = overflows / 0xffffffff;
 	

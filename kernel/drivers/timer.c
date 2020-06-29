@@ -26,6 +26,11 @@ static volatile uint32_t *remapped_misc = (uint32_t*) 0xe90a0000;
 	remapped_timer[14] = timer2 background load
 	remapped_timer[11] = timer 2 interrupt clear
 	remapped_timer[12] = timer 2 raw interrupt status
+	
+	remapped_timer[32] = seems to be a clock select register, not in a normal sp804. Is set to 0xa by nSDL to get a 32KHz timer
+	
+	
+	
 */
 
 
@@ -125,7 +130,7 @@ void timer_enable(uint32_t timermodule,uint32_t timer)
 	
 	vic_set_fiq(17+timermodule);
 	vic_enable(17+timermodule);
-	remapped_timer[2+timer*8] |= 0b10100010;
+	remapped_timer[2+timer*8] |= 0b10100000;
 }
 
 void timer_disable(uint32_t timermodule,uint32_t timer)
@@ -149,6 +154,41 @@ void timer_disable(uint32_t timermodule,uint32_t timer)
 	remapped_timer[2+timer*8] &= ~0b10100000;
 }
 
+uint32_t timer_get_clockselect(uint32_t timermodule,uint32_t timer)
+{
+	if (timermodule > 2)
+		return -1;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	return remapped_timer[32];
+}
+
+void timer_set_clockselect(uint32_t timermodule,uint32_t timer,uint32_t select)
+{
+	if (timermodule > 2)
+		return;
+	volatile uint32_t *remapped_timer = remapped_fast_timer;
+	if (timermodule == 1)
+		remapped_timer = remapped_first_timer;
+	if (timermodule == 2)
+		remapped_timer = remapped_second_timer;
+	
+	power_enable_device(11);
+	power_enable_device(12);
+	power_enable_device(13);
+	
+	remapped_timer[32] = select;
+}
+
+
 uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 {
 	if (timer > 1)
@@ -157,19 +197,9 @@ uint32_t timer_value(uint32_t timermodule,uint32_t timer)
 		return 0;
 	volatile uint32_t *remapped_timer = remapped_fast_timer;
 	if (timermodule == 1)
-	{
-		debug_shell_println("reading from first timer");
 		remapped_timer = remapped_first_timer;
-	}
 	if (timermodule == 2)
-	{
-		debug_shell_println("reading from second timer");
 		remapped_timer = remapped_second_timer;
-	}
-	if (timermodule == 0)
-	{
-		debug_shell_println("reading from fast timer");
-	}
 	
 	power_enable_device(11);
 	power_enable_device(12);
@@ -235,7 +265,7 @@ void timer_set_size(uint32_t timermodule,uint32_t timer,uint32_t size)
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
 		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
-	remapped_timer[2+timer*8] &= 0b10;
+	remapped_timer[2+timer*8] &= ~0b10;
 	remapped_timer[2+timer*8] |= (size & 0b1) << 1;
 	if (enabled)
 		remapped_timer[2+timer*8] |= 0b10000000;
@@ -261,7 +291,7 @@ void timer_set_prescaler(uint32_t timermodule,uint32_t timer,uint8_t prescale)
 	uint32_t enabled = (remapped_timer[2+timer*8] >> 7) & 0b1;
 	if (enabled)
 		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
-	remapped_timer[2+timer*8] &= 0b1100;
+	remapped_timer[2+timer*8] &= ~0b1100;
 	remapped_timer[2+timer*8] |= (prescale & 0b11) << 2;
 	if (enabled)
 		remapped_timer[2+timer*8] |= 0b10000000;
@@ -406,7 +436,7 @@ void timer_set_oneshot(uint32_t timermodule,uint32_t timer,bool oneshot)
 	if (enabled)
 		remapped_timer[2+timer*8] &= ~0b10000000; // timer has to be disabled before changing this setting
 	
-	remapped_timer[2+timer*8] &= ~ 0b1;
+	remapped_timer[2+timer*8] &= ~0b1;
 	if (oneshot)
 	{
 		remapped_timer[2+timer*8] |= 0b1;

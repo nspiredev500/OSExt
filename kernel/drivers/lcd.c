@@ -116,13 +116,22 @@ void lcd_setpixel(uint32_t x,uint32_t y,uint32_t r, uint32_t g,uint32_t b)
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		volatile uint16_t *buff = framebuffer2;
-		buff[x*240+y] = colour565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buff = framebuffer2;
+			buff[x*240+y] = colour565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buff = framebuffer2;
+			buff[y*320+x] = colour565;
+			return;
+		}
 	}
-	
-	
-	
 }
 void lcd_fillrect(uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, uint32_t g,uint32_t b)
 {
@@ -200,9 +209,21 @@ void framebuffer_setpixel(void *buff,uint32_t x,uint32_t y,uint32_t r, uint32_t 
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t* buffer = buff;
-		buffer[x*240+y] = colour565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[x*240+y] = colour565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[y*320+x] = colour565;
+			return;
+		}
 	}
 }
 
@@ -211,9 +232,21 @@ void framebuffer_setpixel565(void *buff,uint32_t x,uint32_t y,uint16_t rgb565)
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t* buffer = buff;
-		buffer[x*240+y] = rgb565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[x*240+y] = rgb565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[y*320+x] = rgb565;
+			return;
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ void init_drivers_remapped_io()
 void init_drivers()
 {
 	initLCDDriver();
-	//systime_init();
+	systime_init();
 	
 	
 	

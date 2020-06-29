@@ -5,9 +5,9 @@
 
 /*
 	Timer IDs
-	first timer = 0
-	second timer = 1
-	fast timer = 2
+	fast timer = 0
+	first timer = 1
+	second timer = 2
 */
 
 struct timer_state {
@@ -15,6 +15,11 @@ struct timer_state {
 	uint32_t control;
 	uint32_t bgload;
 };
+
+// the individual timer in the module doesn't matter, it's a setting for both
+uint32_t timer_get_clockselect(uint32_t timermodule,uint32_t timer);
+void timer_set_clockselect(uint32_t timermodule,uint32_t timer,uint32_t select);
+
 
 void timer_save_state(uint32_t timermodule,uint32_t timer,struct timer_state *state);
 void timer_resume_state(uint32_t timermodule,uint32_t timer,struct timer_state *state);

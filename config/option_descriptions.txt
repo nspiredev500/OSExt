@@ -12,7 +12,7 @@ _USB_DRIVER:
 _DISABLE_TEXT_OUTPUT:
 	disables the status output at the start, and the clock if enabled
 
-
+_WH_W: whether the hardware revision of your calculator is  bigger or equal to W
 
 
 
