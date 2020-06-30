@@ -184,19 +184,6 @@ static void testfunc()
 }
 
 
-int64_t osext_unix_time()
-{
-	register uint32_t bottom asm("r0") = 0;
-	register uint32_t top asm("r1") = 0;
-	asm volatile(
-		"swi %[nr]\n"
-		: "+r" (bottom), "+r" (top)
-		: [nr] "i" (SYSCALL_MASK + 2), "r" (bottom), "r" (top)
-		: "memory", "r3", "r4", "r12", "lr");
-	int64_t time = (int64_t) ((((uint64_t) top) << 32) | ((uint64_t) bottom));
-	return time;
-}
-
 
 
 // because we return with main after this, every error here is still recoverable without a kernel panic
@@ -621,10 +608,6 @@ void initialize()
 	
 	
 	
-	
-	
-	debug_shell_println("testing syscalls");
-	debug_shell_println("unix time syscall: %lld",osext_unix_time());
 	
 	
 	

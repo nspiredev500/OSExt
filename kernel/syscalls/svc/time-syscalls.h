@@ -3,11 +3,11 @@
 
 
 
-void syscall_unix_time(uint32_t* regs);
-void syscall_unix_time_milli(uint32_t* regs);
-void syscall_set_unix_time(uint32_t* regs);
-void syscall_set_unix_time_milli(uint32_t* regs);
-void syscall_unix_time_micro(uint32_t* regs);
+void syscall_unix_time(volatile uint32_t* regs);
+void syscall_unix_time_milli(volatile uint32_t* regs);
+void syscall_set_unix_time(volatile uint32_t* regs);
+void syscall_set_unix_time_milli(volatile uint32_t* regs);
+void syscall_unix_time_micro(volatile uint32_t* regs);
 
 
 

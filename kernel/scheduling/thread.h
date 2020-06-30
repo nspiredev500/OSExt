@@ -2,12 +2,13 @@
 #define THREAD_H
 
 
+
+
 struct svc_thread;
-struct svc_thread { // kernel-mode threads, these are also exposed via syscalls
+struct svc_thread { // kernel-mode threads, exposed via syscalls. OSExt itself will use other threads
 	volatile uint32_t regs[18]; // 16 registers + cpsr + spsr
-	bool osext; // if this is a thread of OSExt itself, or created via the syscall api for other programs
 	bool main; // if this is the original thread of the nucleus OS. Can't be killed.
-	void* stack; // if not an osext thread, the stack is deallocated with ti_free
+	void* stack; // the stack is deallocated with ti_free
 	uint32_t stacksize; // size in bytes
 	uint16_t status;
 	uint32_t waiting; // number of scheduler ticks to wait for, or 0 if not waiting
@@ -16,7 +17,7 @@ struct svc_thread { // kernel-mode threads, these are also exposed via syscalls
 	struct svc_thread *next;
 };
 
-struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize, void* entry);
+struct svc_thread* create_svc_thread(void* stack, uint32_t stacksize, void* entry);
 
 // make sure the thread isn't running
 void destroy_svc_thread(struct svc_thread* thread);

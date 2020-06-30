@@ -8,7 +8,7 @@ void syscall_log(uint32_t *instruction)
 {
 	uint32_t inst = *(instruction-1);
 	uint32_t swi = inst & 0xffffff;
-	if (swi != 14  && swi != 75 && swi != 8) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
+	if (swi != 14  && swi != 75 && swi != 8 && swi != 2097160) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
 		DEBUGPRINTLN_1("Syscall: %d",swi);
 }
 
@@ -26,7 +26,8 @@ asm(
 
 "swi_wrapper: \n"
 "push {r0} \n"
-"mov r0, #0x1 \n"
+"ldr r0, __syscall_in_progress \n"
+"add r0, r0, #1 \n"
 "str r0, __syscall_in_progress \n" // indicate that a syscall is in progress
 
 /*
@@ -70,7 +71,8 @@ asm(
 "pop {r1} \n" // pop the unused r1 pushed earlier
 "pop {r0} \n"
 "msr cpsr, r0 \n" // restore the cpsr
-"mov r0, #0 \n"
+"ldr r0, __syscall_in_progress \n"
+"sub r0, r0, #1 \n"
 "str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n" // remove the saved r0 from the stack
 "movs pc, lr \n" // return from the swi
@@ -99,7 +101,8 @@ asm(
 "pop {r1} \n"
 "pop {r0} \n"
 "msr cpsr, r0 \n"
-"mov r0, #0 \n"
+"ldr r0, __syscall_in_progress \n"
+"sub r0, r0, #1 \n"
 "str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n"
 "movs pc, lr \n" // return from the swi
@@ -135,7 +138,8 @@ asm(
 "pop {r1} \n"
 "pop {r0} \n"
 "msr cpsr, r0 \n"
-"mov r0, #0 \n"
+"ldr r0, __syscall_in_progress \n"
+"sub r0, r0, #1 \n"
 "str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n"
 "movs pc, lr \n"
@@ -169,7 +173,8 @@ asm(
 		"__SYSCALL_INST: .long 0 \n" // place the original syscall instruction here, so the Ndless swi handler can correctly extract the swi number
 		//BREAKPOINT_ASM
 		"push {r0} \n" // return here, save r0
-			"mov r0, #0 \n"
+			"ldr r0, __syscall_in_progress \n"
+			"sub r0, r0, #1 \n"
 			"str r0, __syscall_in_progress \n" // indicate that the syscall ended
 		"pop {r0} \n" // restore r0
 	"pop {lr} \n"
@@ -183,7 +188,7 @@ extern volatile uint32_t __syscall_in_progress;
 
 bool syscall_in_progress()
 {
-	if (__syscall_in_progress == 1)
+	if (__syscall_in_progress != 0)
 	{
 		return true;
 	}
@@ -194,12 +199,12 @@ bool syscall_in_progress()
 }
 
 #define SYSCALL_SIZE 7
-void (*swi_table[SYSCALL_SIZE])(uint32_t* regs);
+void (*swi_table[SYSCALL_SIZE])(volatile uint32_t* regs);
 
 
 
 #define USER_SYSCALL_SIZE 1
-void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
+void (*user_swi_table[USER_SYSCALL_SIZE])(volatile uint32_t* regs);
 
 /*
 	User Mode System Calls:
@@ -234,7 +239,7 @@ void (*user_swi_table[USER_SYSCALL_SIZE])(uint32_t* regs);
 */
 
 
-void syscall_set_reg(uint32_t *regs,uint32_t reg,uint32_t value)
+void syscall_set_reg(volatile uint32_t *regs,uint32_t reg,uint32_t value)
 {
 	if (reg > 1 && reg < 13)
 	{
@@ -249,7 +254,7 @@ void syscall_set_reg(uint32_t *regs,uint32_t reg,uint32_t value)
 		regs[15] = value;
 	}
 }
-uint32_t syscall_get_reg(uint32_t *regs,uint32_t reg)
+uint32_t syscall_get_reg(volatile uint32_t *regs,uint32_t reg)
 {
 	if (reg > 1 && reg < 13)
 	{
@@ -288,7 +293,7 @@ void init_syscall_table()
 }
 
 
-void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
+void swi_handler_usr(uint32_t swi_number,volatile  uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
 	uint32_t max_swi = sizeof(user_swi_table)/sizeof(uint32_t (*)());
 	if (swi_number >= max_swi)
@@ -317,7 +322,7 @@ void swi_handler_usr(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc
 
 
 
-void swi_handler(uint32_t swi_number, uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
+void swi_handler(uint32_t swi_number,volatile  uint32_t* regs) // regs is r2-r12, svc lr, spsr, r1, cpsr, r0
 {
 	/*
 	DEBUGPRINTLN_1("r2: 0x%x",regs[0])

@@ -112,6 +112,12 @@ static const uint32_t os_framebuffer1_addrs[] =
  0x0, 0x13fda800,
  0x0, 0x0
 };
+
+
+
+
+
+
 static uint32_t os_draw_inst[4];
 static bool draw_clock = true;
 

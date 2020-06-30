@@ -5,7 +5,7 @@
 
 
 
-struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize, void* entry)
+struct svc_thread* create_svc_thread(void* stack, uint32_t stacksize, void* entry)
 {
 	struct svc_thread* t = request_svc_thread();
 	for (uint32_t i = 0;i<18;i++)
@@ -17,7 +17,6 @@ struct svc_thread* create_svc_thread(bool osext, void* stack, uint32_t stacksize
 	t->regs[15] = (uint32_t) entry; // set the pc to the entry point
 	
 	t->main = false;
-	t->osext = osext;
 	t->stack = stack;
 	t->stacksize = stacksize;
 	t->status = 0;

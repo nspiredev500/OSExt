@@ -52,7 +52,7 @@ void scheduler_enable_kernel_thread_scheduling()
 		return;
 	}
 	disableIRQ();
-	struct svc_thread *t = create_svc_thread(false, NULL, 1024*128, NULL); // most of these values don't matter for the main thread
+	struct svc_thread *t = create_svc_thread(NULL, 1024*128, NULL); // most of these values don't matter for the main thread
 	t->main = true;
 	t->next = t; // close the list
 	running_kernel_thread = t;
@@ -60,7 +60,11 @@ void scheduler_enable_kernel_thread_scheduling()
 	timer_disable(SCHEDULER_TIMER);
 	timer_set_prescaler(SCHEDULER_TIMER,0);
 	timer_set_mode(SCHEDULER_TIMER,1);
-	//timer_set_size(SCHEDULER_TIMER,1);
+	timer_set_size(SCHEDULER_TIMER,1);
+	if (timer_get_clockselect(SCHEDULER_TIMER) != 0xa)
+	{
+		timer_set_clockselect(SCHEDULER_TIMER,0xa);
+	}
 	timer_set_load(SCHEDULER_TIMER,32000*timeslice_length);
 	timer_set_bg_load(SCHEDULER_TIMER,32000*timeslice_length);
 	timer_enable(SCHEDULER_TIMER);
@@ -92,16 +96,8 @@ void scheduler_disable_kernel_thread_scheduling()
 			t = t->next;
 			continue;
 		}
-		if (t->osext)
-		{
-			// don't deallocate the stack, because OSExt stacks will be managed differently
-			destroy_svc_thread(t);
-		}
-		else
-		{
-			ti_free(t->stack);
-			destroy_svc_thread(t);
-		}
+		ti_free(t->stack);
+		destroy_svc_thread(t);
 		t = t->next;
 	}
 	destroy_svc_thread(running_kernel_thread);
@@ -113,6 +109,10 @@ void scheduler_disable_kernel_thread_scheduling()
 
 void schedule_kernel_thread()
 {
+	
+	
+	
+	
 	
 }
 
