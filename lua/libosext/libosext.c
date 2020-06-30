@@ -3,16 +3,19 @@
 #include <nucleus.h>
 #include <lua.h>
 
-#include "../libosext/libosext.h"
+#include "../../libosext/libosext.h"
+
+/// for freeing resources https://www.lua.org/pil/29.html
 
 
 
 
 int lua_unix(lua_State *L)
 {
-	printf("lua wants the unix time");
-	fflush(stdout);
-	lua_pushnumber(L,(double) osext_unix_time());
+	int64_t time = osext_unix_time();
+	lua_pushnumber(L,(double) time);
+	//printf("unix time: %ld\n",(uint32_t)time); // 64 bit display seems to be broken in newlib
+	//fflush(stdout);
 	return 1;
 }
 

@@ -3,6 +3,12 @@
 
 
 
+// a value other than 0 indicates an error
+// set by all functions
+extern int osext_errno;
+
+
+bool osext_installed();
 
 
 // returns the current unix time (as set by the user), in seconds

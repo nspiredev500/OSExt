@@ -20,8 +20,8 @@ endif
 OBJS = $(patsubst %.c, %.o, $(shell find . -name \*.c))
 OBJS += $(patsubst %.cpp, %.o, $(shell find . -name \*.cpp))
 OBJS += $(patsubst %.S, %.o, $(shell find . -name \*.S))
-OBJS += ../libosext/libosext.o
-EXE = libosext.luax
+OBJS += ../../libosext/libosext.o
+EXE = os.luax
 DISTDIR = .
 vpath %.tns $(DISTDIR)
 vpath %.elf $(DISTDIR)
