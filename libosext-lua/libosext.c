@@ -35,7 +35,7 @@ int lua_unix_micro(lua_State *L)
 
 int lua_set_unix(lua_State *L)
 {
-	if (lua_isnumber(L,-1))
+	if (lua_gettop() == 1 && lua_isnumber(L,-1))
 	{
 		int64_t time = (int64_t) lua_tonumber(L,-1);
 		osext_set_unix_time(time);
@@ -46,7 +46,7 @@ int lua_set_unix(lua_State *L)
 
 int lua_set_unix_milli(lua_State *L)
 {
-	if (lua_isnumber(L,-1))
+	if (lua_gettop() == 1 && lua_isnumber(L,-1))
 	{
 		int64_t time = (int64_t) lua_tonumber(L,-1);
 		osext_set_unix_time_milli(time);
