@@ -90,7 +90,7 @@ uint32_t call_with_stack(const void* stack,void* function)
 	" continue: str sp, saved_sp \n"
 	" mov sp, r0 \n"
 	" blx r1 \n"
-	" ldr sp, saved_sp":"=r" (sp_var),"=r" (func_var):"r" (sp_var),"r" (func_var):"r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","sp","lr","memory");
+	" ldr sp, saved_sp":"=r" (sp_var),"=r" (func_var):"r" (sp_var),"r" (func_var):"r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r14","lr","memory");
 	return (uint32_t) sp_var;
 }
 

@@ -15,9 +15,12 @@ static volatile uint32_t timer_seconds_overflows = 0;
 
 void systime_init()
 {
-	//timer_set_prescaler(SYSTIME_TIMER,1);
-	timer_set_mode(SYSTIME_TIMER,0b1);
+	timer_disable(SYSTIME_TIMER);
+	timer_set_clockselect(SYSTIME_TIMER,0xa);
+	timer_set_prescaler(SYSTIME_TIMER,0);
+	timer_set_mode(SYSTIME_TIMER,0b0);
 	timer_set_oneshot(SYSTIME_TIMER,false);
+	timer_set_size(SYSTIME_TIMER,1);
 	timer_set_load(SYSTIME_TIMER,0xffffffff);
 	timer_enable(SYSTIME_TIMER);
 	
@@ -25,7 +28,9 @@ void systime_init()
 	rtc_claim();
 	rtc_set_alarm(0);
 	
+	//debug_shell_println("initializing systime: timer %d,%d",SYSTIME_TIMER);
 	
+	systime_set_unix(systime_unix()); // to set the millisecond time to the second time, as the RTC not always resets after a reboot
 }
 
 void systime_rtc_overflow()
@@ -41,24 +46,25 @@ void systime_timer_overflow()
 // returns the current unix time in second
 int64_t systime_unix()
 {
-	return timer_seconds_overflows*0xffffffff+rtc_get_value();
+	return timer_seconds_overflows*0x100000000+rtc_get_value();
 }
+
 
 int64_t systime_unix_micro()
 {
-	return (int64_t) ((double) (timer_milis_overflows*0xffffffff)*31.25 + (double) (0xffffffff-timer_value(SYSTIME_TIMER))*31.25);
+	return (int64_t) ((double) (timer_milis_overflows*0x100000000)*31.25 + (double) (0xffffffff-timer_value(SYSTIME_TIMER))*31.25);
 }
 
 
 // returns the current unix time with millisecond accuracy
-int64_t systime_unix_milis()
+int64_t systime_unix_milli()
 {
-	return timer_milis_overflows*0xffffffff/32+(0xffffffff-timer_value(SYSTIME_TIMER))/32;
+	return  (timer_milis_overflows*0x100000000)/32+(0xffffffff-timer_value(SYSTIME_TIMER))/32;
 }
 
 
 
-void systime_set_unix_milis(int64_t unix_time_milis)
+void systime_set_unix_milli(int64_t unix_time_milis)
 {
 	if (unix_time_milis <= 0) // we use the RTC as a second clock, and it can't deal with negative numbers
 	{
@@ -68,11 +74,10 @@ void systime_set_unix_milis(int64_t unix_time_milis)
 	int64_t milis_remaining = unix_time_milis-(seconds*1000);
 	
 	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining*32);
-	timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
 	
 	uint64_t unix_time = unix_time_milis/1000;
-	timer_seconds_overflows = unix_time/0xffffffff;
-	rtc_set_value(unix_time%0xffffffff);
+	timer_seconds_overflows = unix_time/0x100000000;
+	rtc_set_value(unix_time%0x100000000);
 }
 
 
@@ -83,14 +88,13 @@ void systime_set_unix(int64_t unix_time)
 	{
 		return;
 	}
-	timer_seconds_overflows = unix_time/0xffffffff;
-	rtc_set_value(unix_time%0xffffffff);
+	timer_seconds_overflows = unix_time/0x100000000;
+	rtc_set_value(unix_time%0x100000000);
 	
-	timer_milis_overflows = (unix_time*1000)/(0xffffffff/32);
-	uint32_t milis_remaining = (unix_time*1000)%(0xffffffff/32);
+	timer_milis_overflows = (unix_time*1000)/(0x100000000/32);
+	uint32_t milis_remaining = (unix_time*1000)%(0x100000000/32);
 	
 	timer_set_load(SYSTIME_TIMER,0xffffffff-milis_remaining*32);
-	timer_set_bg_load(SYSTIME_TIMER,0xffffffff);
 }
 
 

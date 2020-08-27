@@ -12,6 +12,11 @@ void* get_front_framebuffer_address();
 
 void initLCDDriver();
 
+
+void lcd_power_down();
+void lcd_power_up();
+
+
 void claimLCD();
 void freeLCD();
 

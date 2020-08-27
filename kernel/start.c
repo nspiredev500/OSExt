@@ -58,6 +58,7 @@ int main(int argsn,char **argc)
 	DEBUGPRINTLN_1("got address: 0x%x\n",(&_GOT_START))
 	
 	
+	
 	/*
 	void *got_offset = (void*) ((&_GOT_START)-(&_EXEC_START));
 	uint32_t *got_entry = (uint32_t*) ((uint32_t)(&_EXEC_START)+(uint32_t)got_offset);
@@ -181,6 +182,8 @@ static void testfunc()
 	}
 	debug_shell_println("syscall successfull!");
 }
+
+
 
 
 // because we return with main after this, every error here is still recoverable without a kernel panic
@@ -349,15 +352,291 @@ void initialize()
 	*/
 	
 	
+	// test the systime interrupt
+	/*
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+	
+	
+	debug_shell_println("testing systime interrupts");
+	
+	
+	rtc_set_value(0xffffffff-1);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(500);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(500);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(100);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(100);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(300);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(100);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	debug_shell_println("seconds: 0x%llx",systime_unix());
+	msleep(200);
+	
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+	*/
+	
+	
+	
+	
+	/*
+	#undef TESTTIMER
+	#define TESTTIMER 1,0
+
+	debug_shell_println("testing milisecond timer interrupt:");
+
+	timer_set_load(TESTTIMER,32*1000);
+	msleep(100);
+	int64_t t1 = systime_unix_milis();
+	debug_shell_println("unix milliseconds: %lld",t1);
+	msleep(2000);
+	int64_t t2 = systime_unix_milis();
+	debug_shell_println("unix milliseconds: %lld",t2);
+	debug_shell_println("delta: %lld",t2-t1);
+	
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+	
+	t1 = systime_unix_milis();
+	msleep(1000);
+	t2 = systime_unix_milis();
+	
+	debug_shell_println("unix milliseconds: %lld",t1);
+	debug_shell_println("unix milliseconds: %lld",systime_unix_milis()-t1);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+	
+	t1 = systime_unix_micro();
+	msleep(1000);
+	t2 = systime_unix_micro();
+	debug_shell_println("unix microseconds: %lld",t1);
+	debug_shell_println("unix microseconds: %lld",systime_unix_micro()-t1);
+	*/
+	
+	/*
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+
+	debug_shell_println("msleep test:");
+	debug_shell_println("please use a stopwatch to time");
+	debug_shell_println("the interval between the flashes");
+	debug_shell_println_rgb("press any key to start the",0,255,0);
+	debug_shell_println_rgb("msleep test",0,255,0);
+	keypad_press_release_barrier();
+
+
+	for (uint32_t i = 0;i<10;i++)
+	{
+		uint32_t r,g,b;
+		if (i % 3 == 0)
+		{
+			r = 255;
+			g = 0;
+			b = 0;
+		}
+		if (i % 3 == 1)
+		{
+			r = 0;
+			g = 255;
+			b = 0;
+		}
+		if (i % 3 == 2)
+		{
+			r = 0;
+			g = 0;
+			b = 255;
+		}
+		framebuffer_fillrect(get_front_framebuffer_address(),0,0,320,240,r,g,b);
+		
+		
+		
+		msleep(1000);
+	}
+	
+	
+	
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+	
+	
+	#undef TESTTIMER
+	#define TESTTIMER 1,0
+
+	debug_shell_println("first timer:");
+	debug_shell_println("initial clockselect: 0x%x",timer_get_clockselect(TESTTIMER));
+	
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("value: %d",t);
+	}
+
+	timer_disable(TESTTIMER);
+
+
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+
+
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+
+
+	debug_shell_println("first timer with clockselect=0xA");
+	
+
+
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0xa);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("value: %d",t);
+	}
+
+	timer_disable(TESTTIMER);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+
+
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+
+
+	debug_shell_println("first timer with clockselect=0x9");
+
+
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_size(TESTTIMER,1);
+	timer_set_clockselect(TESTTIMER,0x9);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("value: %d",t);
+	}
+
+	timer_disable(TESTTIMER);
+	*/
+	
+	/*
+	debug_shell_println_rgb("please press the reset button",0,255,0);
+	while (true)
+	{
+		keypad_press_release_barrier();
+	}
+	*/
+	
+	
+	
+	
+	/*
+	int64_t milis = systime_unix_milis(), micro = systime_unix_micro();
+	uint32_t ticks = 0xffffffff - timer_value(SYSTIME_TIMER);
+
+	debug_shell_println("unix milliseconds: %lld",milis);
+	debug_shell_println("unix microseconds: %lld",micro);
+	debug_shell_println("ticks: %d",ticks);
+	*/
+	
+	/*
+	debug_shell_println("trying to power down the lcd");
+	debug_shell_println("press any key to continue");
+	keypad_press_release_barrier();
+	lcd_power_down();
+	debug_shell_println("");
+	debug_shell_println("test to write while screen is powered down");
+	debug_shell_println("");
+	msleep(4000);
+	lcd_power_up();
+	debug_shell_println("powered back on");
+	
+	
+	while (true)
+	{
+		keypad_press_release_barrier();
+	}
+	*/
+	
+	/// register variables: GCC docs
+	/// Warning: In the above example, be aware that a register (for example r0) can be call-clobbered by subsequent code,
+	/// including function calls and library calls for arithmetic operators on other variables (for example the initialization of p2).
+	/// In this case, use temporary variables for expressions between the register assignments
+	
+	
+	
 	
 	
 	
 	
 	debug_shell_println_rgb("osext installed",0,255,0);
 	debug_shell_println_rgb("press any key to exit",0,255,0);
-	
-	
-	
 	
 	#ifndef RELEASE
 		// to be able to read the messages

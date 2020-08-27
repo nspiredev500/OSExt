@@ -41,6 +41,7 @@ static const uint8_t fiq_adr_offset = 0x3c+8;
 
 volatile void *remapped_exception_vectors = (void*) 0xffff0000;
 
+extern volatile uint32_t _fiq_stack_reset;
 
 asm(
 "undef_jump: ldr pc, [pc, #0x20] \n"
@@ -70,6 +71,7 @@ bool install_exception_handlers()
 	orig_abort_stack = orig_stack;
 	new_stack = undef_stack+sizeof(undef_stack)/4-4;
 	
+	
 	asm volatile(
 	"mrs r1, cpsr \n"
 	"mov r2, r1 \n"
@@ -82,6 +84,7 @@ bool install_exception_handlers()
 	orig_undef_stack = orig_stack;
 	
 	new_stack = fiq_stack+sizeof(fiq_stack)/4-4;
+	_fiq_stack_reset = (uint32_t) new_stack;
 	
 	asm volatile(
 	"mrs r1, cpsr \n"
@@ -102,7 +105,6 @@ bool install_exception_handlers()
 	extern void fiq_wrapper();
 	
 	
-	set_exception_vectors(true);
 	
 	void undef_jump();
 	void swi_jump();
@@ -167,7 +169,7 @@ bool install_exception_handlers()
 	*vector = (uint32_t) fiq_wrapper;
 	
 	
-	
+	set_exception_vectors(true);
 	
 	
 	// TODO put the page with the fiq handler in the lockdown-tlb, by making an offset variable in the linker script
@@ -176,7 +178,6 @@ bool install_exception_handlers()
 	
 	return true;
 }
-
 
 
 

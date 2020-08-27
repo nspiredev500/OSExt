@@ -53,6 +53,25 @@ bool k_streq(const char *s1, const char *s2, uint32_t max)
 	return true;
 }
 
+// doesn't check if the lengths are equal, so it's true if one string is the starting part of the other
+bool k_streq_len(const char *s1, const char *s2, uint32_t max)
+{
+	int32_t count = 0;
+	for (uint32_t i = 0;i<max;i++)
+	{
+		if (s1[i] == '\0' || s2[i] == '\0')
+		{
+			return true;
+		}
+		if (s1[i] != s2[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+
 
 
 void sprintf_safe(char *result,char *str,uint32_t length,...)

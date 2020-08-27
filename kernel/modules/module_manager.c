@@ -140,7 +140,7 @@ void module_manager_show()
 		
 		
 		blitLCDBuffer();
-		msleep(70);
+		msleep(30);
 	}
 	keypad_press_release_barrier();
 }

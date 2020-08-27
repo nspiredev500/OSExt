@@ -66,7 +66,7 @@ uint32_t prefetch_abort_handler(uint32_t* address,uint32_t spsr,uint32_t *regs) 
 			{
 				running_thread->regs[i] = regs[i+2];
 			}
-			register uint32_t *t_regs asm("r0") = running_thread->regs;
+			register volatile uint32_t *t_regs asm("r0") = running_thread->regs;
 			asm volatile(
 			" mrs r1, cpsr\n"
 			" orr r1, r1, #31\n"

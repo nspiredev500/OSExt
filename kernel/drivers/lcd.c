@@ -1,15 +1,25 @@
 #include "../kernel.h"
 
 
-// TODO use remapped registers when available
+
+static volatile uint32_t *remapped_lcd_controller = (volatile uint32_t*) 0xC0000000;
+/*
+	remapped_lcd_controller[6] = control register
+	
+	
+	
+*/
 
 
+
+static volatile uint32_t old_backlight_value = 0x174;
+static volatile uint32_t *remapped_backlight = (volatile uint32_t*) 0x900f0020; // assumed remapped, don't use before the virtual memory is initialized
 volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;
 
 // gets locked if the kernel transfers control over the lcd framebuffer to itself
 static uint32_t *kernel_lcd_mutex = NULL;
-static void *framebuffer1 = NULL;
-static void *framebuffer2 = NULL;
+static volatile void *framebuffer1 = NULL;
+static volatile void *framebuffer2 = NULL;
 
 static void *old_framebuffer = NULL;
 
@@ -34,24 +44,45 @@ void initLCDDriver()
 }
 void remappLCD(void* address)
 {
+	remapped_lcd_controller = (volatile uint32_t*) address;
 	LCD_UPBASE = (volatile void**) ((uint32_t) address+0x10);
 	
 	
 }
 
+
+void lcd_power_down()
+{
+	old_backlight_value = *remapped_backlight;
+	*remapped_backlight = 0x100;
+	remapped_lcd_controller[6] &= ~(0b1 << 11);
+	msleep(20); // some time for it to stabilize
+	remapped_lcd_controller[6] &= ~ 0b1;
+}
+void lcd_power_up()
+{
+	remapped_lcd_controller[6] |= 0b1;
+	msleep(20); // some time for it to stabilize
+	remapped_lcd_controller[6]|= 0b1 << 11;
+	*remapped_backlight = old_backlight_value;
+}
+
+
+
+
 void* get_old_framebuffer_address()
 {
-	return old_framebuffer;
+	return (void*) old_framebuffer;
 }
 
 void* get_back_framebuffer_address()
 {
-	return framebuffer2;
+	return (void*) framebuffer2;
 }
 
 void* get_front_framebuffer_address()
 {
-	return framebuffer1;
+	return (void*) framebuffer1;
 }
 
 void claimLCD()
@@ -68,7 +99,7 @@ void claimLCD()
 	
 	//framebuffer_fillrect(framebuffer1,0,0,320,240,0,0,255);
 	
-	*LCD_UPBASE = (volatile void*) getKernelPhysicalAddress(framebuffer1);
+	*LCD_UPBASE = (volatile void*) getKernelPhysicalAddress((void*) framebuffer1);
 	
 	
 	
@@ -116,13 +147,22 @@ void lcd_setpixel(uint32_t x,uint32_t y,uint32_t r, uint32_t g,uint32_t b)
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t *buff = framebuffer2;
-		buff[x*240+y] = colour565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buff = framebuffer2;
+			buff[x*240+y] = colour565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buff = framebuffer2;
+			buff[y*320+x] = colour565;
+			return;
+		}
 	}
-	
-	
-	
 }
 void lcd_fillrect(uint32_t xs,uint32_t ys, uint32_t w, uint32_t h,uint32_t r, uint32_t g,uint32_t b)
 {
@@ -200,9 +240,21 @@ void framebuffer_setpixel(void *buff,uint32_t x,uint32_t y,uint32_t r, uint32_t 
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t* buffer = buff;
-		buffer[x*240+y] = colour565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[x*240+y] = colour565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[y*320+x] = colour565;
+			return;
+		}
 	}
 }
 
@@ -211,9 +263,21 @@ void framebuffer_setpixel565(void *buff,uint32_t x,uint32_t y,uint16_t rgb565)
 	// add cases for other screen versions
 	if (x < 320 && y < 240)
 	{
-		uint16_t* buffer = buff;
-		buffer[x*240+y] = rgb565;
-		return;
+		// hwversion seems to not work for HW<W
+		// for now use a compile-time macro
+		//if (hwversion_sub() == 3)
+		if (_HW_W)
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[x*240+y] = rgb565;
+			return;
+		}
+		else
+		{
+			volatile uint16_t *buffer = buff;
+			buffer[y*320+x] = rgb565;
+			return;
+		}
 	}
 }
 

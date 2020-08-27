@@ -6,11 +6,14 @@ static volatile uint32_t *fiq_address = (volatile uint32_t*) 0x30;
 
 
 asm(
+".global _fiq_stack_reset \n"
+"_fiq_stack_reset: .word 0 \n" // this is set to the real value in aborts.c
 ".global relay_watchdog_fiq_to_ndless \n"
 "relay_watchdog_fiq_to_ndless: .long 0 \n"
 ".global fiq_wrapper \n"
-"fiq_wrapper: \n" // don't push all registers, because the fiq mode has private r8-r14 registers
-"push {r0-r7,r14} \n"
+"fiq_wrapper: \n"
+"ldr sp, _fiq_stack_reset \n" // reset the stack to the value set in aborts.c, in case a return isn't made through this handler, like scheduling kernel threads
+"push {r0-r7,r14} \n" // don't push all registers, because the fiq mode has private r8-r14 registers
 "mrs r0, cpsr \n"
 "push {r0} \n" // push the cpsr
 "mrs r0, spsr \n"
@@ -39,7 +42,7 @@ static void __attribute__ ((noreturn)) reset(void) {
 	__builtin_unreachable();
 }
 
-static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
+static void fiq_return_thread(uint32_t spsr,void* address,volatile uint32_t *regs)
 {
 	struct thread* running_thread = scheduler_running();
 	if (running_thread != NULL)
@@ -49,21 +52,21 @@ static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 		running_thread->regs[15] = (uint32_t) address;
 		for (uint8_t i = 0;i<=7;i++)
 		{
-			running_thread->regs[i] = regs[i];
+			running_thread->regs[i] = regs[i+1];
 		}
-		register uint32_t *t_regs asm("r0") = running_thread->regs;
+		register volatile uint32_t *t_regs asm("r0") = running_thread->regs;
 		asm volatile(
 		" mrs r1, cpsr\n"
 		" orr r1, r1, #31\n"
 		" msr cpsr, r1 \n" // go into system mode to manipulate user mode registers
-		" str sp, [r0, #32]\n" // store the r8
-		" str sp, [r0, #36]\n" // store the r9
-		" str sp, [r0, #40]\n" // store the r10
-		" str sp, [r0, #44]\n" // store the r11
-		" str sp, [r0, #48]\n" // store the r12
+		" str r8, [r0, #32]\n" // store the r8
+		" str r9, [r0, #36]\n" // store the r9
+		" str r10, [r0, #40]\n" // store the r10
+		" str r11, [r0, #44]\n" // store the r11
+		" str r12, [r0, #48]\n" // store the r12
 		" str sp, [r0, #52]\n" // store the sp
 		" str lr, [r0, #56]\n" // store the lr
-		" bic r1, r1, #8 \n"
+		" bic r1, r1, #0b1110 \n"
 		" msr cpsr, r1 \n" // switch back to fiq mode
 		"  \n"::"r" (t_regs):"r1");
 	}
@@ -74,7 +77,9 @@ static void fiq_return_thread(uint32_t spsr,void* address,uint32_t *regs)
 	scheduler_return(SCHEDULER_OTHER);
 }
 
-void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old r0-r7
+
+
+void fiq_handler(uint32_t spsr, void* address,volatile uint32_t *regs) // regs is the cpsr, then the old r0-r7, then the old pc+4
 {
 	uint32_t fiq_status = vic_fiq_status();
 	//debug_shell_println("fiq: %d",fiq_status);
@@ -135,13 +140,24 @@ void fiq_handler(uint32_t spsr,void* address, uint32_t *regs) // regs is the old
 	}
 	if (fiq_status & (0b1 << 18)) // first timer
 	{
-		if (timer_irq_status(SYSTIME_TIMER))
+		volatile bool systime = timer_irq_status(SYSTIME_TIMER);
+		volatile bool scheduler = timer_irq_status(SCHEDULER_TIMER);
+		DEBUGPRINTLN_1("fiq from first timer!")
+		//debug_shell_println("fiq from first timer!");
+		if (systime)
 		{
+			timer_irq_clear(SYSTIME_TIMER);
+			//debug_shell_println("milis timer overflow!");
 			systime_timer_overflow();
 		}
-		//DEBUGPRINTLN_1("fiq from first timer!")
-		timer_irq_clear(1,0);
-		timer_irq_clear(1,1);
+		if (scheduler)
+		{
+			timer_irq_clear(SCHEDULER_TIMER);
+		}
+		if (scheduler && scheduler_is_kernel_scheduling() && ! syscall_in_progress())
+		{
+			schedule_kernel_thread(regs); // if it returns, it will just continue with this thread
+		}
 	}
 	if (fiq_status & (0b1 << 19)) // second timer
 	{

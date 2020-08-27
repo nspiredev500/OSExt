@@ -47,6 +47,7 @@ uint32_t rtc_get_value()
 {
 	return remapped_rtc[0];
 }
+
 void rtc_set_value(uint32_t newval)
 {
 	remapped_rtc[2] = newval;

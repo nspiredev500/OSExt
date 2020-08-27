@@ -1,0 +1,590 @@
+
+
+Assuming watchdog frequency is: 33MHZ
+Timertest 1:
+Watchdog: 0,82-0,92 seconds
+fast timer: 				33031959 ticks
+first timer: 				33032629 ticks
+initial clockselect: 0x0
+first timer + clockselect: 	27750 ticks
+second timer:				27751 ticks
+
+
+Timertest 2:
+Watchdog: 0,88 seconds average
+fast timer: 				33031926 ticks
+initial clockselect: 0x0
+fast timer + clockselect: 	27749 ticks
+first timer: 				33032484 ticks
+initial clockselect: 0x0
+first timer + clockselect: 	27750 ticks
+second timer:				27752 ticks
+
+
+Timertest 3:
+Watchdog: ~0,88 seconds average
+fast timer: 				33031944 ticks
+initial clockselect: 0x0
+fast timer + clockselect: 	27749 ticks
+first timer: 				33032361 ticks
+initial clockselect: 0x0
+first timer + clockselect: 	27749 ticks
+second timer:				27752 ticks
+
+
+Assumig Watchdog frequency is: 38MHZ
+Watchdog: 1,002 average
+initial clockselect: 0
+timer: 33031944
+timer+clockselect=0xa: 31958
+timer+clockselect=0x9: 11704931
+
+
+
+
+Timertest 4:
+fast timer: 				33032040 ticks
+initial clockselect: 0x0
+fast timer + clockselect: 	27749 ticks
+first timer: 				33032383 ticks
+initial clockselect: 0x0
+first timer + clockselect: 	27750 ticks
+second timer:				27750 ticks
+initial clockselect: 0xa
+second timer + clockselect:	27750 ticks
+second timer:
+clockselect 0x0:			33034205 ticks
+clockselect 0x1:			10164373 ticks
+clockselect 0x2:			27750 ticks
+clockselect 0x3:			27769 ticks
+clockselect 0x4:			33034215 ticks
+clockselect 0x5:			33034262 ticks
+clockselect 0x6:			33034153 ticks
+clockselect 0x7:			33034317 ticks
+clockselect 0x8:			33034278 ticks
+clockselect 0x9:			10164391 ticks
+clockselect 0xa:			27752 ticks
+clockselect 0xb:			27770 ticks
+clockselect 0xc:			33034220 ticks
+clockselect 0xd:			33034230 ticks
+clockselect 0xe:			33034183 ticks
+clockselect 0xf:			33034268 ticks
+clockselect 0x10:			33034341 ticks
+clockselect 0x11:			10164388 ticks
+clockselect 0x12:			27750 ticks
+clockselect 0x13:			27770 ticks
+clockselect 0x14:			33034243 ticks
+clockselect 0x15:			33034332 ticks
+clockselect 0x16:			33034227 ticks
+clockselect 0x17:			33034260 ticks
+clockselect 0x18:			33034224 ticks
+clockselect 0x19:			10164407 ticks
+clockselect 0x1a:			27751 ticks
+clockselect 0x1b:			27769 ticks
+clockselect 0x1c:			33034208 ticks
+clockselect 0x1d:			33034224 ticks
+clockselect 0x1e:			33034310 ticks
+clockselect 0x1f:			33034310 ticks
+
+
+
+Timertest 5:
+second timer:
+clockselect 0b0:		33034250 ticks
+clockselect 0b1:		10164364 ticks
+clockselect 1 << 1:		27750 ticks
+clockselect 1 << 2:		33034278 ticks
+clockselect 1 << 3:		33034188 ticks
+clockselect 1 << 4:		33034043 ticks
+clockselect 1 << 5:		33034077 ticks
+clockselect 1 << 6:		33034085 ticks
+clockselect 1 << 7:		33034185 ticks
+clockselect 1 << 8:		33034236 ticks
+clockselect 1 << 9:		33034258 ticks
+clockselect 1 << 10:	33034287 ticks
+clockselect 1 << 11:	33034244 ticks
+clockselect 1 << 12:	33034229 ticks
+clockselect 1 << 13:	33034230 ticks
+clockselect 1 << 14:	33034210 ticks
+clockselect 1 << 15:	33034158 ticks
+clockselect 1 << 16:	33034339 ticks
+clockselect 1 << 17:	33034316 ticks
+clockselect 1 << 18:	33034092 ticks
+clockselect 1 << 19:	33034193 ticks
+clockselect 1 << 20:	33034161 ticks
+clockselect 1 << 21:	33034281 ticks
+clockselect 1 << 22:	33034168 ticks
+clockselect 1 << 23:	33034259 ticks
+clockselect 1 << 24:	33034212 ticks
+clockselect 1 << 25:	33034070 ticks
+clockselect 1 << 26:	33034249 ticks
+clockselect 1 << 27:	33034215 ticks
+clockselect 1 << 28:	33034167 ticks
+clockselect 1 << 29:	33034361 ticks
+clockselect 1 << 30:	33034176 ticks
+clockselect 1 << 31:	33034209 ticks
+
+
+Timertest 6:
+fast timer:
+clockselect 0b0:		33031923 ticks
+clockselect 0b1:		10163635 ticks
+clockselect 1 << 1:		27750 ticks
+other: same as 0b0
+module 2 of the fast timer:
+clockselect 0b0:		33032038 ticks
+clockselect 0b1:		10163653 ticks
+clockselect 1 << 1:		27747 ticks
+other: same as 0b0
+
+
+test code:
+
+/*
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+debug_shell_println("msleep test:");
+debug_shell_println("please use a stopwatch to time");
+debug_shell_println("the interval between the flashes");
+debug_shell_println_rgb("press any key to start the",0,255,0);
+debug_shell_println_rgb("msleep test",0,255,0);
+keypad_press_release_barrier();
+
+
+for (uint32_t i = 0;i<10;i++)
+{
+	uint32_t r,g,b;
+	if (i % 3 == 0)
+	{
+		r = 255;
+		g = 0;
+		b = 0;
+	}
+	if (i % 3 == 1)
+	{
+		r = 0;
+		g = 255;
+		b = 0;
+	}
+	if (i % 3 == 2)
+	{
+		r = 0;
+		g = 0;
+		b = 255;
+	}
+	framebuffer_fillrect(get_front_framebuffer_address(),0,0,320,240,r,g,b);
+	
+	
+	
+	msleep(1000);
+}
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+debug_shell_println("timer test:");
+debug_shell_println("please write down the values");
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+#undef TESTTIMER
+#define TESTTIMER 0,0
+
+debug_shell_println("fast timer:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+debug_shell_println("fast timer with clockselect=0xA");
+debug_shell_println("initial clockselect: 0x%x",timer_get_clockselect(TESTTIMER));
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_clockselect(TESTTIMER,0xa);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+#undef TESTTIMER
+#define TESTTIMER 1,0
+
+debug_shell_println("first timer:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+debug_shell_println("first timer with clockselect=0xA");
+debug_shell_println("initial clockselect: 0x%x",timer_get_clockselect(TESTTIMER));
+
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_clockselect(TESTTIMER,0xa);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+
+#undef TESTTIMER
+#define TESTTIMER 2,0
+
+debug_shell_println("second timer:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+*/
+
+
+
+/*
+debug_shell_println("second timer with clockselect=0xA");
+debug_shell_println("initial clockselect: 0x%x",timer_get_clockselect(TESTTIMER));
+
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_clockselect(TESTTIMER,0xa);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+*/
+
+
+/*
+for (uint32_t i = 0;i<0xffffffff;i++)
+{
+	debug_shell_println("second timer with clockselect=0x%x",i);
+	
+	
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_clockselect(TESTTIMER,i);
+	timer_set_size(TESTTIMER,1);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+	
+	
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("timer: %d",t);
+	}
+	
+	timer_disable(TESTTIMER);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+}
+*/
+
+#undef TESTTIMER
+#define TESTTIMER 0,0
+
+for (int32_t i = -1;i < 32;i++)
+{
+	uint32_t clocksel = 1 << i;
+	debug_shell_println("fast timer with clockselect=0x%x",clocksel);
+	
+	
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_clockselect(TESTTIMER,clocksel);
+	timer_set_size(TESTTIMER,1);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+	
+	
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("timer: %d",t);
+	}
+	
+	timer_disable(TESTTIMER);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+}
+
+
+#undef TESTTIMER
+#define TESTTIMER 0,1
+
+for (int32_t i = -1;i < 32;i++)
+{
+	uint32_t clocksel = 1 << i;
+	debug_shell_println("fast timer second module with clockselect=0x%x",clocksel);
+	
+	
+	timer_disable(TESTTIMER);
+	timer_set_irq_enabled(TESTTIMER,false);
+	timer_set_mode(TESTTIMER,0);
+	timer_set_oneshot(TESTTIMER,false);
+	timer_set_prescaler(TESTTIMER,0);
+	timer_set_clockselect(TESTTIMER,clocksel);
+	timer_set_size(TESTTIMER,1);
+	timer_set_load(TESTTIMER,0xffffffff);
+	timer_enable(TESTTIMER);
+	
+	
+	msleep(1000);
+	{
+		uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+		debug_shell_println("timer: %d",t);
+	}
+	
+	timer_disable(TESTTIMER);
+	
+	
+	debug_shell_println_rgb("press any key to continue",0,255,0);
+	keypad_press_release_barrier();
+	
+	k_memset(get_front_framebuffer_address(),0,320*240*2);
+	debug_shell_reset();
+}
+
+
+
+/*
+#undef TESTTIMER
+#define TESTTIMER 0,1
+
+debug_shell_println("fast timer second module:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+#undef TESTTIMER
+#define TESTTIMER 1,1
+
+debug_shell_println("first timer second module:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+
+
+k_memset(get_front_framebuffer_address(),0,320*240*2);
+debug_shell_reset();
+
+
+#undef TESTTIMER
+#define TESTTIMER 2,1
+
+debug_shell_println("second timer second module:");
+
+timer_disable(TESTTIMER);
+timer_set_irq_enabled(TESTTIMER,false);
+timer_set_mode(TESTTIMER,0);
+timer_set_oneshot(TESTTIMER,false);
+timer_set_prescaler(TESTTIMER,0);
+timer_set_size(TESTTIMER,1);
+timer_set_load(TESTTIMER,0xffffffff);
+timer_enable(TESTTIMER);
+
+msleep(1000);
+{
+	uint32_t t = 0xffffffff-timer_value(TESTTIMER);
+	debug_shell_println("timer: %d",t);
+}
+
+timer_disable(TESTTIMER);
+
+
+debug_shell_println_rgb("press any key to continue",0,255,0);
+keypad_press_release_barrier();
+*/
+
+
+
+
+
+
+

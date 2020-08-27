@@ -1,7 +1,7 @@
 #include "../kernel.h"
 
 static const char* charset_path = "/documents/osext/charset.tns";
-
+static const char* charset_path2 = "/documents/charset.tns"; // to remain backwards-compatible
 
 static uint8_t charset_ascii[1600]; // (128*10*10)/8 bytes for the charset
 
@@ -11,15 +11,18 @@ void charset_load()
 	NUC_FILE *f = nuc_fopen(charset_path,"rb");
 	if (f == NULL)
 	{
-		DEBUGPRINTLN_1("charset not found!");
-		return;
+		f = nuc_fopen(charset_path2,"rb");
+		if (f == NULL)
+		{
+			DEBUGPRINTLN_1("charset not found!");
+			return;
+		}
 	}
 	k_memset(charset_ascii,0,sizeof(charset_ascii));
 	
 	nuc_fread(charset_ascii,1,sizeof(charset_ascii),f);
 	
 	nuc_fclose(f);
-	DEBUGPRINTLN_1("charset loaded: size: %d!",sizeof(charset_ascii));
 }
 
 bool isDigitPixel(uint32_t x,uint32_t y,uint32_t digit)

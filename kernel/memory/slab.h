@@ -12,6 +12,12 @@ struct slab_desc_t {
 	uint8_t *used;
 }; // sizeof(struct slab) = 16
 
+#define CACHE_NO_MALLOC 0b1
+#define CACHE_NO_SHRINK 0b10
+#define CACHE_NO_AUTOGROW 0b100
+#define CACHE_NO_CACHE 0b1000
+#define CACHE_SLAB_DESC_OFF_SLAB 0b10000
+
 struct cache_t {
 	struct slab_desc_t *full;
 	struct slab_desc_t *partial;
@@ -24,7 +30,7 @@ struct cache_t {
 		bit 1: no_shrink
 		bit 2: no_autogrow
 		bit 3: no_cache			pages are mapped as non-cached and non-buffered
-		
+		bit 4: slab_desc_off_cache: slab descriptors are always stored off-slab, regardless of object size
 		
 		bit 14: poison: initialize objects with a pattern and check it before allocation
 				and restore it after free
@@ -35,7 +41,7 @@ struct cache_t {
 	struct cache_t *next;
 }; // sizeof(struct cache) = 28
 
-void* const kernel_heap_start;
+extern void* const kernel_heap_start;
 
 void* getKernelHeapNextPage();
 void setKernelHeapNextPage(void* next);
@@ -45,9 +51,9 @@ void addKernelHeapPage(void* page);
 
 bool initSlabAllocator();
 
-void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size);
-bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj);
-bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size);
+void* alloc_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size, struct cache_t* cache);
+bool free_object_from_slab(struct slab_desc_t* slab,uint32_t obj_size,void *obj, struct cache_t* cache);
+bool isSlabFree(struct slab_desc_t* slab,uint32_t obj_size, struct cache_t* cache);
 
 void* alloc_object_from_cache(struct cache_t *cache);
 bool free_object_from_cache(struct cache_t *cache,void* obj);
@@ -120,6 +126,19 @@ struct deferred_action* requestAction();
 void freeAction(struct deferred_action *a);
 
 
+struct osext_file* requestFile();
+void freeFile(struct osext_file* file);
+
+
+struct usb_QH* requestQH();
+void freeQH(struct usb_QH* qh);
+
+struct usb_qTD* requestqTD();
+void freeqTD(struct usb_qTD* td);
+
+
+struct svc_thread* request_svc_thread();
+void free_svc_thread(void* thread);
 
 
 #endif

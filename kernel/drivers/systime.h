@@ -9,6 +9,9 @@
 #endif
 
 
+
+
+
 void systime_init();
 
 
@@ -22,12 +25,12 @@ int64_t systime_unix();
 
 
 // returns the current unix time with millisecond accuracy
-int64_t systime_unix_milis();
+int64_t systime_unix_milli();
 
 int64_t systime_unix_micro();
 
 
-void systime_set_unix_milis(int64_t unix_time_milis);
+void systime_set_unix_milli(int64_t unix_time_milis);
 
 
 
