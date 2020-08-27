@@ -1,9 +1,19 @@
 #include "../kernel.h"
 
 
-// TODO use remapped registers when available
+
+static volatile uint32_t *remapped_lcd_controller = (volatile uint32_t*) 0xC0000000;
+/*
+	remapped_lcd_controller[6] = control register
+	
+	
+	
+*/
 
 
+
+static volatile uint32_t old_backlight_value = 0x174;
+static volatile uint32_t *remapped_backlight = (volatile uint32_t*) 0x900f0020; // assumed remapped, don't use before the virtual memory is initialized
 volatile void** LCD_UPBASE = (volatile void**) 0xC0000010;
 
 // gets locked if the kernel transfers control over the lcd framebuffer to itself
@@ -34,10 +44,31 @@ void initLCDDriver()
 }
 void remappLCD(void* address)
 {
+	remapped_lcd_controller = (volatile uint32_t*) address;
 	LCD_UPBASE = (volatile void**) ((uint32_t) address+0x10);
 	
 	
 }
+
+
+void lcd_power_down()
+{
+	old_backlight_value = *remapped_backlight;
+	*remapped_backlight = 0x100;
+	remapped_lcd_controller[6] &= ~(0b1 << 11);
+	msleep(20); // some time for it to stabilize
+	remapped_lcd_controller[6] &= ~ 0b1;
+}
+void lcd_power_up()
+{
+	remapped_lcd_controller[6] |= 0b1;
+	msleep(20); // some time for it to stabilize
+	remapped_lcd_controller[6]|= 0b1 << 11;
+	*remapped_backlight = old_backlight_value;
+}
+
+
+
 
 void* get_old_framebuffer_address()
 {

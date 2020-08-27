@@ -18,6 +18,8 @@
 	Due to the project not being finished yet, the mayor version isn't the first number in the github releases, but the second one: 0.mayor.minor.patch
 	
 	
+	
+	
 	modules also have to provide a module_end function, that is called when the kernel uninstalls this module.
 	A pointer to module_end should be returned by module_start.
 	
@@ -302,19 +304,19 @@ void module_install(const char *name)
 void module_load_all()
 {
 	NUC_DIR* dir = nuc_opendir(modules_path);
-	//DEBUGPRINTLN_1("opening directory")
+	DEBUGPRINTLN_1("opening directory")
 	if (dir != NULL)
 	{
 		struct nuc_dirent* dirent;
 		while ((dirent = nuc_readdir(dir)) != NULL)
 		{
-			//DEBUGPRINTLN_1("entry: %s",dirent->d_name)
+			DEBUGPRINTLN_1("entry: %s",dirent->d_name)
 			if (k_strlen(dirent->d_name,100) > 8)
 			{
 				uint32_t pathlen = k_strlen(dirent->d_name,100);
 				if (k_strcmp(dirent->d_name+(pathlen-8),".elf.tns",100) == 0)
 				{
-					//DEBUGPRINTLN_1("elf file extension",dirent->d_name)
+					DEBUGPRINTLN_1("elf file extension",dirent->d_name)
 					char buffer[105];
 					k_memset(buffer,'\0',103);
 					k_memcpy(buffer,dirent->d_name,pathlen);

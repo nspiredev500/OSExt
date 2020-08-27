@@ -2,11 +2,16 @@
 
 static volatile uint32_t *remapped_power = (uint32_t*) 0xe90b0000;
 /*
+	remapped_power[0] = clock speed load
+	remapped_power[1] = low power interrupt mask
+	remapped_power[2] = low power mode interrupt and acknowledge
+	remapped_power[3] = clock speed control and low power mode. write 0x3a to enter low power mode
 	remapped_power[6] = bus enable register (2 bytes)
 	remapped_power[6] = bus enable register (2 bytes)
 	// maybe using it as a 4 byte register is bad?
 	
 */
+
 
 
 bool power_device_powered(uint32_t device)

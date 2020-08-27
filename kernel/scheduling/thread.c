@@ -12,7 +12,8 @@ struct svc_thread* create_svc_thread(void* stack, uint32_t stacksize, void* entr
 	{
 		t->regs[i] = 0;
 	}
-	t->regs[13] = ((((uint32_t) stack) & (~ 0b111))-0b1000) + stacksize; // align to 8 bytes
+	t->regs[13] = ((((uint32_t) stack) & (~ 0b111))-0b1000) + stacksize; // align to 8 bytes by clearing the bottom 3 bits, and then also subtract 8
+	t->regs[14] = (uint32_t) scheduler_svc_thread_destroy_self; // so it won't just return to 0 after it's finished
 	t->regs[16] = 0b10010011; // set mode to svc, irq disabled and fiq enabled
 	t->regs[15] = (uint32_t) entry; // set the pc to the entry point
 	
@@ -20,6 +21,7 @@ struct svc_thread* create_svc_thread(void* stack, uint32_t stacksize, void* entr
 	t->stack = stack;
 	t->stacksize = stacksize;
 	t->status = 0;
+	t->status_data = NULL;
 	t->waiting = 0;
 	t->next = NULL;
 	return t;
@@ -27,23 +29,53 @@ struct svc_thread* create_svc_thread(void* stack, uint32_t stacksize, void* entr
 
 void destroy_svc_thread(struct svc_thread* thread)
 {
-	
-	
 	free_svc_thread(thread);
 }
 
-
-void resume_svc_thread(struct svc_thread* thread)
+/// WARNING: should only be called from the fiq handler, no way to return
+/// call with fiqs disabled
+void __attribute__ ((noreturn)) resume_svc_thread(struct svc_thread* thread)
 {
+	//DEBUGPRINTLN_1("resuming thread with pc: 0x%x\n",thread->regs[15]);
 	register volatile uint32_t* regs asm("r0") = thread->regs;
-	
-	
-	
+	asm volatile(
+	"mrs r1, cpsr \n"
+	"bic r1, #0b11111 \n" // clear the mode bits
+	"orr r1, r1, #0b10011 \n" // set the mode to svc
+	"msr cpsr, r1 \n"
+	"ldr r1, [r0, #68] \n" // load the spsr
+	"msr spsr, r1 \n" // set the svc spsr
+	"ldr r8, [r0, #32] \n" // load r8-r14
+	"ldr r9, [r0, #36] \n"
+	"ldr r10, [r0, #40] \n"
+	"ldr r11, [r0, #44] \n"
+	"ldr r12, [r0, #48] \n"
+	"ldr r13, [r0, #52] \n"
+	"ldr r14, [r0, #56] \n"
+	"mrs r1, cpsr \n"
+	"bic r1, #0b11111 \n" // clear the mode bits
+	"orr r1, r1, #0b10001 \n" // set the mode to fiq (should be already, but for example scheduler_svc_thread_destroy_self is in svc mode)
+	"msr cpsr, r1 \n" // the fiq mode is just needed to have some registers hidden from svc mode
+	"mov r8, r0 \n" // move the base address into one of the protected fiq registers
+	"ldr r0, [r8] \n" // load r0-r7
+	"ldr r1, [r8, #4] \n"
+	"ldr r2, [r8, #8] \n"
+	"ldr r3, [r8, #12] \n"
+	"ldr r4, [r8, #16] \n"
+	"ldr r5, [r8, #20] \n"
+	"ldr r6, [r8, #24] \n"
+	"ldr r7, [r8, #28] \n"
+	"ldr r9, [r8, #64] \n" // load the cpsr
+	"msr spsr, r9 \n" // put the svc cpsr into the spsr, so movs pc can set it at return
+	"ldr r9, [r8, #60] \n" // load the pc
+	"movs pc, r9 \n" // jump to the thread with it's cpsr
+	" \n"::"r" (regs):"memory");
+	__builtin_unreachable();
+	/*
 	asm(
 	" .global svc_thread_return_point \n"
 	" b resume_svc_thread_actual_start \n" // we store variables here, it isn't code
 	" svc_saved_sp: .long 0 \n"
-	//" thread_saved_sp: .long 0 \n"
 	" resume_svc_thread_actual_start: \n"
 	" push {r0-r12,lr} \n"
 	" mrs r1, cpsr \n"
@@ -70,8 +102,6 @@ void resume_svc_thread(struct svc_thread* thread)
 	//" ldr r1, [r0 + #52] \n"
 	//" str r1, thread_saved_sp \n"
 	" ldr sp, [r0, #52] \n" // change the stack to the threads stack
-	"  \n" // TODO store the address to jump to and the threads r0 and r1 temporarily on the thread's stack
-	"  \n" // then pop both to resume the thread
 	" ldr r1, [r0, #60] \n" // load the threads pc
 	" push {r1} \n" // push it, so we can jump via a pop after restoring r1 and r0
 	" ldr r1, [r0, #4] \n"
@@ -85,22 +115,10 @@ void resume_svc_thread(struct svc_thread* thread)
 	" msr cpsr, r1 \n"
 	" pop {r0-r12,lr} \n"
 	"  \n"::"r" (regs):"memory");
-	
-	
-	
+	*/
 }
 
 
-void __attribute__ ((noreturn)) return_from_svc_thread(struct svc_thread* thread)
-{
-	extern void* svc_thread_return_point;
-	register uint32_t return_pc asm("r0") = (uint32_t) svc_thread_return_point;
-	
-	asm(
-	" mov pc, r0 \n"
-	"  \n"::"r" (return_pc):);
-	__builtin_unreachable();
-}
 
 
 

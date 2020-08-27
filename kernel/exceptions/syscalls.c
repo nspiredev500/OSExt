@@ -8,7 +8,7 @@ void syscall_log(uint32_t *instruction)
 {
 	uint32_t inst = *(instruction-1);
 	uint32_t swi = inst & 0xffffff;
-	if (swi != 14  && swi != 75 && swi != 8 && swi != 2097160) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
+	//if (swi != 14  && swi != 75 && swi != 8 && swi != 2097160) // exclude TCT_Local_Control_Interrupts, because it's called so much in the hooks, Touchpad_read is called too much in isKeyPressed, also memcpy
 		DEBUGPRINTLN_1("Syscall: %d",swi);
 }
 
@@ -25,6 +25,7 @@ asm(
 
 
 "swi_wrapper: \n"
+//BREAKPOINT_ASM
 "push {r0} \n"
 "ldr r0, __syscall_in_progress \n"
 "add r0, r0, #1 \n"
@@ -150,15 +151,101 @@ asm(
 " \n"
 "delegate: \n"
 
-"pop {r0} \n" // restore the cpsr
-"msr cpsr, r0 \n"
-"pop {r0} \n" // restore r0
-"ldr pc, swi_address \n"
+//"pop {r0} \n" // restore the cpsr
+//"msr cpsr, r0 \n"
+//"pop {r0} \n" // restore r0
+//"ldr pc, swi_address \n"
 
 
-"pop {r0} \n" // not needed here, but get it off the stack
+
+
+
+"b real_delegate\n"
+"saved_lr1: .word 0\n"
+"saved_lr2: .word 0\n"
+"saved_spsr1:.word 0\n"
+"saved_spsr2:.word 0\n"
+
+/// TODO convert the delegate to not using the stack, as functions such as fprintf expect the arguments to be there
+
+"real_delegate: \n"
+//BREAKPOINT_ASM
+"ldr r0, saved_lr1 \n"
+"cmp r0, #0 \n"
+"ldr r0, saved_lr1 \n"
+"cmp r0, #0 \n"
+"strne lr, saved_lr2 \n"
+"streq lr, saved_lr1 \n"
+"mrs r0, spsr \n"
+"strne r0, saved_spsr2 \n"
+"streq r0, saved_spsr1 \n"
+" \n"
+"and r0, r0, #0b100000 \n"
+"cmp r0, #0b100000 \n" // test for thumb bit
+"beq real_delegate_thumb \n"
+"pop {r0} \n" // pop the cpsr
+"mrs r0, cpsr \n"
+"msr spsr, r0 \n" // pretend our cpsr is the callers cpsr
 "pop {r0} \n" // pop the original r0
-"push {lr} \n" // lr gets overwritten in the Ndless swi handler
+"ldr lr, [lr, #-4] \n"
+"str lr, SWI_INST_ARM \n"
+"add lr, pc, #4 \n"
+"mov pc, #0x8 \n" // jump to the system call vector
+"SWI_INST_ARM: .word 0 \n" // the swi instruction will be put here, so the ndless swi handler can extract the swi number
+"b delegate_end \n"
+
+
+"real_delegate_thumb: \n"
+//BREAKPOINT_ASM
+"pop {r0} \n" // pop the cpsr
+"mrs r0, cpsr \n"
+"orr r0,r0, #0b100000 \n" // set the thumb bit
+"msr spsr, r0 \n" // pretend our cpsr is the callers cpsr, and set the thumb bit
+"pop {r0} \n" // pop the original r0
+"ldrh lr, [lr, #-2] \n"
+"str lr, SWI_INST_THUMB \n"
+" \n"
+"mov lr, pc\n"
+"mov pc, #0x8 \n" // jump to the system call vector
+" \n"
+" \n"
+"SWI_INST_THUMB: .short 0 \n"
+".thumb \n" // the swi handler thinks we're in thumb mode, so returns to us in thumb mode
+"blx delegate_end \n"
+".align 4\n" // go back to arm mode
+".arm \n"
+"delegate_end: \n"
+//BREAKPOINT_ASM
+"push {r0} \n"
+	"ldr lr, saved_lr2 \n"
+	"cmp lr, #0 \n" // check if returning from a recursive syscall
+	"mov r0, #0 \n"
+	"beq after_not \n"
+	//BREAKPOINT_ASM
+	"strne r0, saved_lr2 \n" // saved_lr2 not 0, so recursive syscall, use the 2. variables
+	"ldrne r0, saved_spsr2 \n"
+	"msrne spsr, r0 \n"
+	"movne r0, #0 \n"
+	"strne r0, saved_spsr2 \n"
+	"after_not: \n"
+	"ldreq lr, saved_lr1 \n" // not a recursive syscall, use the first variables
+	"streq r0, saved_lr1 \n"
+	"ldreq r0, saved_spsr1 \n"
+	"msreq spsr, r0 \n"
+	"moveq r0, #0 \n"
+	"streq r0, saved_spsr1 \n"
+	"push {r1} \n"
+		"mrs r0, cpsr \n"
+		"mrs r1, spsr \n"
+		"and r0, r0, #0x80 \n" // extract the I bit
+		"bic r1, #0x80 \n" // clear the I bit in the spsr
+		"orr r1, r1, r0 \n" // put the I bit of the cpsr into the spsr
+		"msr spsr, r1 \n"
+	"pop {r1} \n"
+"pop {r0} \n"
+"movs pc, lr \n"
+/*
+"real_delegate: push {lr} \n" // lr gets overwritten in the Ndless swi handler
 	"ldr lr, [lr, #-4] \n" // load the original instruction
 	"str lr, __SYSCALL_INST \n" // save the instruction where the Ndless syscall handler thinks the syscall originated from, to let it extract the swi number
 	"mrs lr, spsr \n"
@@ -181,7 +268,7 @@ asm(
 	"msr spsr, lr \n" // restore the original spsr
 "pop {lr} \n" // restore the lr
 "movs pc, lr \n" // return from the syscall
-
+*/
 " \n");
 
 extern volatile uint32_t __syscall_in_progress;
@@ -198,7 +285,27 @@ bool syscall_in_progress()
 	}
 }
 
-#define SYSCALL_SIZE 7
+uint32_t nested_syscalls()
+{
+	return __syscall_in_progress;
+}
+
+
+// marks a syscall as finished by decrementing __syscall_in_progress
+// should only be used when the syscall uses another way to return than the syscall handler, to net mess up the syscall count
+void syscall_mark_as_finished()
+{
+	bool fiq = isFIQ();
+	disableFIQ();
+	__syscall_in_progress--;
+	if (fiq)
+	{
+		enableFIQ();
+	}
+}
+
+
+#define SYSCALL_SIZE 13
 void (*swi_table[SYSCALL_SIZE])(volatile uint32_t* regs);
 
 
@@ -253,6 +360,10 @@ void syscall_set_reg(volatile uint32_t *regs,uint32_t reg,uint32_t value)
 	{
 		regs[15] = value;
 	}
+	if (reg == 15)
+	{
+		regs[11] = value;
+	}
 }
 uint32_t syscall_get_reg(volatile uint32_t *regs,uint32_t reg)
 {
@@ -268,6 +379,18 @@ uint32_t syscall_get_reg(volatile uint32_t *regs,uint32_t reg)
 	{
 		return regs[15];
 	}
+	if (reg == 15)
+	{
+		return regs[11];
+	}
+	if (reg == 13)
+	{
+		return (uint32_t) (regs+16); // the stack uses stmdb, so increment after means the original value of sp pointed to is where r0 now is +4
+	}
+	if (reg == 16) // my index for the cpsr
+	{
+		return regs[12];
+	}
 	return 0;
 }
 
@@ -277,12 +400,20 @@ static void dummy_syscall() {};
 void init_syscall_table()
 {
 	swi_table[0] = uninstall_osext;
-	swi_table[1] = dummy_syscall;
+	swi_table[1] = syscall_version;
 	swi_table[2] = syscall_unix_time;
 	swi_table[3] = syscall_unix_time_milli;
 	swi_table[4] = syscall_unix_time_micro;
 	swi_table[5] = syscall_set_unix_time;
 	swi_table[6] = syscall_set_unix_time_milli;
+	swi_table[7] = syscall_enable_kernel_thread_scheduling;
+	swi_table[8] = syscall_disable_kernel_thread_scheduling;
+	swi_table[9] = syscall_kernel_thread_wait_millis;	
+	swi_table[10] = syscall_kernel_thread_wait_for;
+	swi_table[11] = syscall_kernel_thread_create;
+	swi_table[12] = syscall_kernel_thread_delete;
+	
+	
 	
 	
 	
@@ -349,7 +480,7 @@ void swi_handler(uint32_t swi_number,volatile  uint32_t* regs) // regs is r2-r12
 		DEBUGPRINTF_1("unknown syscall: %d\n",swi_number)
 		panic("unknown syscall!");
 	}
-	DEBUGPRINTF_1("syscall: %d\n",swi_number)
+	//DEBUGPRINTF_1("syscall: %d\n",swi_number)
 	swi_table[swi_number](regs);
 	
 	

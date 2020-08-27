@@ -83,6 +83,8 @@
 
 #include "syscalls/svc/uninstall.h"
 #include "syscalls/svc/time-syscalls.h"
+#include "syscalls/svc/thread-syscalls.h"
+#include "syscalls/svc/version.h"
 
 
 #include "memory/physical_MM.h"
@@ -103,7 +105,7 @@
 
 
 
-#define OSEXT_VERSION 0x00010004
+#define OSEXT_VERSION 0x00000005
 
 
 

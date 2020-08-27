@@ -353,11 +353,11 @@ void initialize()
 	
 	
 	// test the systime interrupt
-	
+	/*
 	k_memset(get_front_framebuffer_address(),0,320*240*2);
 	debug_shell_reset();
 	
-	/*
+	
 	debug_shell_println("testing systime interrupts");
 	
 	
@@ -605,13 +605,29 @@ void initialize()
 	debug_shell_println("ticks: %d",ticks);
 	*/
 	
+	/*
+	debug_shell_println("trying to power down the lcd");
+	debug_shell_println("press any key to continue");
+	keypad_press_release_barrier();
+	lcd_power_down();
+	debug_shell_println("");
+	debug_shell_println("test to write while screen is powered down");
+	debug_shell_println("");
+	msleep(4000);
+	lcd_power_up();
+	debug_shell_println("powered back on");
 	
 	
+	while (true)
+	{
+		keypad_press_release_barrier();
+	}
+	*/
 	
-	
-	
-	
-	
+	/// register variables: GCC docs
+	/// Warning: In the above example, be aware that a register (for example r0) can be call-clobbered by subsequent code,
+	/// including function calls and library calls for arithmetic operators on other variables (for example the initialization of p2).
+	/// In this case, use temporary variables for expressions between the register assignments
 	
 	
 	
