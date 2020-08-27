@@ -242,6 +242,9 @@ asm(
 		"orr r1, r1, r0 \n" // put the I bit of the cpsr into the spsr
 		"msr spsr, r1 \n"
 	"pop {r1} \n"
+	"ldr r0, __syscall_in_progress \n"
+	"sub r0, r0, #1 \n"
+	"str r0, __syscall_in_progress \n" // indicate that the syscall ended
 "pop {r0} \n"
 "movs pc, lr \n"
 /*

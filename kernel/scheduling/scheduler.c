@@ -287,8 +287,12 @@ void schedule_kernel_thread_current_saved()
 		{
 			panic("could not find a kernel thread to wait for!\n");
 		}
-		DEBUGPRINTLN_1("sleeping for %d milliseconds",min_wait*timeslice_length)
+		//DEBUGPRINTLN_1("sleeping for %d milliseconds",min_wait*timeslice_length)
+		timer_disable(SCHEDULER_TIMER); // disable the timer, so the scheduling fiq doesn't fire while waiting
+		enableFIQ();
 		msleep(min_wait*timeslice_length);
+		disableFIQ();
+		timer_enable(SCHEDULER_TIMER);
 		next = running_kernel_thread;
 		do // subtract the waited timeslices from all thread's waiting time
 		{
