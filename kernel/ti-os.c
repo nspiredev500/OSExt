@@ -85,6 +85,11 @@ int TCT_Local_Control_Interrupts(int mask)
 {
 	return wa_syscall1(e_TCT_Local_Control_Interrupts,mask);
 }
+NU_TASK* TCC_Current_Task_Pointer()
+{
+	return (NU_TASK*) wa_syscall(e_TCC_Current_Task_Pointer);
+}
+
 
 void *ti_malloc(uint32_t size) // not 8-byte-aligned !
 {

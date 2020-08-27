@@ -1,0 +1,16 @@
+Next:
+- add support for kernel-level threads in the scheduler
+- expose the thread api as syscalls
+- expose a interface for sleeping as syscalls (so other threads don't block)
+- make a libosext.c to wrap all the syscalls to OSExt and to allow for runtime checking if OSExt is present
+
+
+
+
+
+
+
+
+
+
+

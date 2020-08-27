@@ -18,6 +18,8 @@
 	Due to the project not being finished yet, the mayor version isn't the first number in the github releases, but the second one: 0.mayor.minor.patch
 	
 	
+	
+	
 	modules also have to provide a module_end function, that is called when the kernel uninstalls this module.
 	A pointer to module_end should be returned by module_start.
 	
@@ -61,7 +63,7 @@ void module_system_init()
 	modules_export[16] = framebuffer_write10pstring_ascii;
 	modules_export[17] = panic;
 	modules_export[18] = systime_unix;
-	modules_export[19] = systime_unix_milis;
+	modules_export[19] = systime_unix_milli;
 	modules_export[20] = systime_timestamp_to_unix;
 	modules_export[21] = systime_unix_to_timestamp;
 	modules_export[22] = debug_shell_println;
@@ -109,7 +111,7 @@ void module_system_init()
 	modules_export_names[16] = "framebuffer_write10pstring_ascii";
 	modules_export_names[17] = "panic";
 	modules_export_names[18] = "systime_unix";
-	modules_export_names[19] = "systime_unix_milis";
+	modules_export_names[19] = "systime_unix_milli";
 	modules_export_names[20] = "systime_timestamp_to_unix";
 	modules_export_names[21] = "systime_unix_to_timestamp";
 	modules_export_names[22] = "debug_shell_println";
@@ -302,19 +304,19 @@ void module_install(const char *name)
 void module_load_all()
 {
 	NUC_DIR* dir = nuc_opendir(modules_path);
-	//DEBUGPRINTLN_1("opening directory")
+	DEBUGPRINTLN_1("opening directory")
 	if (dir != NULL)
 	{
 		struct nuc_dirent* dirent;
 		while ((dirent = nuc_readdir(dir)) != NULL)
 		{
-			//DEBUGPRINTLN_1("entry: %s",dirent->d_name)
+			DEBUGPRINTLN_1("entry: %s",dirent->d_name)
 			if (k_strlen(dirent->d_name,100) > 8)
 			{
 				uint32_t pathlen = k_strlen(dirent->d_name,100);
 				if (k_strcmp(dirent->d_name+(pathlen-8),".elf.tns",100) == 0)
 				{
-					//DEBUGPRINTLN_1("elf file extension",dirent->d_name)
+					DEBUGPRINTLN_1("elf file extension",dirent->d_name)
 					char buffer[105];
 					k_memset(buffer,'\0',103);
 					k_memcpy(buffer,dirent->d_name,pathlen);

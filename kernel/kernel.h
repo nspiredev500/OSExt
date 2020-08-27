@@ -14,12 +14,18 @@
 // from the ndless-sdk include directory
 #include <syscall-list.h>
 
-
-
+#include "ti-os.h"
+#include "hw-version.h"
 
 #include "libk/memory.h"
 #include "libk/mutex.h"
 #include "libk/modes.h"
+
+#include "vfs/file.h"
+#include "vfs/vfs.h"
+#include "vfs/tty.h"
+
+
 
 #include "scheduling/lock.h"
 #include "scheduling/deferred_action.h"
@@ -27,7 +33,6 @@
 #include "scheduling/thread.h"
 #include "scheduling/scheduler.h"
 
-#include "ti-os.h"
 #include "LinkedList.h"
 #include "charset/charset.h"
 #include "osversion.h"
@@ -49,6 +54,7 @@
 
 
 
+
 #include "drivers/power.h"
 #include "drivers/irq_controller.h"
 #include "drivers/i2c.h"
@@ -63,7 +69,6 @@
 #include "drivers/adc.h"
 #include "drivers/nand.h"
 #include "drivers/systime.h"
-#include "drivers/vfs.h"
 #include "drivers/init_drivers.h"
 
 
@@ -77,6 +82,10 @@
 
 
 #include "syscalls/svc/uninstall.h"
+#include "syscalls/svc/time-syscalls.h"
+#include "syscalls/svc/thread-syscalls.h"
+#include "syscalls/svc/version.h"
+
 
 #include "memory/physical_MM.h"
 #include "memory/virtual_MM.h"
@@ -96,7 +105,7 @@
 
 
 
-#define OSEXT_VERSION 0x00010004
+#define OSEXT_VERSION 0x00000005
 
 
 
@@ -117,9 +126,9 @@ extern char _GOT_SIZE;
 
 
 
-void* const virtual_base_address;
-void* const kernel_heap_start;
-volatile void** LCD_UPBASE;
+extern void* const virtual_base_address;
+extern void* const kernel_heap_start;
+extern volatile void** LCD_UPBASE;
 
 
 

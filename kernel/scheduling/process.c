@@ -41,10 +41,9 @@ void destroyProcess(struct process *p)
 	struct mem_desc* mem = p->mem;
 	while (mem != NULL)
 	{
-		/// TODO destroy mem, and the data if the type uses the data field
-		
-		
-		mem = mem->next;
+		struct mem_desc* next = mem->next;
+		kfree(mem);
+		mem = next;
 	}
 	freeProcess(p);
 }

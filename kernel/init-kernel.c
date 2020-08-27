@@ -9,6 +9,7 @@
 
 bool init_kernel()
 {
+	//hwversion_check();
 	charset_load();
 	void* framebuffer = (void*) *LCD_UPBASE;
 	#ifndef RELEASE
@@ -100,7 +101,7 @@ bool init_kernel()
 	
 	
 	
-	debug_shell_println("switching framebuffer, press any key");
+	debug_shell_println_rgb("switching framebuffer, press any key",0,255,0);
 	#ifndef RELEASE
 		keypad_press_release_barrier();
 	#endif
